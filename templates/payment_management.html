@@ -1,0 +1,616 @@
+{% extends "base.html" %}
+{% set page_title = "Payment Management" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Payment Management</h1>
+    <div class="page-actions">
+        <button class="btn btn-primary" onclick="showCreatePaymentModal()">
+            <i class="icon">💳</i> Create Payment
+        </button>
+        <button class="btn btn-secondary" onclick="showBulkCreateModal()">
+            <i class="icon">📄</i> Bulk Create
+        </button>
+    </div>
+</div>
+
+<!-- Payment Statistics -->
+<div class="stats-grid">
+    {% for stat in payment_stats %}
+    <div class="stat-card">
+        <div class="stat-value">{{ stat.count }}</div>
+        <div class="stat-label">{{ stat._id|title }} Payments</div>
+        <div class="stat-amount">₹{{ "%.2f"|format(stat.total_amount) }}</div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <h3>Quick Actions</h3>
+    <div class="action-buttons">
+        <button class="action-btn" onclick="showOverduePayments()">
+            <i class="icon">⚠️</i>
+            <span>View Overdue</span>
+        </button>
+        <button class="action-btn" onclick="generateReport()">
+            <i class="icon">📊</i>
+            <span>Generate Report</span>
+        </button>
+        <button class="action-btn" onclick="sendReminders()">
+            <i class="icon">📱</i>
+            <span>Send Reminders</span>
+        </button>
+        <button class="action-btn" onclick="showAnalytics()">
+            <i class="icon">📈</i>
+            <span>Analytics</span>
+        </button>
+    </div>
+</div>
+
+<!-- Recent Payments -->
+<div class="section">
+    <h3>Recent Payments</h3>
+    <div class="table-container">
+        <table class="payments-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in recent_payments %}
+                <tr class="payment-row" data-payment-id="{{ payment._id }}">
+                    <td>
+                        <div class="student-info">
+                            <strong>{{ payment.student_name }}</strong>
+                        </div>
+                    </td>
+                    <td>{{ payment.description }}</td>
+                    <td class="amount">₹{{ "%.2f"|format(payment.amount) }}</td>
+                    <td>{{ payment.due_date.strftime('%Y-%m-%d') if payment.due_date else 'N/A' }}</td>
+                    <td>
+                        <span class="status-badge status-{{ payment.status }}">
+                            {{ payment.status|title }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons-small">
+                            {% if payment.status in ['pending', 'overdue'] %}
+                            <button class="btn-small btn-success" onclick="markAsPaid('{{ payment._id }}')">
+                                Mark Paid
+                            </button>
+                            {% endif %}
+                            <button class="btn-small btn-secondary" onclick="viewPaymentDetails('{{ payment._id }}')">
+                                View
+                            </button>
+                            {% if payment.status == 'paid' %}
+                            <button class="btn-small btn-warning" onclick="processRefund('{{ payment._id }}')">
+                                Refund
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Payment Modal -->
+<div id="createPaymentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Create New Payment</h3>
+            <button class="modal-close" onclick="closeModal('createPaymentModal')">&times;</button>
+        </div>
+        <form id="createPaymentForm">
+            <div class="form-group">
+                <label for="studentSelect">Student</label>
+                <select id="studentSelect" name="student_id" required>
+                    <option value="">Select Student...</option>
+                    <!-- Populated via JavaScript -->
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="paymentDescription">Description</label>
+                <input type="text" id="paymentDescription" name="description" required>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="paymentAmount">Amount (₹)</label>
+                    <input type="number" id="paymentAmount" name="amount" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dueDate">Due Date</label>
+                    <input type="date" id="dueDate" name="due_date" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="paymentType">Payment Type</label>
+                    <select id="paymentType" name="payment_type">
+                        <option value="monthly">Monthly</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="session">Per Session</option>
+                        <option value="one_time">One Time</option>
+                        <option value="registration">Registration</option>
+                        <option value="equipment">Equipment</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentCategory">Category</label>
+                    <select id="paymentCategory" name="payment_category">
+                        <option value="tuition">Tuition</option>
+                        <option value="equipment">Equipment</option>
+                        <option value="events">Events</option>
+                        <option value="registration">Registration</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="taxAmount">Tax Amount (₹)</label>
+                    <input type="number" id="taxAmount" name="tax_amount" step="0.01" min="0" value="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="gateway">Payment Gateway</label>
+                    <select id="gateway" name="gateway">
+                        <option value="cash">Cash</option>
+                        <option value="razorpay">Razorpay</option>
+                        <option value="stripe">Stripe</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="paymentInstructions">Payment Instructions</label>
+                <textarea id="paymentInstructions" name="payment_instructions" rows="3"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('createPaymentModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Mark as Paid Modal -->
+<div id="markPaidModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Mark Payment as Paid</h3>
+            <button class="modal-close" onclick="closeModal('markPaidModal')">&times;</button>
+        </div>
+        <form id="markPaidForm">
+            <input type="hidden" id="paidPaymentId" name="payment_id">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="paidAmount">Amount Paid (₹)</label>
+                    <input type="number" id="paidAmount" name="amount" step="0.01" min="0" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="paidMethod">Payment Method</label>
+                    <select id="paidMethod" name="payment_method" required>
+                        <option value="">Select Method...</option>
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                        <option value="upi">UPI</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="cheque">Cheque</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="paidReference">Reference/Transaction ID</label>
+                <input type="text" id="paidReference" name="reference" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="paidNotes">Notes</label>
+                <textarea id="paidNotes" name="notes" rows="3"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('markPaidModal')">Cancel</button>
+                <button type="submit" class="btn btn-success">Mark as Paid</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    color: #666;
+    margin: 0.5rem 0;
+}
+
+.stat-amount {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #28a745;
+}
+
+.quick-actions {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.action-btn .icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.payments-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.payments-table th,
+.payments-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.payments-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.amount {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-paid {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-overdue {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.action-buttons-small {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-small {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.modal form {
+    padding: 1.5rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+</style>
+
+<script>
+// Load students for the create payment form
+async function loadStudents() {
+    try {
+        const response = await fetch('/api/users?role=student', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const select = document.getElementById('studentSelect');
+            
+            data.users.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student._id;
+                option.textContent = `${student.name} (${student.phone_number || 'No phone'})`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading students:', error);
+    }
+}
+
+// Show create payment modal
+function showCreatePaymentModal() {
+    loadStudents();
+    document.getElementById('createPaymentModal').style.display = 'block';
+}
+
+// Close modal
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// Create payment form submission
+document.getElementById('createPaymentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const paymentData = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await fetch('/api/enhanced-payments/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(paymentData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('Payment created successfully!');
+            closeModal('createPaymentModal');
+            location.reload();
+        } else {
+            alert(`Error: ${result.error}`);
+        }
+    } catch (error) {
+        alert('Error creating payment');
+        console.error('Error:', error);
+    }
+});
+
+// Mark payment as paid
+function markAsPaid(paymentId) {
+    document.getElementById('paidPaymentId').value = paymentId;
+    document.getElementById('markPaidModal').style.display = 'block';
+}
+
+// Mark paid form submission
+document.getElementById('markPaidForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const paymentId = formData.get('payment_id');
+    const paidData = {
+        amount: parseFloat(formData.get('amount')),
+        payment_method: formData.get('payment_method'),
+        reference: formData.get('reference'),
+        notes: formData.get('notes')
+    };
+    
+    try {
+        const response = await fetch(`/api/enhanced-payments/${paymentId}/process-manual`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(paidData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('Payment marked as paid successfully!');
+            closeModal('markPaidModal');
+            location.reload();
+        } else {
+            alert(`Error: ${result.error}`);
+        }
+    } catch (error) {
+        alert('Error processing payment');
+        console.error('Error:', error);
+    }
+});
+
+// View payment details
+function viewPaymentDetails(paymentId) {
+    // Implement payment details view
+    alert('Payment details view - to be implemented');
+}
+
+// Process refund
+function processRefund(paymentId) {
+    const refundAmount = prompt('Enter refund amount:');
+    const refundReason = prompt('Enter refund reason:');
+    
+    if (refundAmount && refundReason) {
+        // Implement refund processing
+        alert('Refund processing - to be implemented');
+    }
+}
+
+// Show overdue payments
+function showOverduePayments() {
+    // Implement overdue payments view
+    window.location.href = '/payments?status=overdue';
+}
+
+// Generate report
+function generateReport() {
+    window.location.href = '/payment-reports';
+}
+
+// Send reminders
+async function sendReminders() {
+    if (confirm('Send payment reminders to all students with pending payments?')) {
+        // Implement reminder sending
+        alert('Sending reminders...');
+    }
+}
+
+// Show analytics
+function showAnalytics() {
+    // Implement analytics view
+    alert('Analytics view - to be implemented');
+}
+
+// Set default due date to tomorrow
+document.addEventListener('DOMContentLoaded', function() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('dueDate').value = tomorrow.toISOString().split('T')[0];
+});
+</script>
+{% endblock %}

@@ -1,0 +1,496 @@
+<!-- Post Card Template -->
+<div class="post-card" data-post-id="{{ post._id }}">
+    <div class="post-header">
+        <div class="post-author-avatar">
+            {% if post.author.profile_picture_url %}
+                <img src="{{ post.author.profile_picture_url }}" alt="{{ post.author.name }}" class="avatar-img">
+            {% else %}
+                {{ post.author.name.split(' ')|map('first')|join('')|upper }}
+            {% endif %}
+        </div>
+        <div class="post-author-info">
+            <h6 class="post-author-name">{{ post.author.name }}</h6>
+            <p class="post-meta">
+                {{ post.author.role.replace('_', ' ').title() }} • 
+                <time datetime="{{ post.created_at.isoformat() }}">
+                    {{ moment(post.created_at).fromNow() if moment else post.created_at.strftime('%b %d, %Y') }}
+                </time>
+                {% if post.is_pinned %}
+                    <i class="icon-pin text-warning" title="Pinned"></i>
+                {% endif %}
+            </p>
+        </div>
+        <div class="post-type-badge">
+            <span class="badge badge-{{ {
+                'announcement': 'primary',
+                'tip': 'success', 
+                'event': 'warning',
+                'achievement': 'info',
+                'general': 'secondary'
+            }.get(post.post_type, 'secondary') }}">
+                {{ post.post_type.title() }}
+            </span>
+        </div>
+    </div>
+    
+    <div class="post-content">
+        <h5 class="post-title">{{ post.title }}</h5>
+        <div class="post-text">
+            {% if post.content|length > 300 %}
+                <div class="post-excerpt">
+                    {{ post.excerpt or post.content[:300] + '...' }}
+                    <button class="btn-link expand-post" onclick="expandPost('{{ post._id }}')">
+                        Show more
+                    </button>
+                </div>
+                <div class="post-full-content" style="display: none;">
+                    {{ post.content|nl2br }}
+                    <button class="btn-link collapse-post" onclick="collapsePost('{{ post._id }}')">
+                        Show less
+                    </button>
+                </div>
+            {% else %}
+                {{ post.content|nl2br }}
+            {% endif %}
+        </div>
+        
+        {% if post.media_urls %}
+            <div class="post-media">
+                {% for media_url in post.media_urls %}
+                    {% if media_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')) %}
+                        <img src="{{ media_url }}" alt="Post image" class="post-image" onclick="openImageModal('{{ media_url }}')">
+                    {% elif media_url.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) %}
+                        <video controls class="post-video">
+                            <source src="{{ media_url }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if post.tags %}
+            <div class="post-tags">
+                {% for tag in post.tags %}
+                    <span class="tag" onclick="filterByTag('{{ tag }}')">#{{ tag }}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {% if post.category %}
+            <div class="post-category">
+                <small class="text-muted">
+                    <i class="icon-folder"></i>
+                    {{ post.category.title() }}
+                </small>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="post-actions">
+        <button class="action-btn {{ 'liked' if post.user_has_liked else '' }}" 
+                onclick="toggleLike('{{ post._id }}', this)"
+                title="Like this post">
+            <i class="icon-heart"></i>
+            <span>{{ post.likes_count }}</span>
+        </button>
+        
+        <button class="action-btn" 
+                onclick="showComments('{{ post._id }}')"
+                title="View comments">
+            <i class="icon-message-circle"></i>
+            <span>{{ post.comments_count }}</span>
+        </button>
+        
+        <button class="action-btn" 
+                onclick="sharePost('{{ post._id }}')"
+                title="Share this post">
+            <i class="icon-share-2"></i>
+            Share
+        </button>
+        
+        {% if post.recent_comments %}
+            <button class="action-btn" 
+                    onclick="togglePreviewComments('{{ post._id }}')"
+                    title="Toggle comment preview">
+                <i class="icon-eye"></i>
+                Preview
+            </button>
+        {% endif %}
+        
+        <div class="ms-auto">
+            <small class="text-muted">
+                <i class="icon-eye"></i>
+                {{ post.views_count }} view{{ 's' if post.views_count != 1 else '' }}
+            </small>
+        </div>
+    </div>
+    
+    <!-- Comment Preview -->
+    {% if post.recent_comments %}
+        <div class="comment-preview" id="commentPreview{{ post._id }}" style="display: none;">
+            <div class="comment-preview-header">
+                <small class="text-muted">Recent comments:</small>
+            </div>
+            {% for comment in post.recent_comments %}
+                <div class="preview-comment">
+                    <strong>{{ comment.author.name }}</strong>
+                    <span class="comment-text">{{ comment.content[:100] }}{{ '...' if comment.content|length > 100 else '' }}</span>
+                    <small class="text-muted">
+                        {{ moment(comment.created_at).fromNow() if moment else comment.created_at.strftime('%b %d') }}
+                    </small>
+                </div>
+            {% endfor %}
+            <button class="btn btn-sm btn-outline-primary" onclick="showComments('{{ post._id }}')">
+                View all {{ post.comments_count }} comments
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.post-card {
+    background: white;
+    border: 1px solid #e3f2fd;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+}
+
+.post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.post-header {
+    padding: 1rem 1.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.post-author-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    overflow: hidden;
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.post-author-info {
+    flex-grow: 1;
+}
+
+.post-author-name {
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.post-meta {
+    color: #666;
+    font-size: 0.85rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.post-type-badge {
+    flex-shrink: 0;
+}
+
+.post-content {
+    padding: 1rem 1.5rem;
+}
+
+.post-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.post-text {
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    font-size: inherit;
+}
+
+.btn-link:hover {
+    color: #0056b3;
+}
+
+.post-media {
+    margin-bottom: 1rem;
+}
+
+.post-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    margin-bottom: 0.5rem;
+}
+
+.post-image:hover {
+    transform: scale(1.02);
+}
+
+.post-video {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.post-tags {
+    margin-bottom: 1rem;
+}
+
+.tag {
+    background: #e3f2fd;
+    color: #1565c0;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+    display: inline-block;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.tag:hover {
+    background: #bbdefb;
+}
+
+.post-category {
+    margin-bottom: 0.5rem;
+}
+
+.post-actions {
+    padding: 0 1.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-top: 1px solid #f5f5f5;
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+}
+
+.action-btn:hover {
+    color: #007bff;
+    background: #f8f9fa;
+}
+
+.action-btn.liked {
+    color: #dc3545;
+}
+
+.action-btn.liked:hover {
+    color: #c82333;
+}
+
+.comment-preview {
+    border-top: 1px solid #f5f5f5;
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+}
+
+.comment-preview-header {
+    margin-bottom: 0.5rem;
+}
+
+.preview-comment {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 6px;
+    border-left: 3px solid #007bff;
+}
+
+.comment-text {
+    color: #555;
+    margin-left: 0.5rem;
+}
+
+.ms-auto {
+    margin-left: auto;
+}
+
+@media (max-width: 768px) {
+    .post-header {
+        padding: 1rem;
+    }
+    
+    .post-content {
+        padding: 0 1rem 1rem;
+    }
+    
+    .post-actions {
+        padding: 0 1rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .action-btn {
+        font-size: 0.8rem;
+    }
+}
+</style>
+
+<script>
+function expandPost(postId) {
+    const postCard = document.querySelector(`[data-post-id="${postId}"]`);
+    const excerpt = postCard.querySelector('.post-excerpt');
+    const fullContent = postCard.querySelector('.post-full-content');
+    
+    if (excerpt && fullContent) {
+        excerpt.style.display = 'none';
+        fullContent.style.display = 'block';
+    }
+}
+
+function collapsePost(postId) {
+    const postCard = document.querySelector(`[data-post-id="${postId}"]`);
+    const excerpt = postCard.querySelector('.post-excerpt');
+    const fullContent = postCard.querySelector('.post-full-content');
+    
+    if (excerpt && fullContent) {
+        excerpt.style.display = 'block';
+        fullContent.style.display = 'none';
+    }
+}
+
+function togglePreviewComments(postId) {
+    const preview = document.getElementById(`commentPreview${postId}`);
+    if (preview) {
+        preview.style.display = preview.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function filterByTag(tag) {
+    // This would be implemented in the main feed page
+    if (typeof window.filterByTag === 'function') {
+        window.filterByTag(tag);
+    }
+}
+
+function openImageModal(imageUrl) {
+    // Simple image modal implementation
+    const modal = document.createElement('div');
+    modal.className = 'image-modal';
+    modal.innerHTML = `
+        <div class="image-modal-overlay" onclick="closeImageModal()">
+            <div class="image-modal-content">
+                <img src="${imageUrl}" alt="Full size image">
+                <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+    const modal = document.querySelector('.image-modal');
+    if (modal) {
+        modal.remove();
+        document.body.style.overflow = '';
+    }
+}
+</script>
+
+<style>
+.image-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+}
+
+.image-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.image-modal-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    cursor: default;
+}
+
+.image-modal-content img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.image-modal-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.image-modal-close:hover {
+    color: #ccc;
+}
+</style>

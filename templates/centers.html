@@ -1,0 +1,2209 @@
+{% extends "base.html" %}
+
+{% block title %}Centers Management - Adrilly Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="centers-page">
+    <div class="page-header-modern">
+        <div class="page-header-content">
+            <div class="page-title-section">
+                <h1 class="page-title-modern">Centers Management</h1>
+                <p class="page-subtitle-modern">Manage training centers and facilities</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-secondary-modern" onclick="exportCenters()">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export
+                </button>
+                <button class="btn btn-primary-modern" onclick="openCreateCenterModal()">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Center
+                </button>
+            </div>
+        </div>
+</div>
+
+    <div class="content-card-modern">
+        <!-- Enhanced Filter Bar -->
+        <div class="filter-bar-modern">
+            <form method="GET" class="filter-form" id="filterForm">
+                <div class="search-section">
+                    <div class="search-input-container">
+                        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" name="search" class="search-input" 
+                               placeholder="Search by center name, location, facilities..." 
+                               value="{{ request.args.get('search', '') }}"
+                               id="searchInput">
+        </div>
+    </div>
+                
+                <div class="filter-controls">
+                    <div class="filter-dropdown">
+                        <select name="status" class="filter-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="active" {{ 'selected' if request.args.get('status') == 'active' }}>Active</option>
+                            <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' }}>Inactive</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-dropdown">
+                        <select name="facility" class="filter-select" id="facilityFilter">
+                            <option value="">All Facilities</option>
+                            <option value="yoga" {{ 'selected' if request.args.get('facility') == 'yoga' }}>Yoga</option>
+                            <option value="pilates" {{ 'selected' if request.args.get('facility') == 'pilates' }}>Pilates</option>
+                            <option value="tennis" {{ 'selected' if request.args.get('facility') == 'tennis' }}>Tennis</option>
+                            <option value="football" {{ 'selected' if request.args.get('facility') == 'football' }}>Football</option>
+                            <option value="swimming" {{ 'selected' if request.args.get('facility') == 'swimming' }}>Swimming</option>
+                            <option value="gym" {{ 'selected' if request.args.get('facility') == 'gym' }}>Gym</option>
+                            <option value="dance" {{ 'selected' if request.args.get('facility') == 'dance' }}>Dance</option>
+                        </select>
+                    </div>
+                    
+                    <button type="button" class="btn-clear-filters" id="clearFilters">
+                        Clear Filters
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Active Filters Chips -->
+            <div class="active-filters" id="activeFilters"></div>
+        </div>
+        <!-- Modern Centers Table -->
+        {% if centers %}
+        <div class="table-container-modern">
+            <table class="table-modern" id="centersTable">
+                <thead class="table-header-sticky">
+                    <tr>
+                        <th class="sortable text-left" data-sort="name" style="width: 35%;">
+                            <div class="th-content">
+                                <span>Center</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="d-none d-md-table-cell text-left" style="width: 20%;">
+                            <div class="th-content">
+                                <span>Location</span>
+                            </div>
+                        </th>
+                        <th class="text-center" style="width: 15%;">
+                            <div class="th-content">
+                                <span>Status</span>
+                            </div>
+                        </th>
+                        <th class="text-center" style="width: 15%;">
+                            <div class="th-content">
+                                <span>Schedule</span>
+                            </div>
+                        </th>
+                        <th class="text-center" style="width: 15%;">
+                            <div class="th-content">
+                                <span>Actions</span>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="table-body-modern">
+                    {% for center in centers %}
+                    <tr class="table-row-modern" data-center-id="{{ center._id }}">
+                        <td class="td-modern text-left">
+                            <div class="org-info-modern">
+                                <div class="center-avatar-modern">
+                                    <span class="center-avatar-letter">{{ center.name[0].upper() if center.name else 'C' }}</span>
+                                </div>
+                                <div class="org-details-modern">
+                                    <div class="org-name-modern">{{ center.name }}</div>
+                                    {% if center.contact_info and center.contact_info.phone %}
+                                    <div class="org-meta-modern">
+                                        <span class="meta-item">📞 {{ center.contact_info.phone }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="td-modern d-none d-md-table-cell text-left">
+                            {% if center.address %}
+                            <div class="location-info-modern">
+                                <div class="location-primary">{{ center.address.city or 'Unknown' }}</div>
+                                {% if center.address.state %}
+                                <div class="location-secondary">{{ center.address.state }}</div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                            <span class="text-muted-modern">Not specified</span>
+                            {% endif %}
+                        </td>
+
+
+
+                        <td class="td-modern">
+                            {% if center.is_active %}
+                            <span class="status-pill status-active">
+                                <span class="status-dot"></span>
+                                <span class="status-text">Active</span>
+                                </span>
+                            {% else %}
+                            <span class="status-pill status-inactive">
+                                <span class="status-dot"></span>
+                                <span class="status-text">Inactive</span>
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="td-modern text-left">
+                            <button class="btn-schedule-modern" onclick="window.open('/centers/{{ center._id }}/schedule', '_blank')" title="Open Schedule">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                </button>
+                        </td>
+                        <td class="td-modern">
+                            <button class="actions-trigger-modern" onclick="toggleActionDropdownPortal(event, '{{ center._id }}')">
+                                <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                🏢
+            </div>
+            <h3 class="empty-state-title">No Centers Found</h3>
+            <p class="empty-state-description">
+                You haven't created any training centers yet. Start by adding your first center to begin managing facilities and schedules.
+            </p>
+            <button class="btn btn-primary-modern" onclick="openCreateCenterModal()">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Add Your First Center
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create Center Modal -->
+<div id="createCenterModal" class="modal-overlay-modern" style="display: none;">
+    <div class="modal-modern" style="max-width: 600px;">
+        <div class="modal-header-modern">
+            <div class="modal-title-modern">
+                <h3>Add New Center</h3>
+                <p class="modal-subtitle-modern">Create a new training center</p>
+            </div>
+            <button class="modal-close-modern" onclick="closeCreateCenterModal()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form id="createCenterForm" method="POST" action="{{ url_for('web.create_center') }}">
+            <div class="modal-body-modern">
+                <div class="form-field-modern">
+                    <label for="center_name" class="form-label-modern">
+                        <span class="label-text">Center Name</span>
+                        <span class="label-required">*</span>
+                    </label>
+                    <input type="text" class="form-input-modern" id="center_name" name="name" 
+                           placeholder="Enter center name" required>
+                    <div class="form-feedback-modern" id="centerNameFeedback"></div>
+                </div>
+                
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="center_phone" class="form-label-modern">
+                            <span class="label-text">Phone</span>
+                        </label>
+                        <input type="tel" class="form-input-modern" id="center_phone" name="contact_phone" 
+                               placeholder="Enter phone number">
+                        <div class="form-feedback-modern" id="centerPhoneFeedback"></div>
+                    </div>
+                    
+                    <div class="form-field-modern">
+                        <label for="center_email" class="form-label-modern">
+                            <span class="label-text">Email</span>
+                        </label>
+                        <input type="email" class="form-input-modern" id="center_email" name="contact_email" 
+                               placeholder="Enter email address">
+                        <div class="form-feedback-modern" id="centerEmailFeedback"></div>
+                    </div>
+                </div>
+                
+                <div class="form-field-modern">
+                    <label for="center_address" class="form-label-modern">
+                        <span class="label-text">Street Address</span>
+                    </label>
+                    <input type="text" class="form-input-modern" id="center_address" name="street" 
+                           placeholder="Enter street address">
+                    <div class="form-feedback-modern" id="centerAddressFeedback"></div>
+                </div>
+                
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="center_city" class="form-label-modern">
+                            <span class="label-text">City</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="center_city" name="city" 
+                               placeholder="Enter city">
+                        <div class="form-feedback-modern" id="centerCityFeedback"></div>
+                    </div>
+                    
+                    <div class="form-field-modern">
+                        <label for="center_state" class="form-label-modern">
+                            <span class="label-text">State</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="center_state" name="state" 
+                               placeholder="Enter state">
+                        <div class="form-feedback-modern" id="centerStateFeedback"></div>
+                    </div>
+                </div>
+                
+
+                <div class="form-field-modern">
+                    <label for="activities" class="form-label-modern">
+                        <span class="label-text">Activities Offered</span>
+                    </label>
+                    <div class="activities-section">
+                        <div class="popular-activities">
+                            <div class="popular-activities-header">
+                                <span class="activities-label">Popular Activities</span>
+                                <span class="activities-hint">Click to add</span>
+                            </div>
+                            <div class="activity-tags">
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('Football')">Football</button>
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('Basketball')">Basketball</button>
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('Tennis')">Tennis</button>
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('Swimming')">Swimming</button>
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('Yoga')">Yoga</button>
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('Pilates')">Pilates</button>
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('Boxing')">Boxing</button>
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('MMA')">MMA</button>
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('Dance')">Dance</button>
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('Gymnastics')">Gymnastics</button>
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('Cricket')">Cricket</button>
+                                <button type="button" class="activity-tag" onclick="addCenterActivity('Badminton')">Badminton</button>
+                            </div>
+                        </div>
+                        <input type="text" class="form-input-modern" id="activities" name="activities"
+                               placeholder="Type activities separated by commas or click popular activities above"
+                               title="Enter activities separated by commas">
+                        <div class="form-help-text">
+                            Enter activities separated by commas or click popular activities above
+                        </div>
+                    </div>
+                    <div class="form-feedback-modern" id="activitiesFeedback"></div>
+                </div>
+            </div>
+            <div class="modal-footer-modern">
+                <button type="button" class="btn btn-secondary-modern" onclick="closeCreateCenterModal()">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary-modern" onclick="createCenter()" id="createCenterBtn">
+                    <span class="btn-text">Create Center</span>
+                    <div class="btn-loading hidden">
+                        <svg class="loading-spinner" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"></circle>
+                            <path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </div>
+                </button>
+            </div>
+        </form>
+                    </div>
+                </div>
+                
+<!-- View Center Modal -->
+<div id="viewCenterModal" class="modal-overlay-modern" style="display: none;">
+    <div class="modal-modern" style="max-width: 800px;">
+        <div class="modal-header-modern">
+            <div class="modal-title-modern">
+                <h3>Center Details</h3>
+                <p class="modal-subtitle-modern">View center information</p>
+                        </div>
+            <button class="modal-close-modern" onclick="closeViewCenterModal()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+                        </div>
+        <div class="modal-body-modern">
+            <div class="loading-state" id="viewCenterLoading">
+                <div class="loading-spinner-large">
+                    <svg class="loading-spinner" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"></circle>
+                        <path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    </div>
+                <p>Loading center details...</p>
+                </div>
+            <div class="center-details-content" id="centerDetailsContent" style="display: none;">
+                <!-- Content will be populated dynamically -->
+            </div>
+            <div class="error-state" id="viewCenterError" style="display: none;">
+                <div class="error-icon">⚠️</div>
+                <h4>Error Loading Center</h4>
+                <p class="error-message" id="viewCenterErrorMessage"></p>
+                <button class="btn btn-primary-modern" onclick="retryLoadCenter()">Try Again</button>
+            </div>
+        </div>
+        <div class="modal-footer-modern">
+            <button class="btn btn-secondary-modern" onclick="closeViewCenterModal()">
+                Close
+            </button>
+            <button class="btn btn-primary-modern" onclick="editCenterFromView()" id="editFromViewBtn">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Edit Center
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Center Modal -->
+<div id="editCenterModal" class="modal-overlay-modern" style="display: none;">
+    <div class="modal-modern" style="max-width: 600px;">
+        <div class="modal-header-modern">
+            <div class="modal-title-modern">
+                <h3>Edit Center</h3>
+                <p class="modal-subtitle-modern">Update center information</p>
+            </div>
+            <button class="modal-close-modern" onclick="closeEditCenterModal()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form id="editCenterForm" onsubmit="return false;">
+            <div class="modal-body-modern">
+                <div class="form-grid-modern">
+                    <div class="form-group-modern form-group-full">
+                        <label for="edit_center_name" class="form-label-modern">
+                            <span class="label-text">Center Name</span>
+                            <span class="label-required">*</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="edit_center_name" name="name" 
+                               placeholder="Enter center name" required>
+                        <div class="form-feedback-modern" id="editCenterNameFeedback"></div>
+                    </div>
+                    
+                    <div class="form-group-modern form-group-half">
+                        <label for="edit_center_phone" class="form-label-modern">
+                            <span class="label-text">Phone</span>
+                        </label>
+                        <input type="tel" class="form-input-modern" id="edit_center_phone" name="contact_phone" 
+                               placeholder="Enter phone number">
+                        <div class="form-feedback-modern" id="editCenterPhoneFeedback"></div>
+                    </div>
+                    
+                    <div class="form-group-modern form-group-half">
+                        <label for="edit_center_email" class="form-label-modern">
+                            <span class="label-text">Email</span>
+                        </label>
+                        <input type="email" class="form-input-modern" id="edit_center_email" name="contact_email" 
+                               placeholder="Enter email address">
+                        <div class="form-feedback-modern" id="editCenterEmailFeedback"></div>
+                    </div>
+                    
+                    <div class="form-group-modern form-group-full">
+                        <label for="edit_center_address" class="form-label-modern">
+                            <span class="label-text">Street Address</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="edit_center_address" name="street" 
+                               placeholder="Enter street address">
+                        <div class="form-feedback-modern" id="editCenterAddressFeedback"></div>
+                    </div>
+                    
+                    <div class="form-group-modern form-group-half">
+                        <label for="edit_center_city" class="form-label-modern">
+                            <span class="label-text">City</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="edit_center_city" name="city" 
+                               placeholder="Enter city">
+                        <div class="form-feedback-modern" id="editCenterCityFeedback"></div>
+                    </div>
+                    
+                    <div class="form-group-modern form-group-half">
+                        <label for="edit_center_state" class="form-label-modern">
+                            <span class="label-text">State</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="edit_center_state" name="state" 
+                               placeholder="Enter state">
+                        <div class="form-feedback-modern" id="editCenterStateFeedback"></div>
+                    </div>
+                    
+                    <div class="form-group-modern form-group-full">
+                        <label for="edit_facilities" class="form-label-modern">
+                            <span class="label-text">Facilities</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="edit_facilities" name="facilities"
+                               placeholder="e.g. Yoga, Pilates, Tennis, Football, Swimming, Gym, Dance">
+                        <div class="form-help-modern">
+                            Enter facilities separated by commas (e.g., Yoga, Pilates, Tennis, Football)
+                        </div>
+                        <div class="form-feedback-modern" id="editFacilitiesFeedback"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer-modern">
+                <button type="button" class="btn btn-secondary-modern" onclick="closeEditCenterModal()">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary-modern" onclick="updateCenter()" id="updateCenterBtn">
+                    <span class="btn-text">Save Changes</span>
+                    <div class="btn-loading hidden">
+                        <svg class="loading-spinner" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"></circle>
+                            <path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </div>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Action Dropdown Portal -->
+<div class="dropdown-backdrop" id="dropdownBackdrop" onclick="closeAllDropdowns()"></div>
+<div class="actions-dropdown-portal" id="actionDropdownPortal">
+    <!-- Dynamic content will be inserted here -->
+</div>
+
+{% endblock %}
+
+{% block head %}
+<style>
+/* Modern Centers Page Styles */
+
+/* Page layout */
+.centers-page {
+    padding: 0;
+}
+
+.page-header-modern {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-primary);
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+}
+
+.page-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.page-title-section {
+    flex: 1;
+}
+
+.page-title-modern {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.page-subtitle-modern {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.page-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.btn-primary-modern, .btn-secondary-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary-modern {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+}
+
+.btn-primary-modern:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.btn-secondary-modern {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+}
+
+.btn-secondary-modern:hover {
+    background: var(--bg-hover);
+}
+
+.btn-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Content card */
+.content-card-modern {
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-primary);
+    margin: 0 2rem 2rem 2rem;
+    overflow: visible;
+}
+
+/* Filter bar */
+.filter-bar-modern {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.filter-form {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.search-section {
+    flex: 1;
+}
+
+.search-input-container {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.filter-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.filter-dropdown {
+    position: relative;
+}
+
+.filter-select {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    min-width: 150px;
+}
+
+.btn-clear-filters {
+    padding: 0.75rem 1rem;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.btn-clear-filters:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+/* Active filters */
+.active-filters {
+    display: none;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--accent-bg);
+    color: var(--accent-primary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 16px;
+    font-size: 0.75rem;
+}
+
+/* Table styles */
+.table-container-modern {
+    overflow-x: auto;
+    overflow-y: visible;
+    position: relative;
+}
+
+.table-modern {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.table-header-sticky {
+    background: var(--bg-secondary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table-modern th {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-primary);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.table-modern td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-primary);
+    vertical-align: top;
+}
+
+.td-modern {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-primary);
+    vertical-align: top;
+}
+
+.th-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sort-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+}
+
+.sortable {
+    cursor: pointer;
+}
+
+.sortable:hover .sort-icon {
+    color: var(--text-primary);
+}
+
+.table-row-modern:hover {
+    background: var(--bg-hover);
+}
+
+.table-body-modern tr:hover {
+    background: var(--bg-hover);
+}
+
+/* Organization info styles */
+.org-info-modern {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.org-avatar-modern {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: var(--accent-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: var(--accent-primary);
+}
+
+.center-avatar-modern {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-primary, #a1de56), var(--accent-secondary, #77ba58));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.center-avatar-letter {
+    line-height: 1;
+}
+
+.org-avatar-icon {
+    font-size: 1.25rem;
+}
+
+.org-details-modern {
+    flex: 1;
+    min-width: 0;
+}
+
+.org-name-modern {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.org-meta-modern {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.meta-item {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Location info */
+.location-info-modern {
+    line-height: 1.4;
+}
+
+.location-primary {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.location-secondary {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.125rem;
+}
+
+/* Activities tags */
+.activities-tags-modern {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.activity-tag-modern {
+    background: var(--accent-bg);
+    color: var(--accent-primary);
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.625rem;
+    font-weight: 500;
+}
+
+.activity-more-modern {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Stats styles */
+.stats-modern {
+    text-align: center;
+}
+
+.stats-number {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 0.125rem;
+}
+
+.stats-label {
+    font-size: 0.625rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Status pills */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.status-text {
+    font-size: 0.75rem;
+}
+
+.status-active {
+    background: var(--success-bg);
+    color: var(--success-color);
+}
+
+.status-inactive {
+    background: var(--error-bg);
+    color: var(--error-color);
+}
+
+/* Actions modern */
+.actions-modern {
+    /* Remove relative positioning - button should be standalone */
+}
+
+.actions-trigger-modern {
+    background: none;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+}
+
+.actions-trigger-modern:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.actions-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Dropdown portal - positioned outside table structure */
+.actions-dropdown-portal {
+    position: fixed;
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    z-index: 9999;
+    min-width: 180px;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+    padding: 0.5rem 0;
+}
+
+.actions-dropdown-portal.show {
+    display: block;
+}
+
+.action-item-modern {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+}
+
+.action-item-modern:hover {
+    background: var(--bg-hover);
+}
+
+.action-item-modern.action-danger {
+    color: var(--error);
+}
+
+.action-divider-modern {
+    height: 1px;
+    background: var(--border-primary);
+    margin: 0.5rem 0;
+}
+
+/* Backdrop for closing dropdown */
+.dropdown-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9998;
+    display: none;
+}
+
+.action-item-modern.action-danger:hover {
+    background: var(--error-bg);
+}
+
+.action-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Schedule button styles */
+.btn-schedule-modern {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--success);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-schedule-modern:hover {
+    background: var(--success-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-schedule-modern svg {
+    width: 20px;
+    height: 20px;
+}
+
+.action-divider {
+    height: 1px;
+    background: var(--border-primary);
+    margin: 0.25rem 0;
+    border: none;
+}
+
+/* Text utilities */
+.text-muted-modern {
+    color: var(--text-muted);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-muted);
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.empty-state-description {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin: 0 0 2rem 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Modal styles */
+.modal-overlay-modern {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-modern {
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--border-primary);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+}
+
+.modal-header-modern {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.modal-title-modern {
+    flex: 1;
+}
+
+.modal-title-modern h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.modal-subtitle-modern {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.modal-close-modern {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+}
+
+.modal-close-modern:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.modal-close-modern svg {
+    width: 20px;
+    height: 20px;
+}
+
+.modal-body-modern {
+    padding: 2rem;
+}
+
+.modal-footer-modern {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* Form styles */
+.form-grid-modern {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group-modern {
+    margin-bottom: 1.5rem;
+}
+
+.form-group-full {
+    grid-column: 1 / -1;
+}
+
+.form-group-half {
+    grid-column: span 1;
+}
+
+.form-label-modern {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.label-text {
+    font-size: 0.875rem;
+}
+
+.label-required {
+    color: var(--error);
+    margin-left: 0.25rem;
+}
+
+.form-input-modern, .form-select-modern {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease;
+}
+
+.form-input-modern:focus, .form-select-modern:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.form-input-modern.error {
+    border-color: var(--error);
+}
+
+.form-input-modern.success {
+    border-color: var(--success);
+}
+
+.form-feedback-modern {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--error);
+}
+
+.form-feedback-modern.error {
+    color: var(--error);
+}
+
+.form-feedback-modern.success {
+    color: var(--success);
+}
+
+.form-help-modern {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Loading states */
+.loading-state {
+    text-align: center;
+    padding: 2rem;
+}
+
+.loading-spinner-large {
+    margin-bottom: 1rem;
+}
+
+.loading-spinner {
+    width: 32px;
+    height: 32px;
+    margin: 0 auto;
+    animation: spin 1s linear infinite;
+}
+
+.error-state {
+    text-align: center;
+    padding: 2rem;
+}
+
+.error-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--error);
+}
+
+.error-state h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.error-message {
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+}
+
+/* Button loading states */
+.btn-loading {
+    display: none;
+}
+
+.btn-text {
+    display: inline;
+}
+
+/* Detail view styles */
+.center-details-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.detail-section {
+    margin-bottom: 1.5rem;
+}
+
+.detail-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.detail-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.5rem 0;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    min-width: 120px;
+}
+
+.detail-value {
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    text-align: right;
+    flex: 1;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .page-header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .page-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .page-actions .btn-primary-modern,
+    .page-actions .btn-secondary-modern {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .content-card-modern {
+        margin: 0 1rem 2rem 1rem;
+    }
+    
+    .filter-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-controls {
+        flex-direction: column;
+    }
+    
+    .form-grid-modern {
+        grid-template-columns: 1fr;
+    }
+    
+    .table-modern th.d-none.d-md-table-cell,
+    .table-modern td.d-none.d-md-table-cell {
+        display: none !important;
+    }
+    
+    .table-modern th.d-none.d-lg-table-cell,
+    .table-modern td.d-none.d-lg-table-cell {
+        display: none !important;
+    }
+    
+    .table-modern th.d-none.d-sm-table-cell,
+    .table-modern td.d-none.d-sm-table-cell {
+        display: none !important;
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Hidden utility */
+.hidden {
+    display: none !important;
+}
+
+/* Activity Suggestions */
+.activities-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.popular-activities {
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-primary);
+}
+
+.popular-activities-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.activities-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.activities-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.activity-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.activity-tag {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.activity-tag:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.activity-tag:active {
+    transform: translateY(1px);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Global variables
+let activeDropdown = null;
+
+// Activity management for centers
+function addCenterActivity(activityName) {
+    const activitiesInput = document.getElementById('activities');
+    const currentValue = activitiesInput.value.trim();
+    
+    // Check if activity already exists
+    const activities = currentValue ? currentValue.split(',').map(s => s.trim()) : [];
+    if (activities.includes(activityName)) {
+        return; // Activity already exists
+    }
+    
+    // Add the activity
+    if (currentValue) {
+        activitiesInput.value = currentValue + ', ' + activityName;
+    } else {
+        activitiesInput.value = activityName;
+    }
+    
+    // Trigger input event to update any preview
+    activitiesInput.dispatchEvent(new Event('input'));
+}
+
+// Modal Functions
+function openCreateCenterModal() {
+    const modal = document.getElementById('createCenterModal');
+    modal.style.display = 'flex';
+    clearValidationStates();
+    setupFormValidation();
+}
+
+function closeCreateCenterModal() {
+    const modal = document.getElementById('createCenterModal');
+    modal.style.display = 'none';
+    document.getElementById('createCenterForm').reset();
+    clearValidationStates();
+}
+
+// Navigation Functions
+function viewCenter(centerId) {
+    openViewCenterModal(centerId);
+}
+
+function editCenter(centerId) {
+    openEditCenterModal(centerId);
+}
+
+function manageCoaches(centerId) {
+    window.location.href = `/users`;
+}
+
+function viewSchedule(centerId) {
+    window.location.href = `/centers/${centerId}/schedule`;
+}
+
+function deleteCenter(centerId, centerName) {
+    if (confirm(`Are you sure you want to delete "${centerName}"? This action cannot be undone.`)) {
+        // Show loading state
+        const row = document.querySelector(`[data-center-id="${centerId}"]`);
+        if (row) {
+            row.style.opacity = '0.5';
+        }
+        
+        fetch(`/api/centers/${centerId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the row from table
+                if (row) {
+                    row.remove();
+                }
+                Adrilly.showAlert('Center deleted successfully!', 'success');
+            } else {
+                throw new Error(data.message || 'Failed to delete center');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (row) {
+                row.style.opacity = '1';
+            }
+            Adrilly.showAlert('Error deleting center: ' + error.message, 'error');
+        });
+    }
+}
+
+function exportCenters() {
+    Adrilly.showAlert('Export functionality coming soon!', 'info');
+}
+
+// Dropdown Functions
+function toggleActionDropdownPortal(event, centerId) {
+    event.stopPropagation();
+    
+    const portal = document.getElementById('actionDropdownPortal');
+    const backdrop = document.getElementById('dropdownBackdrop');
+    const button = event.currentTarget;
+    
+    // Close dropdown if already open for this item
+    if (portal.dataset.activeId === centerId && portal.classList.contains('show')) {
+        closeAllDropdowns();
+        return;
+    }
+    
+    // Close any existing dropdown
+    closeAllDropdowns();
+    
+    // Create dropdown content
+    portal.innerHTML = `
+        <button class="action-item-modern" onclick="editCenter('${centerId}'); closeAllDropdowns();">
+            <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+            Edit
+        </button>
+        <div class="action-divider-modern"></div>
+        <button class="action-item-modern action-danger" onclick="deleteCenter('${centerId}', 'Center'); closeAllDropdowns();">
+            <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            Delete
+        </button>
+    `;
+    
+    // Position the dropdown
+    const buttonRect = button.getBoundingClientRect();
+    const portalWidth = 180; // min-width from CSS
+    const viewportWidth = window.innerWidth;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    
+    let left = buttonRect.right + scrollX - portalWidth + 8; // Align right edge with some offset
+    let top = buttonRect.bottom + scrollY + 4;
+    
+    // Keep dropdown within viewport horizontally
+    if (left < scrollX + 8) {
+        left = scrollX + 8;
+    } else if (left + portalWidth > scrollX + viewportWidth - 8) {
+        left = scrollX + viewportWidth - portalWidth - 8;
+    }
+    
+    // Keep dropdown within viewport vertically (check if it would go below fold)
+    const viewportHeight = window.innerHeight;
+    const estimatedDropdownHeight = 200; // Rough estimate
+    if (top + estimatedDropdownHeight > scrollY + viewportHeight) {
+        top = buttonRect.top + scrollY - estimatedDropdownHeight - 4; // Show above button
+    }
+    
+    portal.style.left = left + 'px';
+    portal.style.top = top + 'px';
+    portal.dataset.activeId = centerId;
+    
+    // Show dropdown and backdrop
+    portal.classList.add('show');
+    backdrop.style.display = 'block';
+}
+
+function closeAllDropdowns() {
+    const portal = document.getElementById('actionDropdownPortal');
+    const backdrop = document.getElementById('dropdownBackdrop');
+    
+    portal.classList.remove('show');
+    backdrop.style.display = 'none';
+    portal.dataset.activeId = '';
+    portal.innerHTML = '';
+}
+
+// Close dropdowns when clicking outside or on escape
+document.addEventListener('click', function(event) {
+    // Only close if not clicking on an action button
+    if (!event.target.closest('.actions-trigger-modern')) {
+        closeAllDropdowns();
+    }
+});
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeAllDropdowns();
+    }
+});
+
+// Form Validation Functions
+function clearValidationStates() {
+    const inputs = document.querySelectorAll('.form-input-modern');
+    const feedbacks = document.querySelectorAll('.form-feedback-modern');
+    
+    inputs.forEach(input => {
+        input.classList.remove('error', 'success');
+    });
+    
+    feedbacks.forEach(feedback => {
+        feedback.textContent = '';
+        feedback.className = 'form-feedback-modern';
+    });
+}
+
+function setupFormValidation() {
+    const centerNameInput = document.getElementById('center_name');
+    const centerEmailInput = document.getElementById('center_email');
+    const centerPhoneInput = document.getElementById('center_phone');
+    
+    // Center name validation
+    if (centerNameInput) {
+        centerNameInput.addEventListener('input', function() {
+            validateCenterName(this.value, 'centerNameFeedback');
+        });
+    }
+    
+    // Email validation
+    if (centerEmailInput) {
+        centerEmailInput.addEventListener('input', function() {
+            if (this.value) {
+                validateEmail(this.value, 'centerEmailFeedback');
+            } else {
+                clearFieldValidation('center_email', 'centerEmailFeedback');
+            }
+        });
+    }
+    
+    // Phone validation
+    if (centerPhoneInput) {
+        centerPhoneInput.addEventListener('input', function() {
+            if (this.value) {
+                validatePhone(this.value, 'centerPhoneFeedback');
+            } else {
+                clearFieldValidation('center_phone', 'centerPhoneFeedback');
+            }
+        });
+    }
+}
+
+function validateCenterName(name, feedbackId) {
+    const feedback = document.getElementById(feedbackId);
+    const input = document.getElementById('center_name');
+    
+    if (!name || name.trim().length < 2) {
+        setFieldError(input, feedback, 'Center name must be at least 2 characters long');
+        return false;
+    }
+    
+    setFieldSuccess(input, feedback, 'Valid center name');
+    return true;
+}
+
+function validateEmail(email, feedbackId) {
+    const feedback = document.getElementById(feedbackId);
+    const input = document.getElementById('center_email');
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!emailPattern.test(email)) {
+        setFieldError(input, feedback, 'Please enter a valid email address');
+        return false;
+    }
+    
+    setFieldSuccess(input, feedback, 'Valid email address');
+    return true;
+}
+
+function validatePhone(phone, feedbackId) {
+    const feedback = document.getElementById(feedbackId);
+    const input = document.getElementById('center_phone');
+    const phonePattern = /^[\+]?[1-9][\d]{0,15}$/;
+    
+    if (!phonePattern.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+        setFieldError(input, feedback, 'Please enter a valid phone number');
+        return false;
+    }
+    
+    setFieldSuccess(input, feedback, 'Valid phone number');
+    return true;
+}
+
+function setFieldError(input, feedback, message) {
+    input.classList.remove('success');
+    input.classList.add('error');
+    feedback.className = 'form-feedback-modern error';
+    feedback.textContent = message;
+}
+
+function setFieldSuccess(input, feedback, message) {
+    input.classList.remove('error');
+    input.classList.add('success');
+    feedback.className = 'form-feedback-modern success';
+    feedback.textContent = message;
+}
+
+function clearFieldValidation(inputId, feedbackId) {
+    const input = document.getElementById(inputId);
+    const feedback = document.getElementById(feedbackId);
+    
+    input.classList.remove('error', 'success');
+    feedback.className = 'form-feedback-modern';
+    feedback.textContent = '';
+}
+
+// Create Center Function
+function createCenter() {
+    const form = document.getElementById('createCenterForm');
+    const btn = document.getElementById('createCenterBtn');
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoading = btn.querySelector('.btn-loading');
+    
+    // Validate required fields
+    const centerName = document.getElementById('center_name').value.trim();
+    if (!validateCenterName(centerName, 'centerNameFeedback')) {
+        return;
+    }
+    
+    // Show loading state
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoading.classList.remove('hidden');
+    
+    const formData = new FormData(form);
+    
+    fetch('/centers/create', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.redirected) {
+            window.location.href = response.url;
+        } else {
+            return response.json();
+        }
+    })
+    .then(data => {
+        if (data && data.success) {
+    closeCreateCenterModal();
+            Adrilly.showAlert('Center created successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Adrilly.showAlert('Error creating center. Please try again.', 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        btn.disabled = false;
+        btnText.style.display = 'inline';
+        btnLoading.classList.add('hidden');
+    });
+}
+
+// Global variables for modals
+let currentCenterId = null;
+let currentCenterData = null;
+
+// View Center Modal Functions
+function openViewCenterModal(centerId) {
+    currentCenterId = centerId;
+    const modal = document.getElementById('viewCenterModal');
+    const loading = document.getElementById('viewCenterLoading');
+    const content = document.getElementById('centerDetailsContent');
+    const error = document.getElementById('viewCenterError');
+    
+    // Show modal with loading state
+    modal.style.display = 'flex';
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    error.style.display = 'none';
+    
+    // Fetch center data
+    fetch(`/api/centers/${centerId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            currentCenterData = data;
+            displayCenterDetails(data);
+            loading.style.display = 'none';
+            content.style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            loading.style.display = 'none';
+            error.style.display = 'block';
+            document.getElementById('viewCenterErrorMessage').textContent = error.message;
+        });
+}
+
+function closeViewCenterModal() {
+    document.getElementById('viewCenterModal').style.display = 'none';
+    currentCenterId = null;
+    currentCenterData = null;
+}
+
+function retryLoadCenter() {
+    if (currentCenterId) {
+        openViewCenterModal(currentCenterId);
+    }
+}
+
+function displayCenterDetails(center) {
+    const container = document.getElementById('centerDetailsContent');
+    
+    const facilityTags = center.facilities && center.facilities.length > 0 
+        ? center.facilities.map(f => `<span class="activity-tag-modern">${f}</span>`).join('')
+        : '<span class="text-muted-modern">No facilities listed</span>';
+    
+    const address = center.address && (center.address.street || center.address.city || center.address.state)
+        ? `${center.address.street || ''}<br>${center.address.city || ''} ${center.address.state || ''}`
+        : 'Not specified';
+    
+    container.innerHTML = `
+        <div class="center-details-grid">
+            <div class="detail-section">
+                <h4 class="detail-section-title">General Information</h4>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label class="detail-label">Center Name</label>
+                        <div class="detail-value">${center.name}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label">Status</label>
+                        <div class="detail-value">
+                            <span class="status-pill ${center.is_active ? 'status-active' : 'status-inactive'}">
+                                <span class="status-dot"></span>
+                                <span class="status-text">${center.is_active ? 'Active' : 'Inactive'}</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h4 class="detail-section-title">Contact Information</h4>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label class="detail-label">Phone</label>
+                        <div class="detail-value">${center.contact_info?.phone || 'Not provided'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label">Email</label>
+                        <div class="detail-value">${center.contact_info?.email || 'Not provided'}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h4 class="detail-section-title">Address</h4>
+                <div class="detail-item">
+                    <div class="detail-value">${address}</div>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h4 class="detail-section-title">Facilities</h4>
+                <div class="activities-tags-modern">
+                    ${facilityTags}
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h4 class="detail-section-title">Statistics</h4>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label class="detail-label">Coaches</label>
+                        <div class="detail-value">
+                            <div class="stats-modern">
+                                <div class="stats-number">${center.coach_count || 0}</div>
+                                <div class="stats-label">assigned</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label class="detail-label">Classes</label>
+                        <div class="detail-value">
+                            <div class="stats-modern">
+                                <div class="stats-number">${center.class_count || 0}</div>
+                                <div class="stats-label">scheduled</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function editCenterFromView() {
+    closeViewCenterModal();
+    if (currentCenterData) {
+        openEditCenterModal(currentCenterId, currentCenterData);
+    }
+}
+
+function openEditCenterModal(centerId, centerData = null) {
+    currentCenterId = centerId;
+    const modal = document.getElementById('editCenterModal');
+    
+    if (centerData) {
+        populateEditForm(centerData);
+        modal.style.display = 'flex';
+        setupEditFormValidation();
+    } else {
+        // Fetch center data if not provided
+        fetch(`/api/centers/${centerId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                populateEditForm(data);
+                modal.style.display = 'flex';
+                setupEditFormValidation();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Adrilly.showAlert('Error loading center data: ' + error.message, 'error');
+            });
+    }
+}
+
+function closeEditCenterModal() {
+    document.getElementById('editCenterModal').style.display = 'none';
+    document.getElementById('editCenterForm').reset();
+    clearEditValidationStates();
+    currentCenterId = null;
+}
+
+function populateEditForm(center) {
+    document.getElementById('edit_center_name').value = center.name || '';
+    document.getElementById('edit_center_phone').value = center.contact_info?.phone || '';
+    document.getElementById('edit_center_email').value = center.contact_info?.email || '';
+    document.getElementById('edit_center_address').value = center.address?.street || '';
+    document.getElementById('edit_center_city').value = center.address?.city || '';
+    document.getElementById('edit_center_state').value = center.address?.state || '';
+    document.getElementById('edit_facilities').value = center.facilities ? center.facilities.join(', ') : '';
+}
+
+function clearEditValidationStates() {
+    const inputs = document.querySelectorAll('#editCenterModal .form-input-modern');
+    const feedbacks = document.querySelectorAll('#editCenterModal .form-feedback-modern');
+    
+    inputs.forEach(input => {
+        input.classList.remove('error', 'success');
+    });
+    
+    feedbacks.forEach(feedback => {
+        feedback.textContent = '';
+        feedback.className = 'form-feedback-modern';
+    });
+}
+
+function setupEditFormValidation() {
+    // Get fresh references to elements
+    const centerNameInput = document.getElementById('edit_center_name');
+    const centerEmailInput = document.getElementById('edit_center_email');
+    const centerPhoneInput = document.getElementById('edit_center_phone');
+    
+    // Center name validation
+    if (centerNameInput) {
+        centerNameInput.addEventListener('input', function() {
+            validateEditCenterName(this.value);
+        });
+    }
+    
+    // Email validation
+    if (centerEmailInput) {
+        centerEmailInput.addEventListener('input', function() {
+            if (this.value) {
+                validateEditEmail(this.value);
+            } else {
+                clearEditFieldValidation('edit_center_email', 'editCenterEmailFeedback');
+            }
+        });
+    }
+    
+    // Phone validation
+    if (centerPhoneInput) {
+        centerPhoneInput.addEventListener('input', function() {
+            if (this.value) {
+                validateEditPhone(this.value);
+            } else {
+                clearEditFieldValidation('edit_center_phone', 'editCenterPhoneFeedback');
+            }
+        });
+    }
+}
+
+function validateEditCenterName(name) {
+    const feedback = document.getElementById('editCenterNameFeedback');
+    const input = document.getElementById('edit_center_name');
+    
+    if (!name || name.trim().length < 2) {
+        setFieldError(input, feedback, 'Center name must be at least 2 characters long');
+        return false;
+    }
+    
+    setFieldSuccess(input, feedback, 'Valid center name');
+    return true;
+}
+
+function validateEditEmail(email) {
+    const feedback = document.getElementById('editCenterEmailFeedback');
+    const input = document.getElementById('edit_center_email');
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!emailPattern.test(email)) {
+        setFieldError(input, feedback, 'Please enter a valid email address');
+        return false;
+    }
+    
+    setFieldSuccess(input, feedback, 'Valid email address');
+    return true;
+}
+
+function validateEditPhone(phone) {
+    const feedback = document.getElementById('editCenterPhoneFeedback');
+    const input = document.getElementById('edit_center_phone');
+    const phonePattern = /^[\+]?[1-9][\d]{0,15}$/;
+    
+    if (!phonePattern.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+        setFieldError(input, feedback, 'Please enter a valid phone number');
+        return false;
+    }
+    
+    setFieldSuccess(input, feedback, 'Valid phone number');
+    return true;
+}
+
+function clearEditFieldValidation(inputId, feedbackId) {
+    const input = document.getElementById(inputId);
+    const feedback = document.getElementById(feedbackId);
+    
+    if (input && feedback) {
+        input.classList.remove('error', 'success');
+        feedback.className = 'form-feedback-modern';
+        feedback.textContent = '';
+    }
+}
+
+function updateCenter() {
+    const btn = document.getElementById('updateCenterBtn');
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoading = btn.querySelector('.btn-loading');
+    
+    // Validate required fields
+    const centerName = document.getElementById('edit_center_name').value.trim();
+    if (!validateEditCenterName(centerName)) {
+        return;
+    }
+    
+    // Show loading state
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoading.classList.remove('hidden');
+    
+    const formData = {
+        name: centerName,
+        contact_phone: document.getElementById('edit_center_phone').value.trim(),
+        contact_email: document.getElementById('edit_center_email').value.trim(),
+        street: document.getElementById('edit_center_address').value.trim(),
+        city: document.getElementById('edit_center_city').value.trim(),
+        state: document.getElementById('edit_center_state').value.trim(),
+        facilities: document.getElementById('edit_facilities').value.trim()
+    };
+    
+    fetch(`/api/centers/${currentCenterId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeEditCenterModal();
+            Adrilly.showAlert('Center updated successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            throw new Error(data.error || 'Failed to update center');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Adrilly.showAlert('Error updating center: ' + error.message, 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        btn.disabled = false;
+        btnText.style.display = 'inline';
+        btnLoading.classList.add('hidden');
+    });
+}
+
+// Filter Functions
+function setupFilters() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const facilityFilter = document.getElementById('facilityFilter');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    
+    // Search functionality
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(function() {
+            applyFilters();
+        }, 300));
+    }
+    
+    // Filter dropdowns
+    if (statusFilter) {
+        statusFilter.addEventListener('change', applyFilters);
+    }
+    
+    if (facilityFilter) {
+        facilityFilter.addEventListener('change', applyFilters);
+    }
+    
+    // Clear filters
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            document.getElementById('filterForm').reset();
+            applyFilters();
+        });
+    }
+}
+
+function applyFilters() {
+    const formData = new FormData(document.getElementById('filterForm'));
+    const params = new URLSearchParams(formData);
+    window.location.search = params.toString();
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setupFilters();
+
+// Close modal when clicking outside
+    const modal = document.getElementById('createCenterModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCreateCenterModal();
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,794 @@
+{% extends "base.html" %}
+
+{% block title %}{{ organization.name }} - Feed{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="icon-rss"></i>
+            {{ organization.name }} Feed
+        </h1>
+        <div class="page-actions">
+            {% if can_create_posts %}
+                <a href="{{ url_for('feed.create_post_page') }}" class="btn btn-primary">
+                    <i class="icon-plus"></i>
+                    Create Post
+                </a>
+            {% endif %}
+            <button class="btn btn-secondary" onclick="showSearchModal()">
+                <i class="icon-search"></i>
+                Search
+            </button>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Main Feed -->
+        <div class="col-md-8">
+            <div class="feed-container">
+                <!-- Feed Filters -->
+                <div class="feed-filters mb-4">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary active" onclick="filterFeed('all')">
+                            All Posts
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="filterFeed('announcement')">
+                            Announcements
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="filterFeed('tip')">
+                            Tips
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="filterFeed('event')">
+                            Events
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="filterFeed('achievement')">
+                            Achievements
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Posts Container -->
+                <div id="postsContainer">
+                    {% for post in posts %}
+                        {% include 'post_card.html' %}
+                    {% endfor %}
+                    
+                    {% if not posts %}
+                        <div class="empty-state">
+                            <i class="icon-message-circle"></i>
+                            <h3>No Posts Yet</h3>
+                            <p>Be the first to share something with your organization!</p>
+                            {% if can_create_posts %}
+                                <a href="{{ url_for('feed.create_post_page') }}" class="btn btn-primary">
+                                    Create First Post
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Load More Button -->
+                <div class="text-center mt-4">
+                    <button id="loadMoreBtn" class="btn btn-outline-primary" onclick="loadMorePosts()" style="display: none;">
+                        <i class="icon-chevron-down"></i>
+                        Load More Posts
+                    </button>
+                    <div id="loadingSpinner" class="spinner" style="display: none;">
+                        <i class="icon-loader"></i> Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Quick Actions -->
+            {% if can_create_posts %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="icon-zap"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="quick-actions">
+                        <a href="{{ url_for('feed.create_post_page') }}" class="btn btn-primary btn-block mb-2">
+                            <i class="icon-edit"></i>
+                            Write Announcement
+                        </a>
+                        <button class="btn btn-secondary btn-block mb-2" onclick="createQuickTip()">
+                            <i class="icon-lightbulb"></i>
+                            Share Training Tip
+                        </button>
+                        <button class="btn btn-info btn-block" onclick="createEventPost()">
+                            <i class="icon-calendar"></i>
+                            Announce Event
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Categories -->
+            {% if categories %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="icon-tag"></i>
+                        Categories
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="categories-list">
+                        {% for category in categories %}
+                            <button class="btn btn-sm btn-outline-secondary mb-1" onclick="filterByCategory('{{ category }}')">
+                                {{ category.title() }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Feed Stats -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="icon-bar-chart"></i>
+                        Feed Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalPosts">{{ posts|length }}</div>
+                        <div class="stat-label">Posts Today</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalEngagement">-</div>
+                        <div class="stat-label">Total Engagement</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Modal -->
+<div class="modal fade" id="searchModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Search Posts</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="searchForm">
+                    <div class="form-group">
+                        <label>Search for:</label>
+                        <input type="text" id="searchQuery" class="form-control" 
+                               placeholder="Enter keywords, tags, or content..." 
+                               autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="icon-search"></i>
+                            Search
+                        </button>
+                    </div>
+                </form>
+                
+                <div id="searchResults" style="display: none;">
+                    <hr>
+                    <h6>Search Results:</h6>
+                    <div id="searchResultsContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comment Modal -->
+<div class="modal fade" id="commentsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Comments</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="commentsContainer"></div>
+                
+                <form id="addCommentForm" class="mt-3">
+                    <div class="form-group">
+                        <textarea id="commentContent" class="form-control" rows="3" 
+                                placeholder="Write a comment..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="icon-message-circle"></i>
+                        Add Comment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.feed-container {
+    max-width: 100%;
+}
+
+.feed-filters {
+    position: sticky;
+    top: 80px;
+    background: white;
+    z-index: 10;
+    padding: 1rem 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.post-card {
+    background: white;
+    border: 1px solid #e3f2fd;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.post-header {
+    padding: 1rem 1.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.post-author-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.post-author-info {
+    flex-grow: 1;
+}
+
+.post-author-name {
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.post-meta {
+    color: #666;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.post-content {
+    padding: 1rem 1.5rem;
+}
+
+.post-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.post-text {
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.post-tags {
+    margin-bottom: 1rem;
+}
+
+.tag {
+    background: #e3f2fd;
+    color: #1565c0;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+    display: inline-block;
+}
+
+.post-actions {
+    padding: 0 1.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-top: 1px solid #f5f5f5;
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.action-btn:hover {
+    color: #007bff;
+}
+
+.action-btn.liked {
+    color: #dc3545;
+}
+
+.quick-actions .btn {
+    text-align: left;
+}
+
+.categories-list .btn {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-item {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.spinner {
+    text-align: center;
+    color: #007bff;
+}
+
+.comment-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.comment-item:last-child {
+    border-bottom: none;
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.comment-author {
+    font-weight: 600;
+    color: #333;
+}
+
+.comment-time {
+    color: #666;
+    font-size: 0.8rem;
+}
+
+.comment-content {
+    color: #555;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .feed-filters .btn-group {
+        flex-wrap: wrap;
+    }
+    
+    .post-header {
+        padding: 1rem;
+    }
+    
+    .post-content {
+        padding: 0 1rem 1rem;
+    }
+    
+    .post-actions {
+        padding: 0 1rem 1rem;
+    }
+}
+</style>
+
+<script>
+let currentPage = 1;
+let currentFilter = 'all';
+let currentCategory = null;
+let loading = false;
+let hasMore = true;
+let currentPostId = null;
+
+// Initialize feed
+document.addEventListener('DOMContentLoaded', function() {
+    setupInfiniteScroll();
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Search form
+    document.getElementById('searchForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        performSearch();
+    });
+    
+    // Add comment form
+    document.getElementById('addCommentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        addComment();
+    });
+}
+
+function setupInfiniteScroll() {
+    window.addEventListener('scroll', function() {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 1000) {
+            if (!loading && hasMore) {
+                loadMorePosts();
+            }
+        }
+    });
+}
+
+function filterFeed(type) {
+    currentFilter = type;
+    currentPage = 1;
+    currentCategory = null;
+    
+    // Update active button
+    document.querySelectorAll('.feed-filters .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Load filtered posts
+    loadPosts(true);
+}
+
+function filterByCategory(category) {
+    currentCategory = category;
+    currentPage = 1;
+    loadPosts(true);
+}
+
+function loadPosts(replace = false) {
+    if (loading) return;
+    
+    loading = true;
+    document.getElementById('loadingSpinner').style.display = 'block';
+    document.getElementById('loadMoreBtn').style.display = 'none';
+    
+    const params = new URLSearchParams({
+        page: currentPage,
+        per_page: 5
+    });
+    
+    if (currentFilter !== 'all') {
+        params.append('type', currentFilter);
+    }
+    
+    if (currentCategory) {
+        params.append('category', currentCategory);
+    }
+    
+    fetch(`/api/organizations/{{ organization._id }}/feed?${params}`, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.posts) {
+            if (replace) {
+                document.getElementById('postsContainer').innerHTML = '';
+            }
+            
+            data.posts.forEach(post => {
+                addPostToFeed(post);
+            });
+            
+            hasMore = data.pagination.has_next;
+            
+            if (hasMore) {
+                document.getElementById('loadMoreBtn').style.display = 'block';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error loading posts:', error);
+    })
+    .finally(() => {
+        loading = false;
+        document.getElementById('loadingSpinner').style.display = 'none';
+    });
+}
+
+function loadMorePosts() {
+    currentPage++;
+    loadPosts(false);
+}
+
+function addPostToFeed(post) {
+    const postHtml = createPostHTML(post);
+    document.getElementById('postsContainer').insertAdjacentHTML('beforeend', postHtml);
+}
+
+function createPostHTML(post) {
+    const authorInitials = post.author.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    const timeAgo = formatTimeAgo(new Date(post.created_at));
+    const tags = post.tags.map(tag => `<span class="tag">#${tag}</span>`).join('');
+    
+    return `
+        <div class="post-card" data-post-id="${post._id}">
+            <div class="post-header">
+                <div class="post-author-avatar">${authorInitials}</div>
+                <div class="post-author-info">
+                    <h6 class="post-author-name">${post.author.name}</h6>
+                    <p class="post-meta">${post.author.role.replace('_', ' ').title()} • ${timeAgo}</p>
+                </div>
+                <div class="post-type-badge">
+                    <span class="badge badge-${getPostTypeBadgeClass(post.post_type)}">${post.post_type.title()}</span>
+                </div>
+            </div>
+            <div class="post-content">
+                <h5 class="post-title">${post.title}</h5>
+                <div class="post-text">${post.content}</div>
+                ${tags ? `<div class="post-tags">${tags}</div>` : ''}
+            </div>
+            <div class="post-actions">
+                <button class="action-btn ${post.user_has_liked ? 'liked' : ''}" onclick="toggleLike('${post._id}', this)">
+                    <i class="icon-heart"></i>
+                    <span>${post.likes_count}</span>
+                </button>
+                <button class="action-btn" onclick="showComments('${post._id}')">
+                    <i class="icon-message-circle"></i>
+                    <span>${post.comments_count}</span>
+                </button>
+                <button class="action-btn" onclick="sharePost('${post._id}')">
+                    <i class="icon-share-2"></i>
+                    Share
+                </button>
+                <div class="ms-auto">
+                    <small class="text-muted">${post.views_count} views</small>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function getPostTypeBadgeClass(postType) {
+    const classes = {
+        'announcement': 'primary',
+        'tip': 'success',
+        'event': 'warning',
+        'achievement': 'info',
+        'general': 'secondary'
+    };
+    return classes[postType] || 'secondary';
+}
+
+function formatTimeAgo(date) {
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+    
+    return date.toLocaleDateString();
+}
+
+function toggleLike(postId, button) {
+    fetch(`/api/posts/${postId}/like`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.data) {
+            button.classList.toggle('liked', data.data.user_has_liked);
+            button.querySelector('span').textContent = data.data.likes_count;
+        }
+    })
+    .catch(error => {
+        console.error('Error toggling like:', error);
+    });
+}
+
+function showComments(postId) {
+    currentPostId = postId;
+    loadComments(postId);
+    $('#commentsModal').modal('show');
+}
+
+function loadComments(postId) {
+    fetch(`/api/posts/${postId}/comments`, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.comments) {
+            const commentsHtml = data.comments.map(comment => createCommentHTML(comment)).join('');
+            document.getElementById('commentsContainer').innerHTML = commentsHtml;
+        }
+    })
+    .catch(error => {
+        console.error('Error loading comments:', error);
+    });
+}
+
+function createCommentHTML(comment) {
+    const timeAgo = formatTimeAgo(new Date(comment.created_at));
+    
+    return `
+        <div class="comment-item">
+            <div class="comment-header">
+                <span class="comment-author">${comment.author.name}</span>
+                <span class="comment-time">${timeAgo}</span>
+            </div>
+            <div class="comment-content">${comment.content}</div>
+        </div>
+    `;
+}
+
+function addComment() {
+    const content = document.getElementById('commentContent').value.trim();
+    if (!content || !currentPostId) return;
+    
+    fetch(`/api/posts/${currentPostId}/comments`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content: content })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.comment) {
+            // Add comment to the list
+            const commentHtml = createCommentHTML(data.comment);
+            document.getElementById('commentsContainer').insertAdjacentHTML('beforeend', commentHtml);
+            
+            // Clear form
+            document.getElementById('commentContent').value = '';
+            
+            // Update comment count in the post
+            const postCard = document.querySelector(`[data-post-id="${currentPostId}"]`);
+            if (postCard) {
+                const commentBtn = postCard.querySelector('.action-btn:nth-child(2) span');
+                if (commentBtn) {
+                    commentBtn.textContent = parseInt(commentBtn.textContent) + 1;
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error adding comment:', error);
+        alert('Error adding comment. Please try again.');
+    });
+}
+
+function showSearchModal() {
+    $('#searchModal').modal('show');
+}
+
+function performSearch() {
+    const query = document.getElementById('searchQuery').value.trim();
+    if (!query) return;
+    
+    fetch(`/api/organizations/{{ organization._id }}/search?q=${encodeURIComponent(query)}`, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.posts) {
+            const resultsHtml = data.posts.map(post => createPostHTML(post)).join('');
+            document.getElementById('searchResultsContainer').innerHTML = resultsHtml;
+            document.getElementById('searchResults').style.display = 'block';
+        }
+    })
+    .catch(error => {
+        console.error('Error searching:', error);
+    });
+}
+
+function sharePost(postId) {
+    // Simple share functionality
+    const postUrl = `${window.location.origin}/post/${postId}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'Check out this post',
+            url: postUrl
+        });
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(postUrl).then(() => {
+            alert('Post link copied to clipboard!');
+        });
+    }
+}
+
+// Quick action functions
+function createQuickTip() {
+    window.location.href = '{{ url_for("feed.create_post_page") }}?type=tip';
+}
+
+function createEventPost() {
+    window.location.href = '{{ url_for("feed.create_post_page") }}?type=event';
+}
+</script>
+{% endblock %}

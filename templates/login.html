@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Adrilly Sports Coaching{% endblock %}
+
+{% block head %}
+<style>
+    /* Minimal login page styles - clean and balanced */
+    .login-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-primary);
+        padding: var(--spacing-lg);
+    }
+
+    .login-card {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: var(--spacing-xl);
+        width: 100%;
+        max-width: 420px;
+        font-weight: 400 !important;
+    }
+
+    .login-card * {
+        font-weight: 400 !important;
+    }
+
+    .login-header {
+        text-align: left;
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .login-title {
+        margin-bottom: var(--spacing-md);
+        font-size: 2.25rem;
+        font-weight: 400 !important;
+    }
+
+    .login-subtitle {
+        margin-bottom: var(--spacing-lg);
+        font-size: 1rem;
+        opacity: 0.7;
+    }
+
+    /* Minimal steps */
+    .auth-steps {
+        display: flex;
+        justify-content: center;
+        margin-bottom: var(--spacing-lg);
+        gap: var(--spacing-lg);
+    }
+
+    .step {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-sm);
+        background: transparent;
+        border: none;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        opacity: 0.6;
+        transition: all 0.3s ease;
+    }
+
+    .step.active {
+        opacity: 1;
+        color: var(--text-primary);
+        background: var(--bg-secondary);
+    }
+
+    /* Form spacing */
+    .form-group {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .form-label {
+        margin-bottom: var(--spacing-sm);
+        font-size: 0.9rem;
+        font-weight: 400 !important;
+    }
+
+    .form-control {
+        border: none;
+        border-bottom: 1px solid var(--border-primary);
+        border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+        background: transparent;
+        padding: var(--spacing-sm) 0;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-bottom-color: var(--accent-primary);
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .form-control:hover {
+        border-bottom-color: var(--text-secondary);
+    }
+
+    /* Alerts and verification info */
+    .login-card .alert {
+        border: none;
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .verification-info {
+        background: transparent;
+        border: none;
+        padding: var(--spacing-md) 0;
+        margin-bottom: var(--spacing-lg);
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        text-align: center;
+    }
+
+    .verification-button {
+        margin-top: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+        border: none;
+        border-radius: var(--radius-sm);
+        background: var(--accent-primary);
+        padding: var(--spacing-md) var(--spacing-xl);
+        font-size: 0.95rem;
+        font-weight: 400 !important;
+        transition: all 0.3s ease;
+    }
+
+    .verification-button:hover {
+        background: var(--accent-hover);
+        transform: none;
+        box-shadow: none;
+    }
+
+    .auth-footer {
+        text-align: center;
+        margin-top: var(--spacing-lg);
+        padding-top: var(--spacing-md);
+    }
+
+    .auth-footer p {
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .auth-footer a {
+        color: var(--accent-primary);
+        text-decoration: none;
+        font-weight: 400 !important;
+    }
+
+    .auth-footer a:hover {
+        text-decoration: underline;
+    }
+
+    /* Resend button */
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--text-muted);
+        color: var(--text-secondary);
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-xs) var(--spacing-md);
+        font-weight: 400 !important;
+        font-size: 0.85rem;
+    }
+
+    .btn-outline:hover {
+        background: transparent;
+        border-color: var(--text-primary);
+        color: var(--text-primary);
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* Remove step numbers - keep it minimal */
+    .step-number {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block login_content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1 class="login-title">Adrilly</h1>
+            <p class="login-subtitle">Coaching Management</p>
+        </div>
+        
+        <div class="auth-steps" style="display: none;">
+            <div class="step active">
+                <span>Phone Number</span>
+            </div>
+            <div class="step" id="step2">
+                <span>Verification</span>
+            </div>
+        </div>
+        
+        <!-- Step 1: Phone Number Entry -->
+        <div id="phoneStep">
+            <form id="phoneForm" method="POST" action="{{ url_for('web.send_verification') }}">
+                <div class="form-group">
+                    <label for="phone_number" class="form-label">Phone Number</label>
+                    <input type="tel" class="form-control" id="phone_number" name="phone_number" 
+                           placeholder="Enter your phone number" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block verification-button">
+                    <span class="btn-text">Send Verification Code</span>
+                    <span class="loading hidden"></span>
+                </button>
+            </form>
+        </div>
+        
+        <!-- Step 2: Verification Code Entry -->
+        <div id="verificationStep" class="hidden">
+            <form id="verificationForm" method="POST" action="{{ url_for('web.verify_code') }}">
+                <input type="hidden" id="hidden_phone" name="phone_number">
+                
+                <div class="form-group">
+                    <label for="verification_code" class="form-label">Verification Code</label>
+                    <input type="text" class="form-control" id="verification_code" name="verification_code" 
+                           placeholder="Enter 6-digit code sent to your phone/email" maxlength="6" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary verification-button btn-block">
+                    <span class="btn-text">Verify & Login</span>
+                    <span class="loading hidden"></span>
+                </button>
+                
+                <div class="text-center mt-3">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="resendCode()">
+                        Resend Code
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="auth-footer">
+            <p>Don't have an account? <a href="{{ url_for('web.register') }}">Register here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Phone number formatting
+document.getElementById('phone_number').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    // Split phone number into two parts of 5 digits each
+    if (value.length > 5) {
+        value = value.slice(0, 5) + ' ' + value.slice(5, 10);
+    }
+    e.target.value = value;
+});
+
+// Phone form submission
+document.getElementById('phoneForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const loading = submitBtn.querySelector('.loading');
+    
+    // Show loading state
+    btnText.classList.add('hidden');
+    loading.classList.remove('hidden');
+    submitBtn.disabled = true;
+    
+    try {
+        const formData = new FormData(form);
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Move to verification step
+            document.getElementById('phoneStep').classList.add('hidden');
+            document.getElementById('verificationStep').classList.remove('hidden');
+            document.getElementById('step2').classList.add('active');
+            document.getElementById('hidden_phone').value = formData.get('phone_number');
+            
+            // Show success message
+            if (result.message) {
+                showMessage(result.message, 'success');
+            }
+        } else {
+            showMessage(result.error || 'Failed to send verification code', 'error');
+        }
+    } catch (error) {
+        showMessage('Network error. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        btnText.classList.remove('hidden');
+        loading.classList.add('hidden');
+        submitBtn.disabled = false;
+    }
+});
+
+// Verification form submission
+document.getElementById('verificationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const loading = submitBtn.querySelector('.loading');
+    
+    // Show loading state
+    btnText.classList.add('hidden');
+    loading.classList.remove('hidden');
+    submitBtn.disabled = true;
+    
+    try {
+        const formData = new FormData(form);
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Redirect to dashboard
+            window.location.href = result.redirect || '/dashboard';
+        } else {
+            showMessage(result.error || 'Invalid verification code', 'error');
+        }
+    } catch (error) {
+        showMessage('Network error. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        btnText.classList.remove('hidden');
+        loading.classList.add('hidden');
+        submitBtn.disabled = false;
+    }
+});
+
+// Resend code function
+async function resendCode() {
+    const phoneNumber = document.getElementById('hidden_phone').value;
+    
+    try {
+        const response = await fetch('{{ url_for("web.send_verification") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'phone_number=' + encodeURIComponent(phoneNumber)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showMessage('Verification code sent again', 'success');
+        } else {
+            showMessage(result.error || 'Failed to resend code', 'error');
+        }
+    } catch (error) {
+        showMessage('Network error. Please try again.', 'error');
+    }
+}
+
+// Show message function
+function showMessage(message, type) {
+    // Remove existing messages
+    const existingMessages = document.querySelectorAll('.alert');
+    existingMessages.forEach(msg => msg.remove());
+    
+    // Create new message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type}`;
+    alertDiv.textContent = message;
+    
+    // Insert message
+    const loginCard = document.querySelector('.login-card');
+    const firstChild = loginCard.querySelector('.login-header').nextElementSibling;
+    loginCard.insertBefore(alertDiv, firstChild);
+    
+    // Auto-remove after 5 seconds
+    // setTimeout(() => {
+    //     if (alertDiv.parentNode) {
+    //         alertDiv.remove();
+    //     }
+    // }, 5000);
+}
+
+// Auto-format verification code
+document.getElementById('verification_code').addEventListener('input', function(e) {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+});
+</script>
+{% endblock %} 

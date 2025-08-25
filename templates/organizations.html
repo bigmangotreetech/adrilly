@@ -1,0 +1,2709 @@
+{% extends "base.html" %}
+
+{% block title %}Organizations - Adrilly Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="organizations-page">
+    <div class="page-header-modern">
+        <div class="page-header-content">
+            <div class="page-title-section">
+                <h1 class="page-title-modern">Organization Management</h1>
+                <p class="page-subtitle-modern">Manage all organizations in the system</p>
+</div>
+            <div class="page-actions">
+                <a href="{{ url_for('web.export_organizations') }}" class="btn btn-secondary-modern" id="exportOrgsBtn">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Export
+                </a>
+                <button class="btn btn-primary-modern" onclick="openCreateOrgModal()">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Organization
+                </button>
+        </div>
+    </div>
+                </div>
+
+    <div class="content-card-modern">
+        <!-- Enhanced Filter Bar -->
+        <div class="filter-bar-modern">
+            <form method="GET" class="filter-form" id="filterForm">
+                <div class="search-section">
+                    <div class="search-input-container">
+                        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" name="search" class="search-input" 
+                               placeholder="Search by name, location, admin..." 
+                               value="{{ request.args.get('search', '') }}"
+                               id="searchInput">
+                    </div>
+                </div>
+                
+                <div class="filter-controls">
+                    <div class="filter-dropdown">
+                        <select name="status" class="filter-select" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="active" {{ 'selected' if request.args.get('status') == 'active' }}>Active</option>
+                        <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' }}>Inactive</option>
+                        <option value="trial" {{ 'selected' if request.args.get('status') == 'trial' }}>Trial</option>
+                        <option value="expired" {{ 'selected' if request.args.get('status') == 'expired' }}>Expired</option>
+                    </select>
+                </div>
+                    
+                    <div class="filter-dropdown">
+                        <select name="activity" class="filter-select" id="activityFilter">
+                            <option value="">All Activities</option>
+                            <option value="football" {{ 'selected' if request.args.get('activity') == 'football' }}>Football</option>
+                            <option value="basketball" {{ 'selected' if request.args.get('activity') == 'basketball' }}>Basketball</option>
+                            <option value="tennis" {{ 'selected' if request.args.get('activity') == 'tennis' }}>Tennis</option>
+                            <option value="swimming" {{ 'selected' if request.args.get('activity') == 'swimming' }}>Swimming</option>
+                            <option value="athletics" {{ 'selected' if request.args.get('activity') == 'athletics' }}>Athletics</option>
+                            <option value="cricket" {{ 'selected' if request.args.get('activity') == 'cricket' }}>Cricket</option>
+                            <option value="yoga" {{ 'selected' if request.args.get('activity') == 'yoga' }}>Yoga</option>
+                            <option value="pilates" {{ 'selected' if request.args.get('activity') == 'pilates' }}>Pilates</option>
+                            <option value="chess" {{ 'selected' if request.args.get('activity') == 'chess' }}>Chess</option>
+                            <option value="tuition" {{ 'selected' if request.args.get('activity') == 'tuition' }}>Academic Tuition</option>
+                            <option value="dance" {{ 'selected' if request.args.get('activity') == 'dance' }}>Dance</option>
+                            <option value="music" {{ 'selected' if request.args.get('activity') == 'music' }}>Music</option>
+                    </select>
+                </div>
+                    
+                    <button type="button" class="btn-clear-filters" id="clearFilters">
+                        Clear Filters
+                    </button>
+            </div>
+        </form>
+
+            <!-- Active Filters Chips -->
+            <div class="active-filters" id="activeFilters"></div>
+        </div>
+
+        <!-- Modern Organizations Table -->
+        {% if organizations %}
+        <div class="table-container-modern">
+            <table class="table-modern" id="organizationsTable">
+                <thead class="table-header-sticky">
+                    <tr>
+                        <th class="sortable" data-sort="name">
+                            <div class="th-content">
+                                <span>Organization</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="d-none d-md-table-cell">
+                            <div class="th-content">
+                                <span>Address</span>
+                            </div>
+                        </th>
+                        <th class="sortable d-none d-md-table-cell" data-sort="admin">
+                            <div class="th-content">
+                                <span>Admin Name</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="d-none d-lg-table-cell">
+                            <div class="th-content">
+                                <span>Location</span>
+                            </div>
+                        </th>
+
+                        <th class="sortable d-none d-sm-table-cell" data-sort="status">
+                            <div class="th-content">
+                                <span>Status</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="actions-column">
+                            <div class="th-content">
+                                <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                </svg>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for org in organizations %}
+                    <tr class="table-row-modern">
+                        <td class="org-cell">
+                            <div class="org-info-modern">
+                                <div class="org-avatar">
+                                    {% if org.logo_url %}
+                                    <img src="{{ org.logo_url }}" alt="Logo" class="org-logo">
+                                    {% else %}
+                                    {{ org.name[0].upper() }}
+                                    {% endif %}
+                                </div>
+                                <div class="org-details">
+                                    <div class="org-name">{{ org.name }}</div>
+                                    {% if org.description %}
+                                    <div class="org-description">{{ org.description[:50] }}{% if org.description|length > 50 %}...{% endif %}</div>
+                                    {% endif %}
+                                    <div class="mobile-info d-md-none">
+                                        <div class="mobile-detail">{{ org.admin_name }}</div>
+                                        {% if org.address %}
+                                        <div class="mobile-detail">{{ org.address.city }}, {{ org.address.state }}</div>
+                                        {% endif %}
+                                </div>
+                            </div>
+                            </div>
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                            <div class="address-info">
+                            {% if org.address %}
+                                <div class="address-text">{{ org.address.street }}</div>
+                                <div class="address-text">{{ org.address.city }}, {{ org.address.state }} {{ org.address.zipcode }}</div>
+                            {% else %}
+                                <span class="text-muted">Not specified</span>
+                            {% endif %}
+                            </div>
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                            <div class="admin-info">
+                                <div class="admin-name">{{ org.admin_name }}</div>
+                                </div>
+                        </td>
+                        <td class="d-none d-lg-table-cell">
+                            <div class="location-info">
+                                {% if org.address %}
+                                <div class="location-text">{{ org.address.city }}, {{ org.address.state }}</div>
+                            {% else %}
+                                <span class="text-muted">Not specified</span>
+                            {% endif %}
+                            </div>
+                        </td>
+
+
+                        <td class="d-none d-sm-table-cell">
+                            <div class="status-container">
+                            {% if org.subscription_status == 'active' %}
+                                <span class="status-pill status-active">Active</span>
+                            {% elif org.subscription_status == 'trial' %}
+                                <span class="status-pill status-pending">Trial</span>
+                            {% else %}
+                                <span class="status-pill status-inactive">{{ org.subscription_status|title }}</span>
+                            {% endif %}
+                            {% if org.subscription_expires_at %}
+                                <div class="expiry-text">Expires {{ org.subscription_expires_at.strftime('%m/%d') }}</div>
+                            {% endif %}
+                            </div>
+                            <div class="mobile-status d-sm-none">
+                                {% if org.subscription_status == 'active' %}
+                                <span class="status-pill status-active">Active</span>
+                                {% elif org.subscription_status == 'trial' %}
+                                <span class="status-pill status-pending">Trial</span>
+                                {% else %}
+                                <span class="status-pill status-inactive">{{ org.subscription_status|title }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="actions-cell">
+                            <div class="actions-dropdown">
+                                <button class="actions-button" type="button" onclick="toggleActionDropdown(this)">
+                                    <svg class="actions-dots" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                    </svg>
+                                </button>
+                                <div class="actions-menu">
+                                    <button class="action-item" onclick="viewOrganization('{{ org._id }}')">
+                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        View Details
+                                    </button>
+                                    <div class="action-divider"></div>
+                                    <button class="action-item" onclick="editOrganization('{{ org._id }}')">
+                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        Edit Organization
+                                </button>
+                                {% if org.subscription_status != 'active' %}
+                                    <button class="action-item" onclick="activateOrganization('{{ org._id }}')">
+                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Activate
+                                </button>
+                                {% else %}
+                                    <button class="action-item warning" onclick="suspendOrganization('{{ org._id }}')">
+                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Suspend
+                                </button>
+                                {% endif %}
+                                    <div class="action-divider"></div>
+                                    <button class="action-item danger" onclick="deleteOrganization('{{ org._id }}', '{{ org.name }}')">
+                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                        Delete Organization
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile Card View (hidden by CSS, shown on mobile) -->
+        <div class="mobile-cards-container d-md-none">
+            {% for org in organizations %}
+            <div class="org-card-mobile">
+                <div class="org-card-header">
+                    <div class="org-avatar-mobile">
+                        {% if org.logo_url %}
+                        <img src="{{ org.logo_url }}" alt="Logo" class="org-logo">
+                        {% else %}
+                        {{ org.name[0].upper() }}
+                        {% endif %}
+                </div>
+                    <div class="org-card-info">
+                        <h4 class="org-card-name">{{ org.name }}</h4>
+                        <div class="org-card-badges">
+                            {% if org.subscription_status == 'active' %}
+                            <span class="status-pill status-active">Active</span>
+                            {% elif org.subscription_status == 'trial' %}
+                            <span class="status-pill status-pending">Trial</span>
+                            {% else %}
+                            <span class="status-pill status-inactive">{{ org.subscription_status|title }}</span>
+                            {% endif %}
+            </div>
+                </div>
+                    <div class="org-card-actions">
+                        <button class="actions-button" onclick="toggleActionDropdown(this)">
+                            <svg class="actions-dots" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                            </svg>
+                        </button>
+                        <div class="actions-menu">
+                            <button class="action-item" onclick="editOrganization('{{ org._id }}')">Edit Organization</button>
+                            {% if org.subscription_status != 'active' %}
+                            <button class="action-item" onclick="activateOrganization('{{ org._id }}')">Activate</button>
+                            {% else %}
+                            <button class="action-item warning" onclick="suspendOrganization('{{ org._id }}')">Suspend</button>
+                            {% endif %}
+                            <div class="action-divider"></div>
+                            <button class="action-item danger" onclick="deleteOrganization('{{ org._id }}', '{{ org.name }}')">Delete Organization</button>
+            </div>
+                </div>
+            </div>
+                <div class="org-card-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Admin:</span>
+                        <span class="detail-value">{{ org.admin_name }}</span>
+                </div>
+                    {% if org.admin_phone %}
+                    <div class="detail-row">
+                        <span class="detail-label">Phone:</span>
+                        <span class="detail-value">{{ org.admin_phone }}</span>
+            </div>
+                    {% endif %}
+                    {% if org.address %}
+                    <div class="detail-row">
+                        <span class="detail-label">Location:</span>
+                        <span class="detail-value">{{ org.address.city }}, {{ org.address.state }}</span>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="stats-summary-modern">
+            <div class="summary-card">
+                <div class="summary-number">{{ stats.total_organizations or 0 }}</div>
+                <div class="summary-label">Total Organizations</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-number">{{ stats.active_organizations or 0 }}</div>
+                <div class="summary-label">Active</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-number">{{ stats.total_users or 0 }}</div>
+                <div class="summary-label">Total Users</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-number">{{ stats.total_revenue or 0 }}</div>
+                <div class="summary-label">Platform Revenue</div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+            </div>
+            <h3 class="empty-state-title">No organizations found</h3>
+            <p class="empty-state-description">Get started by creating your first organization to manage your sports coaching platform.</p>
+            <button class="btn btn-primary-modern" onclick="openCreateOrgModal()">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Create Your First Organization
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create Organization Modal -->
+<div id="createOrgModal" class="modal-overlay-modern" style="display: none;">
+    <div class="modal-modern">
+        <div class="modal-header-modern">
+            <div class="modal-title-section">
+                <h3 class="modal-title-modern">Create New Organization</h3>
+                <p class="modal-subtitle-modern">Set up a new organization to manage sports coaching activities</p>
+            </div>
+            <button class="modal-close-modern" onclick="closeCreateOrgModal()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form id="createOrgForm" method="POST" action="{{ url_for('web.create_organization_submit') }}">
+            <div class="modal-body-modern">
+                <!-- Organization Details -->
+                <h4 class="section-title-modern">Organization Information</h4>
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="org_name" class="form-label-modern">
+                            <span class="label-text">Organization Name</span>
+                            <span class="label-required">*</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="org_name" name="org_name" required
+                               minlength="2" maxlength="100"
+                               pattern="^[a-zA-Z0-9\s.'-]+$"
+                               placeholder="Enter organization name"
+                               title="Organization name should contain only letters, numbers, spaces, periods, apostrophes, and hyphens">
+                        <div id="org-name-feedback" class="form-feedback-modern"></div>
+                    </div>
+                    
+                    <div class="form-field-modern">
+                        <label for="whatsapp_number" class="form-label-modern">
+                            <span class="label-text">WhatsApp Number</span>
+                        </label>
+                        <input type="tel" class="form-input-modern" id="whatsapp_number" name="whatsapp_number"
+                               pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$"
+                               placeholder="+91-9876543210"
+                               title="Enter a valid phone number">
+                        <div id="whatsapp-feedback" class="form-feedback-modern"></div>
+                    </div>
+                </div>
+                
+                <div class="form-field-modern">
+                    <label for="description" class="form-label-modern">
+                        <span class="label-text">Description</span>
+                    </label>
+                    <textarea class="form-input-modern" id="description" name="description" rows="3"
+                              placeholder="Brief description of the organization"></textarea>
+                </div>
+                
+                <!-- Address -->
+                <h4 class="section-title-modern">Address Information</h4>
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="street" class="form-label-modern">
+                            <span class="label-text">Street Address</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="street" name="street"
+                               placeholder="Enter street address">
+                    </div>
+                    <div class="form-field-modern">
+                        <label for="city" class="form-label-modern">
+                            <span class="label-text">City</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="city" name="city"
+                               placeholder="Enter city">
+                    </div>
+                </div>
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="state" class="form-label-modern">
+                            <span class="label-text">State</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="state" name="state"
+                               placeholder="Enter state">
+                    </div>
+                    <div class="form-field-modern">
+                        <label for="zipcode" class="form-label-modern">
+                            <span class="label-text">ZIP Code</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="zipcode" name="zipcode"
+                               placeholder="Enter ZIP code">
+                    </div>
+                </div>
+                
+                <!-- Contact Info -->
+                <h4 class="section-title-modern">Admin Contact Information</h4>
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="contact_email" class="form-label-modern">
+                            <span class="label-text">Email Address</span>
+                            <span class="label-required">*</span>
+                        </label>
+                        <input type="email" class="form-input-modern" id="contact_email" name="admin_email" required
+                               pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                               placeholder="admin@organization.com"
+                               title="Enter a valid email address">
+                        <div id="contact-email-feedback" class="form-feedback-modern"></div>
+                    </div>
+                    <div class="form-field-modern">
+                        <label for="contact_phone" class="form-label-modern">
+                            <span class="label-text">Phone Number</span>
+                        </label>
+                        <input type="tel" class="form-input-modern" id="contact_phone" name="admin_phone"
+                               pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$"
+                               placeholder="+91-9876543210"
+                               title="Enter a valid phone number">
+                        <div id="contact-phone-feedback" class="form-feedback-modern"></div>
+                    </div>
+                </div>
+                
+                <!-- Admin User -->
+                <h4 class="section-title-modern">Administrator Account</h4>
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="admin_first_name" class="form-label-modern">
+                            <span class="label-text">First Name</span>
+                            <span class="label-required">*</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="admin_first_name" name="admin_first_name" required
+                               minlength="2" maxlength="50"
+                               pattern="^[a-zA-Z\s.'-]+$"
+                               placeholder="Enter first name"
+                               title="Name should contain only letters, spaces, periods, apostrophes, and hyphens">
+                        <div id="admin-first-name-feedback" class="form-feedback-modern"></div>
+                    </div>
+                    <div class="form-field-modern">
+                        <label for="admin_last_name" class="form-label-modern">
+                            <span class="label-text">Last Name</span>
+                            <span class="label-required">*</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="admin_last_name" name="admin_last_name" required
+                               minlength="2" maxlength="50"
+                               pattern="^[a-zA-Z\s.'-]+$"
+                               placeholder="Enter last name"
+                               title="Name should contain only letters, spaces, periods, apostrophes, and hyphens">
+                        <div id="admin-last-name-feedback" class="form-feedback-modern"></div>
+                    </div>
+                </div>
+                <div class="form-field-modern">
+                    <label for="admin_password" class="form-label-modern">
+                        <span class="label-text">Admin Password</span>
+                        <span class="label-required">*</span>
+                    </label>
+                    <input type="password" class="form-input-modern" id="admin_password" name="admin_password" required
+                           pattern="^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]{10,}$"
+                           minlength="10"
+                           placeholder="Enter admin password"
+                           title="Password must be at least 10 characters long and contain at least one letter and one number">
+                    <div class="form-help-text">
+                        Password must be at least 10 alphanumeric characters (letters and numbers only)
+                    </div>
+                    <div id="admin-password-feedback" class="form-feedback-modern"></div>
+                </div>
+                
+                <!-- Activities -->
+                <div class="form-field-modern">
+                    <label for="activities" class="form-label-modern">
+                        <span class="label-text">Activities Offered</span>
+                    </label>
+                    <input type="text" class="form-input-modern" id="activities" name="activities"
+                           placeholder="e.g. Football, Basketball, Yoga, Chess, Academic Tuition, Dance"
+                           title="Enter activities separated by commas">
+                    <div class="form-help-text">
+                        Enter activities separated by commas (e.g., Football, Yoga, Chess, Academic Tuition)
+                        </div>
+                    <div id="activities-feedback" class="form-feedback-modern"></div>
+                        </div>
+                    </div>
+            <div class="modal-footer-modern">
+                <button type="button" class="btn-secondary-modern" onclick="closeCreateOrgModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary-modern">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create Organization
+                </button>
+                </div>
+        </form>
+            </div>
+</div>
+
+<!-- Edit Organization Modal -->
+<div id="editOrgModal" class="modal-overlay-modern" style="display: none;">
+    <div class="modal-modern">
+        <div class="modal-header-modern">
+            <div class="modal-title-section">
+                <h3 class="modal-title-modern">Edit Organization</h3>
+                <p class="modal-subtitle-modern">Update organization information and settings</p>
+            </div>
+            <button class="modal-close-modern" onclick="closeEditOrgModal()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form id="editOrgForm" method="POST">
+            <div class="modal-body-modern">
+                <!-- Organization Details -->
+                <h4 class="section-title-modern">Organization Information</h4>
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="edit_org_name" class="form-label-modern">
+                            <span class="label-text">Organization Name</span>
+                            <span class="label-required">*</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="edit_org_name" name="org_name" required
+                               minlength="2" maxlength="100"
+                               pattern="^[a-zA-Z0-9\s.'-]+$"
+                               placeholder="Enter organization name"
+                               title="Organization name should contain only letters, numbers, spaces, periods, apostrophes, and hyphens">
+                        <div id="edit-org-name-feedback" class="form-feedback-modern"></div>
+                    </div>
+                    
+                    <div class="form-field-modern">
+                        <label for="edit_whatsapp_number" class="form-label-modern">
+                            <span class="label-text">WhatsApp Number</span>
+                        </label>
+                        <input type="tel" class="form-input-modern" id="edit_whatsapp_number" name="whatsapp_number"
+                               pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$"
+                               placeholder="+91-9876543210"
+                               title="Enter a valid phone number">
+                        <div id="edit-whatsapp-feedback" class="form-feedback-modern"></div>
+                    </div>
+                </div>
+                
+                <div class="form-field-modern">
+                    <label for="edit_description" class="form-label-modern">
+                        <span class="label-text">Description</span>
+                    </label>
+                    <textarea class="form-input-modern" id="edit_description" name="description" rows="3"
+                              placeholder="Brief description of the organization"></textarea>
+                </div>
+                
+                <!-- Address -->
+                <h4 class="section-title-modern">Address Information</h4>
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="edit_street" class="form-label-modern">
+                            <span class="label-text">Street Address</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="edit_street" name="street"
+                               placeholder="Enter street address">
+                    </div>
+                    <div class="form-field-modern">
+                        <label for="edit_city" class="form-label-modern">
+                            <span class="label-text">City</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="edit_city" name="city"
+                               placeholder="Enter city">
+                    </div>
+                </div>
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="edit_state" class="form-label-modern">
+                            <span class="label-text">State</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="edit_state" name="state"
+                               placeholder="Enter state">
+                    </div>
+                    <div class="form-field-modern">
+                        <label for="edit_zipcode" class="form-label-modern">
+                            <span class="label-text">ZIP Code</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="edit_zipcode" name="zipcode"
+                               placeholder="Enter ZIP code">
+                    </div>
+                </div>
+                
+                <!-- Status -->
+                <div class="form-field-modern">
+                    <label for="edit_status" class="form-label-modern">
+                        <span class="label-text">Status</span>
+                        <span class="label-required">*</span>
+                    </label>
+                    <select class="form-select-modern" id="edit_status" name="is_active">
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                    <div id="edit-status-feedback" class="form-feedback-modern"></div>
+                </div>
+                
+                <!-- Admin Information -->
+                <h4 class="section-title-modern">Admin Information</h4>
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="edit_admin_name" class="form-label-modern">
+                            <span class="label-text">Admin Name</span>
+                            <span class="label-required">*</span>
+                        </label>
+                        <input type="text" class="form-input-modern" id="edit_admin_name" name="admin_name" required
+                               placeholder="Enter admin full name"
+                               pattern="^[a-zA-Z\s.'-]+$"
+                               title="Admin name should contain only letters, spaces, periods, apostrophes, and hyphens">
+                        <div id="edit-admin-name-feedback" class="form-feedback-modern"></div>
+                    </div>
+                    <div class="form-field-modern">
+                        <label for="edit_admin_email" class="form-label-modern">
+                            <span class="label-text">Admin Email</span>
+                            <span class="label-required">*</span>
+                        </label>
+                        <input type="email" class="form-input-modern" id="edit_admin_email" name="admin_email" required
+                               placeholder="Enter admin email address">
+                        <div id="edit-admin-email-feedback" class="form-feedback-modern"></div>
+                    </div>
+                </div>
+                <div class="form-field-modern">
+                    <label for="edit_admin_phone" class="form-label-modern">
+                        <span class="label-text">Admin Phone</span>
+                        <span class="label-required">*</span>
+                    </label>
+                    <input type="tel" class="form-input-modern" id="edit_admin_phone" name="admin_phone" required
+                           pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$"
+                           placeholder="+91-9876543210"
+                           title="Enter a valid phone number">
+                    <div id="edit-admin-phone-feedback" class="form-feedback-modern"></div>
+                </div>
+                
+                <!-- Activities -->
+                <h4 class="section-title-modern">Activities</h4>
+                <div class="form-field-modern">
+                    <label for="edit_activities" class="form-label-modern">
+                        <span class="label-text">Activities Offered</span>
+                    </label>
+                    <input type="text" class="form-input-modern" id="edit_activities" name="activities"
+                           placeholder="e.g. Football, Basketball, Yoga, Chess, Academic Tuition, Dance"
+                           title="Enter activities separated by commas">
+                    <div class="form-help-text">
+                        Enter activities separated by commas (e.g., Football, Yoga, Chess, Academic Tuition)
+                    </div>
+                    <div id="edit-activities-feedback" class="form-feedback-modern"></div>
+                </div>
+            </div>
+            <div class="modal-footer-modern">
+                <button type="button" class="btn-secondary-modern" onclick="closeEditOrgModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary-modern">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Update Organization
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- View Organization Modal -->
+<div id="viewOrgModal" class="modal-overlay-modern" style="display: none;">
+    <div class="modal-modern modal-large">
+        <div class="modal-header-modern">
+            <div class="modal-title-modern">
+                Organization Details
+            </div>
+            <button type="button" class="modal-close-modern" onclick="closeViewOrgModal()">
+                <svg class="modal-close-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body-modern">
+            <div id="viewOrgContent" class="org-details-content">
+                <!-- Organization details will be loaded here -->
+                <div class="loading-spinner" id="viewOrgLoading">
+                    <div class="spinner"></div>
+                    <span>Loading organization details...</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer-modern">
+            <button type="button" class="btn-secondary-modern" onclick="closeViewOrgModal()">
+                Close
+            </button>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+/* Modern Organization Page Styles */
+
+/* Page layout */
+.organizations-page {
+    padding: 0;
+}
+
+.page-header-modern {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-primary);
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+}
+
+.page-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-title-section {
+    flex: 1;
+}
+
+.page-title-modern {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.page-subtitle-modern {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.page-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.btn-primary-modern, .btn-secondary-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary-modern {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+}
+
+.btn-primary-modern:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.btn-secondary-modern {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+}
+
+.btn-secondary-modern:hover {
+    background: var(--bg-hover);
+}
+
+.btn-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Content card */
+.content-card-modern {
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-primary);
+    margin: 0 2rem 2rem 2rem;
+    overflow: hidden;
+}
+
+/* Filter bar */
+.filter-bar-modern {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.filter-form {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.search-section {
+    flex: 1;
+}
+
+.search-input-container {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.filter-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.filter-dropdown {
+    position: relative;
+}
+
+.filter-select {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    min-width: 150px;
+}
+
+.btn-clear-filters {
+    padding: 0.75rem 1rem;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.btn-clear-filters:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+/* Active filters */
+.active-filters {
+    display: none;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--accent-bg);
+    color: var(--accent-primary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 16px;
+    font-size: 0.75rem;
+}
+
+.filter-chip-remove {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    width: 14px;
+    height: 14px;
+}
+
+/* Table styles */
+.table-container-modern {
+    overflow-x: auto;
+}
+
+.table-modern {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-header-sticky {
+    background: var(--bg-secondary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table-modern th {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-primary);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.table-modern td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-primary);
+    vertical-align: top;
+}
+
+.th-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sort-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+}
+
+.sortable {
+    cursor: pointer;
+}
+
+.sortable:hover .sort-icon {
+    color: var(--text-primary);
+}
+
+.table-row-modern:hover {
+    background: var(--bg-hover);
+}
+
+/* Status pills */
+.status-pill {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-active {
+    background: var(--success-bg);
+    color: var(--success-color);
+}
+
+.status-pending {
+    background: var(--warning-bg);
+    color: var(--text-inverse);
+}
+
+.status-inactive {
+    background: var(--error-bg);
+    color: var(--text-inverse);
+}
+
+/* Actions dropdown */
+.actions-cell {
+    position: relative;
+}
+
+.actions-dropdown {
+    position: relative;
+}
+
+.actions-button {
+    background: none;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.actions-button:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.actions-dots {
+    width: 16px;
+    height: 16px;
+}
+
+.actions-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 0.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    min-width: 180px;
+}
+
+.actions-menu.show {
+    display: block;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-align: left;
+}
+
+.action-item:hover {
+    background: var(--bg-hover);
+}
+
+.action-item.warning {
+    color: var(--warning);
+}
+
+.action-item.danger {
+    color: var(--error);
+}
+
+.action-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.action-divider {
+    height: 1px;
+    background: var(--border-primary);
+    margin: 0.25rem 0;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-state-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1.5rem;
+    color: var(--text-muted);
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.empty-state-description {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin: 0 0 2rem 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Modal styles */
+.modal-overlay-modern {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-modern {
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--border-primary);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+}
+
+.modal-header-modern {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.modal-title-section {
+    flex: 1;
+}
+
+.modal-title-modern {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.modal-subtitle-modern {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.modal-close-modern {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+}
+
+.modal-close-modern:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.modal-close-modern svg {
+    width: 20px;
+    height: 20px;
+}
+
+.modal-body-modern {
+    padding: 2rem;
+}
+
+.modal-footer-modern {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* Form styles */
+.section-title-modern {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent-primary);
+}
+
+.form-grid-modern {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-field-modern {
+    margin-bottom: 1.5rem;
+}
+
+.form-label-modern {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.label-text {
+    font-size: 0.875rem;
+}
+
+.label-required {
+    color: var(--error);
+    margin-left: 0.25rem;
+}
+
+.form-input-modern, .form-select-modern {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease;
+}
+
+.form-input-modern:focus, .form-select-modern:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.form-input-modern.is-valid {
+    border-color: var(--success);
+}
+
+.form-input-modern.is-invalid {
+    border-color: var(--error);
+}
+
+.form-feedback-modern {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--error);
+    display: none;
+}
+
+.form-help-text {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Mobile cards */
+.mobile-cards-container {
+    padding: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .page-header-modern {
+        padding: 1rem;
+    }
+    
+    .page-header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .page-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .page-actions .btn-primary-modern,
+    .page-actions .btn-secondary-modern {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .content-card-modern {
+        margin: 0 1rem 1rem 1rem;
+    }
+    
+    .filter-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .form-grid-modern {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .modal-modern {
+        margin: 0.5rem;
+        max-width: calc(100vw - 1rem);
+    }
+    
+    .modal-header-modern,
+    .modal-body-modern,
+    .modal-footer-modern {
+        padding: 1rem;
+    }
+    
+    .table-container-modern {
+        display: none; /* Hide table on mobile, show cards instead */
+    }
+    
+    .mobile-cards-container {
+        display: block;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-cards-container {
+        display: none;
+    }
+}
+
+/* Organization-specific styles */
+.org-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--accent-bg);
+    color: var(--accent-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+.org-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.org-info-modern {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.org-details {
+    min-width: 0;
+    flex: 1;
+}
+
+.org-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.org-description {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.3;
+}
+
+.admin-info {
+    font-size: 0.875rem;
+}
+
+.admin-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.admin-contact {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 1px;
+}
+
+.location-info {
+    font-size: 0.875rem;
+}
+
+.location-text {
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.whatsapp-text {
+    font-size: 0.75rem;
+    color: var(--success);
+}
+
+.activities-container {
+    font-size: 0.875rem;
+}
+
+.activities-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.activity-pill {
+    background: var(--accent-bg);
+    color: var(--accent-primary);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.activity-count {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.status-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+}
+
+.expiry-text {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+/* Mobile card styles */
+.org-card-mobile {
+    background: var(--card-bg);
+    border: 1px solid var(--border-primary);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.org-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.org-avatar-mobile {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--accent-bg);
+    color: var(--accent-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.org-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.org-card-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.org-card-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.org-card-actions {
+    position: relative;
+}
+
+.org-card-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 80px;
+}
+
+.detail-value {
+    color: var(--text-primary);
+    text-align: right;
+    word-break: break-word;
+}
+
+/* Summary stats modern */
+.stats-summary-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+    padding: 16px   ;
+}
+
+.summary-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+
+.summary-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 4px;
+}
+
+.summary-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Form styles for old elements */
+.form-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.modal h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 1rem;
+}
+
+.modal h4:first-of-type {
+    margin-top: 0;
+}
+
+.form-row label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .mobile-info {
+        margin-top: 8px;
+    }
+    
+    .mobile-detail {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-bottom: 2px;
+    }
+    
+    .stats-summary-modern {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .summary-card {
+        padding: 16px;
+    }
+    
+    .summary-number {
+        font-size: 1.5rem;
+    }
+}
+
+/* View Organization Modal Styles */
+.modal-large {
+    max-width: 900px;
+    width: 90vw;
+}
+
+.org-details-content {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.org-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.detail-section {
+    background: var(--bg-tertiary);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent-primary);
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    flex: 0 0 40%;
+    font-size: 0.875rem;
+}
+
+.detail-value {
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    text-align: right;
+    flex: 1;
+    word-break: break-word;
+}
+
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    gap: 1rem;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-light);
+    border-top: 3px solid var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-message {
+    text-align: center;
+    padding: 2rem;
+    color: var(--danger);
+}
+
+@media (max-width: 768px) {
+    .org-details-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .modal-large {
+        width: 95vw;
+        max-width: none;
+    }
+    
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .detail-label {
+        flex: none;
+    }
+    
+    .detail-value {
+        text-align: left;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Enhanced Organization Management JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFilters();
+    initializeTableSorting();
+    updateActiveFilters();
+    setupExportFunctionality();
+});
+
+// Validation functions
+function validateName(name) {
+    const namePattern = /^[a-zA-Z0-9\s.'-]+$/;
+    return name.length >= 2 && name.length <= 100 && namePattern.test(name);
+}
+
+function validateEmail(email) {
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailPattern.test(email);
+}
+
+function validatePhoneNumber(phone) {
+    const phonePattern = /^(\+?[1-9]\d{1,14}|[0-9]{10})$/;
+    return phonePattern.test(phone.replace(/[\s\-\(\)]/g, ''));
+}
+
+function validatePassword(password) {
+    const errors = [];
+    
+    if (password.length < 10) {
+        errors.push('Password must be at least 10 characters long');
+    }
+    
+    if (!/^[a-zA-Z0-9]+$/.test(password)) {
+        errors.push('Password must contain only letters and numbers');
+    }
+    
+    if (!/[a-zA-Z]/.test(password)) {
+        errors.push('Password must contain at least one letter');
+    }
+    
+    if (!/[0-9]/.test(password)) {
+        errors.push('Password must contain at least one number');
+    }
+    
+    return errors;
+}
+
+// Filter Management
+function initializeFilters() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const activityFilter = document.getElementById('activityFilter');
+    const clearButton = document.getElementById('clearFilters');
+    
+    // Auto-submit on change
+    [statusFilter, activityFilter].forEach(filter => {
+        filter.addEventListener('change', function() {
+            document.getElementById('filterForm').submit();
+        });
+    });
+    
+    // Search with debounce
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            document.getElementById('filterForm').submit();
+        }, 500);
+    });
+    
+    // Clear filters
+    clearButton.addEventListener('click', function() {
+        window.location.href = window.location.pathname;
+    });
+}
+
+function updateActiveFilters() {
+    const activeFilters = document.getElementById('activeFilters');
+    const urlParams = new URLSearchParams(window.location.search);
+    const filters = [];
+    
+    // Check for active filters
+    if (urlParams.get('search')) {
+        filters.push({
+            type: 'search',
+            label: `Search: "${urlParams.get('search')}"`,
+            value: urlParams.get('search')
+        });
+    }
+    
+    if (urlParams.get('status')) {
+        filters.push({
+            type: 'status',
+            label: `Status: ${urlParams.get('status').charAt(0).toUpperCase() + urlParams.get('status').slice(1)}`,
+            value: urlParams.get('status')
+        });
+    }
+    
+    if (urlParams.get('activity')) {
+        filters.push({
+            type: 'activity',
+            label: `Activity: ${urlParams.get('activity').charAt(0).toUpperCase() + urlParams.get('activity').slice(1)}`,
+            value: urlParams.get('activity')
+        });
+    }
+    
+    // Render filter chips
+    if (filters.length > 0) {
+        activeFilters.innerHTML = filters.map(filter => `
+            <div class="filter-chip">
+                <span class="filter-chip-label">${filter.label}</span>
+                <button class="filter-chip-remove" onclick="removeFilter('${filter.type}', '${filter.value}')">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+        activeFilters.style.display = 'flex';
+    } else {
+        activeFilters.style.display = 'none';
+    }
+}
+
+function removeFilter(type, value) {
+    const url = new URL(window.location);
+    url.searchParams.delete(type);
+    window.location.href = url.toString();
+}
+
+// Table Sorting
+function initializeTableSorting() {
+    const sortableHeaders = document.querySelectorAll('.sortable');
+    
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            const sortBy = this.dataset.sort;
+            const url = new URL(window.location);
+            const currentSort = url.searchParams.get('sort');
+            const currentOrder = url.searchParams.get('order');
+            
+            if (currentSort === sortBy) {
+                // Toggle order
+                url.searchParams.set('order', currentOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+                // New sort
+                url.searchParams.set('sort', sortBy);
+                url.searchParams.set('order', 'asc');
+            }
+            
+            window.location.href = url.toString();
+        });
+    });
+    
+    // Update sort indicators
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentSort = urlParams.get('sort');
+    const currentOrder = urlParams.get('order');
+    
+    if (currentSort) {
+        const header = document.querySelector(`[data-sort="${currentSort}"]`);
+        if (header) {
+            header.classList.add('sorted', currentOrder === 'desc' ? 'sorted-desc' : 'sorted-asc');
+        }
+    }
+}
+
+// Export Functionality
+function setupExportFunctionality() {
+    const exportBtn = document.getElementById('exportOrgsBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Get current filters
+            const urlParams = new URLSearchParams(window.location.search);
+            const exportUrl = new URL(this.href, window.location.origin);
+            
+            // Copy current filters to export URL
+            for (const [key, value] of urlParams.entries()) {
+                if (['search', 'status', 'activity'].includes(key)) {
+                    exportUrl.searchParams.set(key, value);
+                }
+            }
+            
+            // Navigate to export with filters
+            window.location.href = exportUrl.toString();
+        });
+    }
+}
+
+// Actions Dropdown
+function toggleActionDropdown(button) {
+    const dropdown = button.parentElement;
+    const menu = dropdown.querySelector('.actions-menu');
+    const isOpen = menu.classList.contains('show');
+    
+    // Close all other dropdowns
+    document.querySelectorAll('.actions-menu.show').forEach(openMenu => {
+        if (openMenu !== menu) {
+            openMenu.classList.remove('show');
+        }
+    });
+    
+    // Toggle current dropdown
+    menu.classList.toggle('show', !isOpen);
+    
+    if (!isOpen) {
+        // Smart positioning to prevent going off-screen
+        setTimeout(() => {
+            const rect = menu.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            
+            // If menu goes off the right edge, position it to the left
+            if (rect.right > viewportWidth - 20) {
+                menu.style.right = '0';
+                menu.style.left = 'auto';
+                menu.style.transform = 'translateX(0)';
+            } else {
+                menu.style.right = '0';
+                menu.style.left = 'auto';
+                menu.style.transform = 'none';
+            }
+        }, 0);
+        
+        // Close dropdown when clicking outside
+        setTimeout(() => {
+            document.addEventListener('click', function closeDropdown(e) {
+                if (!dropdown.contains(e.target)) {
+                    menu.classList.remove('show');
+                    document.removeEventListener('click', closeDropdown);
+                }
+            });
+        }, 0);
+    }
+}
+
+// Modal functions
+function openCreateOrgModal() {
+    const modal = document.getElementById('createOrgModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Add event listeners for real-time validation
+        setupFormValidation();
+    }
+}
+
+function closeCreateOrgModal() {
+    const modal = document.getElementById('createOrgModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    const form = document.getElementById('createOrgForm');
+    if (form) {
+        form.reset();
+        clearValidationStates('createOrgForm');
+    }
+}
+
+function openEditOrgModal(orgId) {
+    // Show loading state
+    const modal = document.getElementById('editOrgModal');
+    if (!modal) {
+        console.error('Edit organization modal not found');
+        alert('Error: Modal not properly loaded. Please refresh the page.');
+        return;
+    }
+    modal.style.display = 'flex';
+    
+    // Add loading indicator
+    const modalBody = modal.querySelector('.modal-body-modern');
+    const originalContent = modalBody.innerHTML;
+    modalBody.innerHTML = `
+        <div style="display: flex; justify-content: center; align-items: center; padding: 2rem;">
+            <div style="text-align: center;">
+                <div class="loading-spinner" style="margin: 0 auto 1rem; width: 40px; height: 40px; border: 3px solid var(--border-primary); border-top: 3px solid var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="color: var(--text-muted);">Loading organization data...</p>
+            </div>
+        </div>
+    `;
+    
+    // Fetch organization data and populate the modal
+    fetch(`/api/organizations/${orgId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch organization data');
+            }
+            return response.json();
+        })
+        .then(org => {
+            // Restore original content
+            modalBody.innerHTML = originalContent;
+            
+            // Populate basic form fields
+            document.getElementById('edit_org_name').value = org.name || '';
+            document.getElementById('edit_whatsapp_number').value = org.whatsapp_number || '';
+            document.getElementById('edit_description').value = org.description || '';
+            
+            // Address fields
+            if (org.address) {
+                document.getElementById('edit_street').value = org.address.street || '';
+                document.getElementById('edit_city').value = org.address.city || '';
+                document.getElementById('edit_state').value = org.address.state || '';
+                document.getElementById('edit_zipcode').value = org.address.zipcode || '';
+            }
+            
+            // Status
+            document.getElementById('edit_status').value = org.is_active ? 'true' : 'false';
+            
+                         // Admin fields - these fields exist in the new form
+             const adminNameField = document.getElementById('edit_admin_name');
+             const adminEmailField = document.getElementById('edit_admin_email');
+             const adminPhoneField = document.getElementById('edit_admin_phone');
+             
+             if (adminNameField) adminNameField.value = org.admin_name || '';
+             if (adminEmailField) adminEmailField.value = org.admin_email || '';
+             if (adminPhoneField) adminPhoneField.value = org.admin_phone || '';
+             
+             // Activities - convert from sports array if activities doesn't exist
+             let activities = org.activities || [];
+             if (!activities.length && org.sports) {
+                 activities = org.sports;
+             }
+             const activitiesField = document.getElementById('edit_activities');
+             if (activitiesField) {
+                 activitiesField.value = activities.join(', ');
+             }
+            
+            // Set form action
+            document.getElementById('editOrgForm').action = `/organizations/${orgId}/edit`;
+        })
+        .catch(error => {
+            console.error('Error fetching organization:', error);
+            modalBody.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <div style="color: var(--error); margin-bottom: 1rem;">
+                        <svg style="width: 48px; height: 48px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Error Loading Organization</h4>
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Unable to load organization data. Please try again.</p>
+                    <button class="btn-secondary-modern" onclick="closeEditOrgModal()">Close</button>
+                </div>
+            `;
+        });
+}
+
+function closeEditOrgModal() {
+    const modal = document.getElementById('editOrgModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    const form = document.getElementById('editOrgForm');
+    if (form) {
+        form.reset();
+        clearValidationStates('editOrgForm');
+    }
+}
+
+function editOrganization(orgId) {
+    openEditOrgModal(orgId);
+}
+
+function clearValidationStates(formId) {
+    const form = document.getElementById(formId);
+    if (form) {
+        form.querySelectorAll('.form-input-modern, .form-select-modern').forEach(input => {
+            input.classList.remove('is-valid', 'is-invalid');
+        });
+        form.querySelectorAll('.form-feedback-modern').forEach(feedback => {
+            feedback.style.display = 'none';
+        });
+    }
+}
+
+// Setup form validation
+function setupFormValidation() {
+    // Real-time validation for create form
+    const orgNameInput = document.getElementById('org_name');
+    const contactEmailInput = document.getElementById('contact_email');
+    const adminPasswordInput = document.getElementById('admin_password');
+    
+    if (orgNameInput && !orgNameInput.hasAttribute('data-validation-setup')) {
+        orgNameInput.setAttribute('data-validation-setup', 'true');
+        orgNameInput.addEventListener('input', function() {
+            const name = this.value;
+            const feedback = document.getElementById('org-name-feedback');
+            
+            if (name && !validateName(name)) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+                if (feedback) {
+                    feedback.textContent = 'Organization name should contain only letters, numbers, spaces, periods, apostrophes, and hyphens';
+                    feedback.style.display = 'block';
+                }
+            } else if (name.length >= 2) {
+                this.classList.add('is-valid');
+                this.classList.remove('is-invalid');
+                if (feedback) feedback.style.display = 'none';
+            } else {
+                this.classList.remove('is-valid', 'is-invalid');
+                if (feedback) feedback.style.display = 'none';
+            }
+        });
+    }
+    
+    if (contactEmailInput && !contactEmailInput.hasAttribute('data-validation-setup')) {
+        contactEmailInput.setAttribute('data-validation-setup', 'true');
+        contactEmailInput.addEventListener('input', function() {
+            const email = this.value;
+            const feedback = document.getElementById('contact-email-feedback');
+            
+            if (email && !validateEmail(email)) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+                if (feedback) {
+                    feedback.textContent = 'Please enter a valid email address';
+                    feedback.style.display = 'block';
+                }
+            } else if (email) {
+                this.classList.add('is-valid');
+                this.classList.remove('is-invalid');
+                if (feedback) feedback.style.display = 'none';
+            } else {
+                this.classList.remove('is-valid', 'is-invalid');
+                if (feedback) feedback.style.display = 'none';
+            }
+        });
+    }
+    
+    if (adminPasswordInput && !adminPasswordInput.hasAttribute('data-validation-setup')) {
+        adminPasswordInput.setAttribute('data-validation-setup', 'true');
+        adminPasswordInput.addEventListener('input', function() {
+            const password = this.value;
+            const feedback = document.getElementById('admin-password-feedback');
+            const errors = validatePassword(password);
+            
+            if (errors.length > 0) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+                if (feedback) {
+                    feedback.textContent = errors[0];
+                    feedback.style.display = 'block';
+                }
+            } else {
+                this.classList.add('is-valid');
+                this.classList.remove('is-invalid');
+                if (feedback) feedback.style.display = 'none';
+            }
+        });
+    }
+    
+    // Setup form submission for create form
+    const createForm = document.getElementById('createOrgForm');
+    if (createForm && !createForm.hasAttribute('data-submit-setup')) {
+        createForm.setAttribute('data-submit-setup', 'true');
+        createForm.addEventListener('submit', handleCreateFormSubmit);
+    }
+    
+    // Setup form submission for edit form
+    const editForm = document.getElementById('editOrgForm');
+    if (editForm && !editForm.hasAttribute('data-submit-setup')) {
+        editForm.setAttribute('data-submit-setup', 'true');
+        editForm.addEventListener('submit', handleEditFormSubmit);
+    }
+}
+
+function handleCreateFormSubmit(e) {
+    e.preventDefault();
+    
+    let isValid = true;
+    const formData = new FormData(this);
+    
+    // Validate required fields
+    const orgName = formData.get('org_name');
+    const adminEmail = formData.get('admin_email');
+    const adminFirstName = formData.get('admin_first_name');
+    const adminLastName = formData.get('admin_last_name');
+    const adminPassword = formData.get('admin_password');
+    
+    // Clear previous validation states
+    clearValidationStates('createOrgForm');
+    
+    // Validate organization name
+    if (!orgName || !validateName(orgName)) {
+        const input = document.getElementById('org_name');
+        const feedback = document.getElementById('org-name-feedback');
+        if (input) input.classList.add('is-invalid');
+        if (feedback) {
+            feedback.textContent = 'Please enter a valid organization name';
+            feedback.style.display = 'block';
+        }
+        isValid = false;
+    }
+    
+    // Validate admin email
+    if (!adminEmail || !validateEmail(adminEmail)) {
+        const input = document.getElementById('contact_email');
+        const feedback = document.getElementById('contact-email-feedback');
+        if (input) input.classList.add('is-invalid');
+        if (feedback) {
+            feedback.textContent = 'Please enter a valid email address';
+            feedback.style.display = 'block';
+        }
+        isValid = false;
+    }
+    
+    // Validate admin names
+    if (!adminFirstName || !validateName(adminFirstName)) {
+        const input = document.getElementById('admin_first_name');
+        const feedback = document.getElementById('admin-first-name-feedback');
+        if (input) input.classList.add('is-invalid');
+        if (feedback) {
+            feedback.textContent = 'Please enter a valid first name';
+            feedback.style.display = 'block';
+        }
+        isValid = false;
+    }
+    
+    if (!adminLastName || !validateName(adminLastName)) {
+        const input = document.getElementById('admin_last_name');
+        const feedback = document.getElementById('admin-last-name-feedback');
+        if (input) input.classList.add('is-invalid');
+        if (feedback) {
+            feedback.textContent = 'Please enter a valid last name';
+            feedback.style.display = 'block';
+        }
+        isValid = false;
+    }
+    
+    // Validate admin password
+    const passwordErrors = validatePassword(adminPassword);
+    if (passwordErrors.length > 0) {
+        const input = document.getElementById('admin_password');
+        const feedback = document.getElementById('admin-password-feedback');
+        if (input) input.classList.add('is-invalid');
+        if (feedback) {
+            feedback.textContent = passwordErrors[0];
+            feedback.style.display = 'block';
+        }
+        isValid = false;
+    }
+    
+    if (!isValid) {
+        // Scroll to first invalid field
+        const firstInvalid = document.querySelector('#createOrgForm .is-invalid');
+        if (firstInvalid) {
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstInvalid.focus();
+        }
+        
+        alert('Please fix the validation errors before submitting the form.');
+        return;
+    }
+    
+    // Parse activities
+    const activitiesInput = document.getElementById('activities');
+    if (activitiesInput && activitiesInput.value.trim()) {
+        const activities = activitiesInput.value.split(',').map(s => s.trim()).filter(s => s);
+        // Add activities as separate form fields
+        activities.forEach(activity => {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'sports';
+            hiddenInput.value = activity.toLowerCase();
+            this.appendChild(hiddenInput);
+        });
+    }
+    
+    // Submit form via AJAX
+    const submitButton = this.querySelector('button[type="submit"]');
+    const originalText = submitButton.textContent;
+    submitButton.textContent = 'Creating...';
+    submitButton.disabled = true;
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            // Close modal and reload page
+            closeCreateOrgModal();
+            location.reload();
+        } else {
+            return response.text().then(text => {
+                throw new Error('Server error: ' + response.status);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error creating organization:', error);
+        alert('Error creating organization. Please try again.');
+    })
+    .finally(() => {
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+    });
+}
+
+function handleEditFormSubmit(e) {
+    e.preventDefault();
+    
+    let isValid = true;
+    const formData = new FormData(this);
+    
+    // Validate required fields
+    const orgName = formData.get('org_name');
+    
+    // Clear previous validation states
+    clearValidationStates('editOrgForm');
+    
+    // Validate organization name
+    if (!orgName || !validateName(orgName)) {
+        const input = document.getElementById('edit_org_name');
+        const feedback = document.getElementById('edit-org-name-feedback');
+        if (input) input.classList.add('is-invalid');
+        if (feedback) {
+            feedback.textContent = 'Please enter a valid organization name';
+            feedback.style.display = 'block';
+        }
+        isValid = false;
+    }
+    
+    if (!isValid) {
+        // Scroll to first invalid field
+        const firstInvalid = document.querySelector('#editOrgForm .is-invalid');
+        if (firstInvalid) {
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstInvalid.focus();
+        }
+        
+        alert('Please fix the validation errors before submitting the form.');
+        return;
+    }
+    
+    // Parse activities for edit form
+    const activitiesInput = document.getElementById('edit_activities');
+    if (activitiesInput && activitiesInput.value.trim()) {
+        const activities = activitiesInput.value.split(',').map(s => s.trim()).filter(s => s);
+        // Add activities as separate form fields
+        activities.forEach(activity => {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'sports';
+            hiddenInput.value = activity.toLowerCase();
+            this.appendChild(hiddenInput);
+        });
+    }
+    
+    // Submit form via AJAX
+    const submitButton = this.querySelector('button[type="submit"]');
+    const originalText = submitButton.textContent;
+    submitButton.textContent = 'Updating...';
+    submitButton.disabled = true;
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            // Close modal and reload page
+            closeEditOrgModal();
+            location.reload();
+        } else {
+            return response.text().then(text => {
+                throw new Error('Server error: ' + response.status);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error updating organization:', error);
+        alert('Error updating organization. Please try again.');
+    })
+    .finally(() => {
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+    });
+}
+
+// Close modals when clicking outside
+document.addEventListener('DOMContentLoaded', function() {
+    const createModal = document.getElementById('createOrgModal');
+    const editModal = document.getElementById('editOrgModal');
+    
+    if (createModal) {
+        createModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCreateOrgModal();
+            }
+        });
+    }
+    
+    if (editModal) {
+        editModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditOrgModal();
+            }
+        });
+    }
+});
+
+// Organization status management functions
+function activateOrganization(orgId) {
+    if (confirm('Activate this organization?')) {
+        updateOrganizationStatus(orgId, 'active');
+    }
+}
+
+function suspendOrganization(orgId) {
+    if (confirm('Suspend this organization? This will prevent users from accessing the system.')) {
+        updateOrganizationStatus(orgId, 'suspended');
+    }
+}
+
+function deleteOrganization(orgId, orgName) {
+    if (confirm(`Are you sure you want to delete "${orgName}"? This action cannot be undone and will delete all associated data.`)) {
+        fetch(`/api/organizations/${orgId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Organization deleted successfully');
+                location.reload();
+            } else {
+                alert('Error deleting organization: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting organization');
+        });
+    }
+}
+
+function updateOrganizationStatus(orgId, status) {
+    fetch(`/api/organizations/${orgId}/status`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Organization ${status} successfully`);
+            location.reload();
+        } else {
+            alert('Error updating organization: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating organization');
+    });
+}
+
+// View Organization Functions
+let currentViewingOrgId = null;
+
+function viewOrganization(orgId) {
+    currentViewingOrgId = orgId;
+    
+    // Check if modal exists
+    const modal = document.getElementById('viewOrgModal');
+    const content = document.getElementById('viewOrgContent');
+    
+    if (!modal || !content) {
+        console.error('View organization modal elements not found');
+        alert('Error: Modal not properly loaded. Please refresh the page.');
+        return;
+    }
+    
+    // Show modal and loading state
+    modal.style.display = 'flex';
+    content.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <span>Loading organization details...</span>
+        </div>
+    `;
+    
+    // Fetch organization details
+    fetch(`/api/organizations/${orgId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(org => {
+            const contentElement = document.getElementById('viewOrgContent');
+            if (contentElement) {
+                contentElement.innerHTML = generateOrgDetailsHTML(org);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading organization:', error);
+            const contentElement = document.getElementById('viewOrgContent');
+            if (contentElement) {
+                contentElement.innerHTML = `
+                    <div class="error-message">
+                        <p>Error loading organization details. Please try again.</p>
+                    </div>
+                `;
+            }
+        });
+}
+
+function generateOrgDetailsHTML(org) {
+    const activities = org.activities && org.activities.length > 0 ? org.activities.join(', ') : 'None specified';
+    const address = org.address ? 
+        `${org.address.street || ''} ${org.address.city || ''}, ${org.address.state || ''} ${org.address.zipcode || ''}`.trim() : 
+        'Not specified';
+    
+    return `
+        <div class="org-details-grid">
+            <div class="detail-section">
+                <h3 class="section-title">Basic Information</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Organization Name:</span>
+                    <span class="detail-value">${org.name || 'N/A'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Description:</span>
+                    <span class="detail-value">${org.description || 'No description provided'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">
+                        <span class="status-pill ${org.is_active ? 'status-active' : 'status-inactive'}">
+                            ${org.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Subscription Status:</span>
+                    <span class="detail-value">${(org.subscription_status || 'active').charAt(0).toUpperCase() + (org.subscription_status || 'active').slice(1)}</span>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h3 class="section-title">Contact Information</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Admin Name:</span>
+                    <span class="detail-value">${org.admin_name || 'N/A'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Admin Email:</span>
+                    <span class="detail-value">${org.admin_email || 'N/A'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Admin Phone:</span>
+                    <span class="detail-value">${org.admin_phone || 'N/A'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">WhatsApp Number:</span>
+                    <span class="detail-value">${org.whatsapp_number || 'N/A'}</span>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h3 class="section-title">Location</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Address:</span>
+                    <span class="detail-value">${address}</span>
+                </div>
+                ${org.address && org.address.country ? `
+                <div class="detail-row">
+                    <span class="detail-label">Country:</span>
+                    <span class="detail-value">${org.address.country}</span>
+                </div>
+                ` : ''}
+            </div>
+            
+            <div class="detail-section">
+                <h3 class="section-title">Activities & Statistics</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Activities Offered:</span>
+                    <span class="detail-value">${activities}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Total Users:</span>
+                    <span class="detail-value">${org.user_count || 0}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Total Centers:</span>
+                    <span class="detail-value">${org.center_count || 0}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Created Date:</span>
+                    <span class="detail-value">${org.created_at ? new Date(org.created_at).toLocaleDateString() : 'N/A'}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function closeViewOrgModal() {
+    const modal = document.getElementById('viewOrgModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    currentViewingOrgId = null;
+}
+
+
+</script>
+{% endblock %} 

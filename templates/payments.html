@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Payments - Adrilly Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Payment Management</h1>
+    <p class="page-subtitle">Track and manage student payments</p>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">All Payments</h3>
+        <div class="btn-group">
+            {% if session.user_role in ['org_admin', 'coach_admin'] %}
+            <button class="btn btn-primary" onclick="openCreatePaymentModal()">Create Payment</button>
+            {% endif %}
+            <a href="{{ url_for('web.export_payments') }}" class="btn btn-outline">Export</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Filters -->
+        <form method="GET" class="mb-3">
+            <div class="form-row">
+                <div class="form-group">
+                    <input type="text" name="search" class="form-control" placeholder="Search students..." 
+                           value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="form-group">
+                    <select name="status" class="form-control form-select">
+                        <option value="">All Status</option>
+                        <option value="pending" {{ 'selected' if request.args.get('status') == 'pending' }}>Pending</option>
+                        <option value="paid" {{ 'selected' if request.args.get('status') == 'paid' }}>Paid</option>
+                        <option value="overdue" {{ 'selected' if request.args.get('status') == 'overdue' }}>Overdue</option>
+                        <option value="cancelled" {{ 'selected' if request.args.get('status') == 'cancelled' }}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <select name="payment_type" class="form-control form-select">
+                        <option value="">All Types</option>
+                        <option value="monthly" {{ 'selected' if request.args.get('payment_type') == 'monthly' }}>Monthly</option>
+                        <option value="quarterly" {{ 'selected' if request.args.get('payment_type') == 'quarterly' }}>Quarterly</option>
+                        <option value="annual" {{ 'selected' if request.args.get('payment_type') == 'annual' }}>Annual</option>
+                        <option value="one_time" {{ 'selected' if request.args.get('payment_type') == 'one_time' }}>One Time</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-outline">Filter</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Payments Table -->
+        {% if payments %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Amount</th>
+                        <th>Description</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Payment Method</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td>
+                            <strong>{{ payment.student_name }}</strong>
+                            <br><small class="text-muted">{{ payment.student_phone }}</small>
+                        </td>
+                        <td>
+                            <strong>${{ payment.amount }}</strong>
+                            {% if payment.late_fee %}
+                            <br><small class="text-danger">+${{ payment.late_fee }} late fee</small>
+                            {% endif %}
+                            {% if payment.discount %}
+                            <br><small class="text-success">-${{ payment.discount }} discount</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ payment.description }}
+                            <br><small class="text-muted">{{ payment.payment_type|title }}</small>
+                        </td>
+                        <td>
+                            {{ payment.due_date.strftime('%Y-%m-%d') }}
+                            {% if payment.days_overdue > 0 %}
+                            <br><small class="text-danger">{{ payment.days_overdue }} days overdue</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ 'success' if payment.status == 'paid' else 'danger' if payment.status == 'overdue' else 'warning' }}">
+                                {{ payment.status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            {{ payment.payment_method|title if payment.payment_method else '-' }}
+                            {% if payment.payment_reference %}
+                            <br><small class="text-muted">Ref: {{ payment.payment_reference }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('web.payment_detail', payment_id=payment._id) }}" 
+                                   class="btn btn-sm btn-outline">View</a>
+                                {% if payment.status != 'paid' and session.user_role in ['org_admin', 'coach_admin'] %}
+                                <button class="btn btn-sm btn-success" 
+                                        onclick="markAsPaid('{{ payment._id }}')">Mark Paid</button>
+                                {% endif %}
+                                {% if session.user_role in ['org_admin', 'coach_admin'] %}
+                                <button class="btn btn-sm btn-primary" 
+                                        onclick="editPayment('{{ payment._id }}')">Edit</button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Summary -->
+        <div class="row mt-3">
+            <div class="col-3">
+                <div class="stats-card">
+                    <div class="stats-number">${{ summary.total_amount or 0 }}</div>
+                    <div class="stats-label">Total Amount</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="stats-card">
+                    <div class="stats-number">${{ summary.paid_amount or 0 }}</div>
+                    <div class="stats-label">Paid Amount</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="stats-card">
+                    <div class="stats-number">${{ summary.pending_amount or 0 }}</div>
+                    <div class="stats-label">Pending Amount</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ summary.overdue_count or 0 }}</div>
+                    <div class="stats-label">Overdue Payments</div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="text-center">
+            <p class="text-muted">No payments found for the selected criteria.</p>
+            {% if session.user_role in ['org_admin', 'coach_admin'] %}
+            <button class="btn btn-primary" onclick="openCreatePaymentModal()">Create Your First Payment</button>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create Payment Modal -->
+<div id="createPaymentModal" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Create New Payment</h3>
+            <button class="modal-close" onclick="closeCreatePaymentModal()">&times;</button>
+        </div>
+        <form id="createPaymentForm" method="POST" action="{{ url_for('web.create_payment') }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="student_id" class="form-label">Student</label>
+                    <select class="form-control form-select" id="student_id" name="student_id" required>
+                        <option value="">Select student</option>
+                        {% for student in students %}
+                        <option value="{{ student._id }}">{{ student.name }} ({{ student.phone_number }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="amount" class="form-label">Amount ($)</label>
+                        <input type="number" class="form-control" id="amount" name="amount" 
+                               step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="due_date" class="form-label">Due Date</label>
+                        <input type="date" class="form-control" id="due_date" name="due_date" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description" class="form-label">Description</label>
+                    <input type="text" class="form-control" id="description" name="description" 
+                           placeholder="e.g. Monthly Training Fee - March 2025" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="payment_type" class="form-label">Payment Type</label>
+                    <select class="form-control form-select" id="payment_type" name="payment_type" required>
+                        <option value="">Select type</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="annual">Annual</option>
+                        <option value="one_time">One Time</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes" class="form-label">Notes (Optional)</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCreatePaymentModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Mark as Paid Modal -->
+<div id="markPaidModal" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Mark Payment as Paid</h3>
+            <button class="modal-close" onclick="closePaidModal()">&times;</button>
+        </div>
+        <form id="markPaidForm">
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="paid_amount" class="form-label">Amount Paid ($)</label>
+                        <input type="number" class="form-control" id="paid_amount" name="paid_amount" 
+                               step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="payment_method" class="form-label">Payment Method</label>
+                        <select class="form-control form-select" id="payment_method" name="payment_method" required>
+                            <option value="">Select method</option>
+                            <option value="cash">Cash</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="credit_card">Credit Card</option>
+                            <option value="check">Check</option>
+                            <option value="online">Online Payment</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="payment_reference" class="form-label">Reference/Transaction ID</label>
+                    <input type="text" class="form-control" id="payment_reference" name="payment_reference">
+                </div>
+                
+                <div class="form-group">
+                    <label for="payment_notes" class="form-label">Notes</label>
+                    <textarea class="form-control" id="payment_notes" name="notes" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closePaidModal()">Cancel</button>
+                <button type="submit" class="btn btn-success">Mark as Paid</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPaymentId = null;
+
+function openCreatePaymentModal() {
+    document.getElementById('createPaymentModal').classList.remove('hidden');
+    // Set default due date to next month
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    document.getElementById('due_date').value = nextMonth.toISOString().split('T')[0];
+}
+
+function closeCreatePaymentModal() {
+    document.getElementById('createPaymentModal').classList.add('hidden');
+    document.getElementById('createPaymentForm').reset();
+}
+
+function markAsPaid(paymentId) {
+    currentPaymentId = paymentId;
+    document.getElementById('markPaidModal').classList.remove('hidden');
+}
+
+function closePaidModal() {
+    document.getElementById('markPaidModal').classList.add('hidden');
+    document.getElementById('markPaidForm').reset();
+    currentPaymentId = null;
+}
+
+function editPayment(paymentId) {
+    window.location.href = `/payments/${paymentId}/edit`;
+}
+
+// Handle mark as paid form submission
+document.getElementById('markPaidForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!currentPaymentId) return;
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await Adrilly.api.post(`/api/payments/${currentPaymentId}/mark-paid`, data);
+        Adrilly.showAlert('Payment marked as paid successfully!', 'success');
+        closePaidModal();
+        location.reload();
+    } catch (error) {
+        Adrilly.showAlert('Error marking payment as paid: ' + error.message, 'error');
+    }
+});
+
+// Close modals when clicking outside
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
+    });
+});
+</script>
+{% endblock %} 

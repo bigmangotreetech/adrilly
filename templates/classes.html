@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Classes - Adrilly Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Class Management</h1>
+    <p class="page-subtitle">Schedule and manage your training sessions</p>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">All Classes</h3>
+        <div class="btn-group">
+            {% if session.user_role in ['coach', 'coach_admin'] %}
+            <a href="{{ url_for('web.schedule_class') }}" class="btn btn-primary">Schedule New Class</a>
+            {% endif %}
+            <a href="{{ url_for('web.export_classes') }}" class="btn btn-outline">Export</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Filters -->
+        <form method="GET" class="mb-3">
+            <div class="form-row">
+                <div class="form-group">
+                    <input type="date" name="start_date" class="form-control" 
+                           value="{{ request.args.get('start_date', '') }}" placeholder="Start Date">
+                </div>
+                <div class="form-group">
+                    <input type="date" name="end_date" class="form-control" 
+                           value="{{ request.args.get('end_date', '') }}" placeholder="End Date">
+                </div>
+                <div class="form-group">
+                    <select name="sport" class="form-control form-select">
+                        <option value="">All Sports</option>
+                        <option value="football" {{ 'selected' if request.args.get('sport') == 'football' }}>Football</option>
+                        <option value="basketball" {{ 'selected' if request.args.get('sport') == 'basketball' }}>Basketball</option>
+                        <option value="tennis" {{ 'selected' if request.args.get('sport') == 'tennis' }}>Tennis</option>
+                        <option value="swimming" {{ 'selected' if request.args.get('sport') == 'swimming' }}>Swimming</option>
+                        <option value="athletics" {{ 'selected' if request.args.get('sport') == 'athletics' }}>Athletics</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <select name="status" class="form-control form-select">
+                        <option value="">All Status</option>
+                        <option value="scheduled" {{ 'selected' if request.args.get('status') == 'scheduled' }}>Scheduled</option>
+                        <option value="ongoing" {{ 'selected' if request.args.get('status') == 'ongoing' }}>Ongoing</option>
+                        <option value="completed" {{ 'selected' if request.args.get('status') == 'completed' }}>Completed</option>
+                        <option value="cancelled" {{ 'selected' if request.args.get('status') == 'cancelled' }}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-outline">Filter</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Classes Table -->
+        {% if classes %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Class</th>
+                        <th>Date & Time</th>
+                        <th>Duration</th>
+                        <th>Sport</th>
+                        <th>Coach</th>
+                        <th>Students</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class in classes %}
+                    <tr>
+                        <td>
+                            <strong>{{ class.title }}</strong>
+                            {% if class.location %}
+                            <br><small class="text-muted">{{ class.location.name }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ class.scheduled_at.strftime('%Y-%m-%d') }}<br>
+                            <small class="text-muted">{{ class.scheduled_at.strftime('%H:%M') }}</small>
+                        </td>
+                        <td>{{ class.duration_minutes }} min</td>
+                        <td>
+                            <span class="badge badge-primary">{{ class.sport|title }}</span>
+                        </td>
+                        <td>{{ class.coach_name }}</td>
+                        <td>
+                            {{ class.student_count }} students
+                            {% if class.max_students %}
+                                / {{ class.max_students }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ 'success' if class.status == 'completed' else 'primary' if class.status == 'scheduled' else 'warning' if class.status == 'ongoing' else 'danger' }}">
+                                {{ class.status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('web.class_detail', class_id=class._id) }}" 
+                                   class="btn btn-sm btn-outline">View</a>
+                                {% if session.user_role in ['coach', 'coach_admin'] and class.coach_id == session.user_id %}
+                                <a href="{{ url_for('web.edit_class', class_id=class._id) }}" 
+                                   class="btn btn-sm btn-primary">Edit</a>
+                                {% endif %}
+                                {% if class.status == 'scheduled' %}
+                                <a href="{{ url_for('web.mark_attendance', class_id=class._id) }}" 
+                                   class="btn btn-sm btn-success">Attendance</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination %}
+        <nav aria-label="Classes pagination">
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('web.classes', page=pagination.prev_num, **request.args) }}">Previous</a>
+                    </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('web.classes', page=page_num, **request.args) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('web.classes', page=pagination.next_num, **request.args) }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="text-center">
+            <p class="text-muted">No classes found for the selected criteria.</p>
+            {% if session.user_role in ['coach', 'coach_admin'] %}
+            <a href="{{ url_for('web.schedule_class') }}" class="btn btn-primary">Schedule Your First Class</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+    
+{% endblock %} 

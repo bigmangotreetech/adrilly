@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+
+{% block title %}Equipment Marketplace - Adrilly Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Equipment Marketplace</h1>
+    <p class="page-subtitle">Buy and sell sports equipment within your community</p>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">Available Equipment</h3>
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="openListEquipmentModal()">List Equipment</button>
+            <button class="btn btn-outline" onclick="toggleView()">Grid View</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Filters -->
+        <form method="GET" class="mb-3">
+            <div class="form-row">
+                <div class="form-group">
+                    <input type="text" name="search" class="form-control" placeholder="Search equipment..." 
+                           value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="form-group">
+                    <select name="category" class="form-control form-select">
+                        <option value="">All Categories</option>
+                        <option value="balls" {{ 'selected' if request.args.get('category') == 'balls' }}>Balls</option>
+                        <option value="footwear" {{ 'selected' if request.args.get('category') == 'footwear' }}>Footwear</option>
+                        <option value="equipment" {{ 'selected' if request.args.get('category') == 'equipment' }}>Equipment</option>
+                        <option value="accessories" {{ 'selected' if request.args.get('category') == 'accessories' }}>Accessories</option>
+                        <option value="apparel" {{ 'selected' if request.args.get('category') == 'apparel' }}>Apparel</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <select name="condition" class="form-control form-select">
+                        <option value="">All Conditions</option>
+                        <option value="new" {{ 'selected' if request.args.get('condition') == 'new' }}>New</option>
+                        <option value="excellent" {{ 'selected' if request.args.get('condition') == 'excellent' }}>Excellent</option>
+                        <option value="good" {{ 'selected' if request.args.get('condition') == 'good' }}>Good</option>
+                        <option value="fair" {{ 'selected' if request.args.get('condition') == 'fair' }}>Fair</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="number" name="max_price" class="form-control" placeholder="Max Price ($)" 
+                           value="{{ request.args.get('max_price', '') }}" min="0">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-outline">Filter</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Equipment Grid -->
+        <div id="equipmentGrid" class="row">
+            {% if equipment %}
+                {% for item in equipment %}
+                <div class="col-4 mb-3">
+                    <div class="card equipment-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="badge badge-primary">{{ item.category|title }}</span>
+                                <span class="badge badge-{{ 'success' if item.condition == 'new' or item.condition == 'excellent' else 'warning' if item.condition == 'good' else 'secondary' }}">
+                                    {{ item.condition|title }}
+                                </span>
+                            </div>
+                            
+                            <h5 class="card-title">{{ item.title }}</h5>
+                            <p class="text-muted mb-2">{{ item.description[:100] }}{% if item.description|length > 100 %}...{% endif %}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <strong class="text-primary">${{ item.price }}</strong>
+                                {% if item.negotiable %}
+                                <small class="text-muted">Negotiable</small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    By: {{ item.owner_name }}<br>
+                                    Location: {{ item.location or 'Not specified' }}
+                                </small>
+                            </div>
+                            
+                            <div class="btn-group btn-group-sm w-100">
+                                <button class="btn btn-outline" onclick="viewEquipment('{{ item._id }}')">View Details</button>
+                                {% if item.owner_id == session.user_id %}
+                                <button class="btn btn-primary" onclick="editEquipment('{{ item._id }}')">Edit</button>
+                                {% else %}
+                                <button class="btn btn-success" onclick="contactSeller('{{ item._id }}')">Contact</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12 text-center">
+                    <p class="text-muted">No equipment found for the selected criteria.</p>
+                    <button class="btn btn-primary" onclick="openListEquipmentModal()">List Your First Item</button>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Equipment Table (hidden by default) -->
+        <div id="equipmentTable" class="hidden">
+            {% if equipment %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Category</th>
+                            <th>Condition</th>
+                            <th>Price</th>
+                            <th>Owner</th>
+                            <th>Location</th>
+                            <th>Posted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in equipment %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.title }}</strong>
+                                <br><small class="text-muted">{{ item.description[:50] }}...</small>
+                            </td>
+                            <td><span class="badge badge-primary">{{ item.category|title }}</span></td>
+                            <td><span class="badge badge-{{ 'success' if item.condition == 'new' or item.condition == 'excellent' else 'warning' if item.condition == 'good' else 'secondary' }}">{{ item.condition|title }}</span></td>
+                            <td>
+                                <strong>${{ item.price }}</strong>
+                                {% if item.negotiable %}<br><small class="text-muted">Negotiable</small>{% endif %}
+                            </td>
+                            <td>{{ item.owner_name }}</td>
+                            <td>{{ item.location or 'Not specified' }}</td>
+                            <td>{{ item.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline" onclick="viewEquipment('{{ item._id }}')">View</button>
+                                    {% if item.owner_id == session.user_id %}
+                                    <button class="btn btn-sm btn-primary" onclick="editEquipment('{{ item._id }}')">Edit</button>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-success" onclick="contactSeller('{{ item._id }}')">Contact</button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- List Equipment Modal -->
+<div id="listEquipmentModal" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">List Equipment for Sale</h3>
+            <button class="modal-close" onclick="closeListEquipmentModal()">&times;</button>
+        </div>
+        <form id="listEquipmentForm" method="POST" action="{{ url_for('web.create_equipment') }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="title" class="form-label">Title</label>
+                    <input type="text" class="form-control" id="title" name="title" 
+                           placeholder="e.g. Nike Basketball Shoes - Size 10" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3" 
+                              placeholder="Describe the item, its condition, and any important details..." required></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-control form-select" id="category" name="category" required>
+                            <option value="">Select category</option>
+                            <option value="balls">Balls</option>
+                            <option value="footwear">Footwear</option>
+                            <option value="equipment">Equipment</option>
+                            <option value="accessories">Accessories</option>
+                            <option value="apparel">Apparel</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="condition" class="form-label">Condition</label>
+                        <select class="form-control form-select" id="condition" name="condition" required>
+                            <option value="">Select condition</option>
+                            <option value="new">New</option>
+                            <option value="excellent">Excellent</option>
+                            <option value="good">Good</option>
+                            <option value="fair">Fair</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="price" class="form-label">Price ($)</label>
+                        <input type="number" class="form-control" id="price" name="price" 
+                               step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="location" name="location" 
+                               placeholder="City or area">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="negotiable" name="negotiable" value="true">
+                        Price is negotiable
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="contact_phone" class="form-label">Contact Phone (Optional)</label>
+                    <input type="tel" class="form-control" id="contact_phone" name="contact_phone" 
+                           placeholder="Leave blank to use your registered phone">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeListEquipmentModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">List Equipment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Equipment Detail Modal -->
+<div id="equipmentDetailModal" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title" id="detailTitle">Equipment Details</h3>
+            <button class="modal-close" onclick="closeEquipmentDetailModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="detailBody">
+            <!-- Content will be loaded dynamically -->
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeEquipmentDetailModal()">Close</button>
+            <button type="button" class="btn btn-success" id="contactSellerBtn" onclick="contactSellerFromDetail()">Contact Seller</button>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Seller Modal -->
+<div id="contactSellerModal" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Contact Seller</h3>
+            <button class="modal-close" onclick="closeContactModal()">&times;</button>
+        </div>
+        <form id="contactForm">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="message" class="form-label">Message</label>
+                    <textarea class="form-control" id="message" name="message" rows="4" 
+                              placeholder="Hi, I'm interested in your equipment. Is it still available?" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="buyer_phone" class="form-label">Your Contact Phone</label>
+                    <input type="tel" class="form-control" id="buyer_phone" name="buyer_phone" 
+                           value="{{ session.user_phone or '' }}" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeContactModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Send Message</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentEquipmentId = null;
+let isGridView = true;
+
+function openListEquipmentModal() {
+    document.getElementById('listEquipmentModal').classList.remove('hidden');
+}
+
+function closeListEquipmentModal() {
+    document.getElementById('listEquipmentModal').classList.add('hidden');
+    document.getElementById('listEquipmentForm').reset();
+}
+
+function toggleView() {
+    const gridView = document.getElementById('equipmentGrid');
+    const tableView = document.getElementById('equipmentTable');
+    const toggleBtn = document.querySelector('button[onclick="toggleView()"]');
+    
+    if (isGridView) {
+        gridView.classList.add('hidden');
+        tableView.classList.remove('hidden');
+        toggleBtn.textContent = 'Grid View';
+        isGridView = false;
+    } else {
+        gridView.classList.remove('hidden');
+        tableView.classList.add('hidden');
+        toggleBtn.textContent = 'Table View';
+        isGridView = true;
+    }
+}
+
+async function viewEquipment(equipmentId) {
+    try {
+        const data = await Adrilly.api.get(`/api/equipment/${equipmentId}`);
+        const equipment = data.equipment;
+        
+        document.getElementById('detailTitle').textContent = equipment.title;
+        document.getElementById('detailBody').innerHTML = `
+            <div class="row">
+                <div class="col-6">
+                    <h5>Description</h5>
+                    <p>${equipment.description}</p>
+                    
+                    <h5>Details</h5>
+                    <table class="table table-sm">
+                        <tr><td><strong>Category:</strong></td><td>${equipment.category}</td></tr>
+                        <tr><td><strong>Condition:</strong></td><td>${equipment.condition}</td></tr>
+                        <tr><td><strong>Price:</strong></td><td>$${equipment.price} ${equipment.negotiable ? '(Negotiable)' : ''}</td></tr>
+                        <tr><td><strong>Location:</strong></td><td>${equipment.location || 'Not specified'}</td></tr>
+                    </table>
+                </div>
+                <div class="col-6">
+                    <h5>Seller Information</h5>
+                    <p><strong>Name:</strong> ${equipment.owner_name}</p>
+                    <p><strong>Posted:</strong> ${new Date(equipment.created_at).toLocaleDateString()}</p>
+                    
+                    ${equipment.owner_id === '{{ session.user_id }}' ? 
+                        '<div class="alert alert-info">This is your listing</div>' : 
+                        '<p class="text-muted">Contact the seller to inquire about this item.</p>'
+                    }
+                </div>
+            </div>
+        `;
+        
+        const contactBtn = document.getElementById('contactSellerBtn');
+        if (equipment.owner_id === '{{ session.user_id }}') {
+            contactBtn.style.display = 'none';
+        } else {
+            contactBtn.style.display = 'block';
+            currentEquipmentId = equipmentId;
+        }
+        
+        document.getElementById('equipmentDetailModal').classList.remove('hidden');
+    } catch (error) {
+        Adrilly.showAlert('Error loading equipment details: ' + error.message, 'error');
+    }
+}
+
+function closeEquipmentDetailModal() {
+    document.getElementById('equipmentDetailModal').classList.add('hidden');
+    currentEquipmentId = null;
+}
+
+function contactSeller(equipmentId) {
+    currentEquipmentId = equipmentId;
+    document.getElementById('contactSellerModal').classList.remove('hidden');
+}
+
+function contactSellerFromDetail() {
+    if (currentEquipmentId) {
+        closeEquipmentDetailModal();
+        contactSeller(currentEquipmentId);
+    }
+}
+
+function closeContactModal() {
+    document.getElementById('contactSellerModal').classList.add('hidden');
+    document.getElementById('contactForm').reset();
+}
+
+function editEquipment(equipmentId) {
+    window.location.href = `/equipment/${equipmentId}/edit`;
+}
+
+// Handle contact form submission
+document.getElementById('contactForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!currentEquipmentId) return;
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        await Adrilly.api.post(`/api/equipment/${currentEquipmentId}/contact`, data);
+        Adrilly.showAlert('Message sent successfully! The seller will contact you.', 'success');
+        closeContactModal();
+    } catch (error) {
+        Adrilly.showAlert('Error sending message: ' + error.message, 'error');
+    }
+});
+
+// Close modals when clicking outside
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
+    });
+});
+</script>
+{% endblock %} 

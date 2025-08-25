@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Adrilly Sports Coaching{% endblock %}
+
+{% block login_content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1 class="login-title">Join Adrilly</h1>
+            <p class="login-subtitle">Create your account</p>
+        </div>
+        
+        <form id="registerForm" method="POST" action="{{ url_for('web.register') }}">
+            <div class="form-group">
+                <label for="name" class="form-label">Full Name</label>
+                <input type="text" class="form-control" id="name" name="name" 
+                       placeholder="Enter your full name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="phone_number" class="form-label">Phone Number</label>
+                <input type="tel" class="form-control" id="phone_number" name="phone_number" 
+                       placeholder="+1234567890" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="role" class="form-label">I am a</label>
+                <select class="form-control form-select" id="role" name="role" required>
+                    <option value="">Select your role</option>
+                    <option value="student">Student</option>
+                    <option value="coach">Coach</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" name="password" 
+                       placeholder="Create a password" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Password</label>
+                <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                       placeholder="Confirm your password" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">
+                <span class="btn-text">Register</span>
+                <span class="loading hidden"></span>
+            </button>
+        </form>
+        
+        <div class="text-center mt-3">
+            <p class="text-muted">Already have an account? <a href="{{ url_for('web.login') }}">Login here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('Passwords do not match');
+        return;
+    }
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const loading = submitBtn.querySelector('.loading');
+    
+    btnText.classList.add('hidden');
+    loading.classList.remove('hidden');
+    submitBtn.disabled = true;
+});
+</script>
+{% endblock %} 

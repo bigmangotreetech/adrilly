@@ -1,0 +1,154 @@
+from flask import Flask, jsonify
+from flask_jwt_extended import JWTManager
+from flask_cors import CORS
+from config import config
+from app.extensions import mongo, jwt, cors, make_celery
+import os
+
+def create_app(config_name=None):
+    """Application factory pattern"""
+    if config_name is None:
+        config_name = os.environ.get('FLASK_ENV', 'development')
+    
+    # Get the absolute path to the project root
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    template_folder = os.path.join(project_root, 'templates')
+    static_folder = os.path.join(project_root, 'static')
+    
+    # Create Flask app with correct template and static folders
+    app = Flask(__name__, 
+                template_folder=template_folder,
+                static_folder=static_folder)
+    app.config.from_object(config[config_name])
+    
+    # Initialize extensions
+    mongo.init_app(app)
+    jwt.init_app(app)
+    cors.init_app(app)
+    
+    # Create Celery instance
+    celery = make_celery(app)
+    
+    # Add context processor to make session available in templates
+    @app.context_processor
+    def inject_session():
+        from flask import session
+        return {
+            'session': session
+        }
+    
+    # Register blueprints
+    register_blueprints(app)
+    
+    # Register error handlers
+    register_error_handlers(app)
+    
+    # Health check endpoint
+    @app.route('/health')
+    def health_check():
+        return jsonify({
+            'status': 'healthy',
+            'service': 'Sports Coaching Management API',
+            'version': '1.0.0'
+        })
+    
+    return app, celery
+
+def register_blueprints(app):
+    """Register all blueprints"""
+    from app.routes.auth import auth_bp
+    from app.routes.classes import classes_bp
+    from app.routes.webhooks import webhooks_bp
+    from app.routes.attendance import attendance_bp
+    from app.routes.progress import progress_bp
+    from app.routes.payments import payments_bp
+    from app.routes.users import users_bp
+    from app.routes.equipment import equipment_bp
+    from app.routes.uploads import uploads_bp
+    from app.routes.web import web_bp
+    from app.routes.organization_signup import org_signup_bp
+    from app.routes.class_cancellation import class_cancellation_bp
+    from app.routes.feed import feed_bp
+    from app.routes.enhanced_webhooks import enhanced_webhooks_bp
+    from app.routes.enhanced_payments import register_payment_blueprints
+    from app.routes.performance_monitoring import register_performance_blueprints
+    from app.routes.security_monitoring import register_security_blueprints
+    
+    # Register API blueprints (they already have /api prefix in their definitions)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(classes_bp)
+    app.register_blueprint(webhooks_bp)
+    app.register_blueprint(attendance_bp)
+    app.register_blueprint(progress_bp)
+    app.register_blueprint(payments_bp)
+    app.register_blueprint(users_bp)
+    app.register_blueprint(equipment_bp)
+    app.register_blueprint(uploads_bp)
+    
+    # Register web blueprint without prefix (for the UI)
+    app.register_blueprint(web_bp)
+    
+    # Register organization signup blueprint
+    app.register_blueprint(org_signup_bp)
+    
+    # Register class cancellation blueprint
+    app.register_blueprint(class_cancellation_bp)
+    
+    # Register feed blueprint
+    app.register_blueprint(feed_bp)
+    
+    # Register enhanced webhooks blueprint
+    app.register_blueprint(enhanced_webhooks_bp)
+    
+    # Register enhanced payment blueprints
+    register_payment_blueprints(app)
+    
+    # Register performance monitoring blueprints
+    register_performance_blueprints(app)
+    
+    # Register security monitoring blueprints
+    register_security_blueprints(app)
+
+def register_error_handlers(app):
+    """Register error handlers"""
+    
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({'error': 'Resource not found'}), 404
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        return jsonify({'error': 'Internal server error'}), 500
+    
+    @app.errorhandler(400)
+    def bad_request(error):
+        return jsonify({'error': 'Bad request'}), 400
+    
+    @app.errorhandler(401)
+    def unauthorized(error):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    @app.errorhandler(403)
+    def forbidden(error):
+        return jsonify({'error': 'Forbidden'}), 403
+
+# JWT error handlers
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    return jsonify({'error': 'Token has expired'}), 401
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    return jsonify({'error': 'Invalid token'}), 401
+
+@jwt.unauthorized_loader
+def missing_token_callback(error):
+    return jsonify({'error': 'Authorization token is required'}), 401
+
+if __name__ == '__main__':
+    app, celery = create_app()
+    app.run(
+        host=app.config['APP_HOST'],
+        port=app.config['APP_PORT'],
+        debug=app.config['DEBUG']
+    ) 

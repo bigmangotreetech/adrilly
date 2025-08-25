@@ -1,0 +1,1944 @@
+{% extends "base.html" %}
+
+{% block title %}Class Management{% endblock %}
+
+{% block content %}
+
+<!-- View Class Modal -->
+<div id="viewClassModal" class="modal-overlay-modern hidden" style="display: none;">
+    <div class="modal-modern">
+        <div class="modal-header-modern">
+            <div class="modal-title-section">
+                <h3 class="modal-title-modern">Class Details</h3>
+                <p class="modal-subtitle-modern">View class information and details</p>
+            </div>
+            <button class="modal-close-modern" onclick="closeViewClassModal()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body-modern">
+            <div id="classDetailsContent">
+                <div
+                    style="display: flex; justify-content: center; align-items: center; padding: 3rem; text-align: center;">
+                    <div>
+                        <div class="loading-spinner" style="width: 40px; height: 40px; margin: 0 auto 1rem;"></div>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Loading class details...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer-modern">
+            <button class="btn-secondary-modern" onclick="closeViewClassModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Student Management Modal -->
+<div id="studentManagementModal" class="modal-overlay-modern hidden" style="display: none;">
+    <div class="modal-modern">
+        <div class="modal-header-modern">
+            <div class="modal-title-section">
+                <h3 class="modal-title-modern">Manage Students</h3>
+                <p class="modal-subtitle-modern">Add or remove students for this class</p>
+            </div>
+            <button class="modal-close-modern" onclick="closeStudentManagementModal()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body-modern">
+            <div class="alert alert-info"
+                style="background: var(--info-light, #cce7ff); color: var(--info-dark, #0c5460); padding: var(--spacing-md); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+                <strong>Note:</strong> Changes here are one-time additions/removals for this specific class only.
+            </div>
+
+            <div class="class-info"
+                style="margin-bottom: var(--spacing-lg); padding: var(--spacing-md); background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                <strong>Class:</strong> <span id="studentMgmtClassName"></span>
+            </div>
+
+            <div class="student-management-grid"
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-lg);">
+                <!-- Current Students -->
+                <div class="current-students-section">
+                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                        <h4 style="color: var(--text-primary); font-size: 1rem; font-weight: 600; margin: 0;">
+                            Currently Enrolled Students
+                        </h4>
+                        <span id="currentStudentsCount" class="student-count-badge" 
+                              style="background: var(--primary-light); color: var(--primary-dark); padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 600;">
+                            0
+                        </span>
+                    </div>
+                    <div id="currentStudentsList" class="student-list">
+                        <div class="loading-placeholder" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <div class="spinner" style="display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border-primary); border-top: 2px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 0.5rem;"></div>
+                            <div>Loading enrolled students...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Available Students -->
+                <div class="available-students-section">
+                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                        <h4 style="color: var(--text-primary); font-size: 1rem; font-weight: 600; margin: 0;">
+                            Available Students
+                        </h4>
+                        <span id="availableStudentsCount" class="student-count-badge" 
+                              style="background: var(--success-light); color: var(--success-dark); padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 600;">
+                            0
+                        </span>
+                    </div>
+                    <div class="student-search-container" style="margin-bottom: var(--spacing-md); position: relative;">
+                        <input type="text" id="studentSearchInput" class="form-input-modern"
+                            placeholder="Search students..." onkeyup="filterAvailableStudents()" 
+                            onfocus="showAvailableStudents()" autocomplete="off">
+                        <div class="search-results-count" id="searchResultsCount" style="display: none;">
+                            <!-- Will show count of filtered results -->
+                        </div>
+                    </div>
+                    <div id="availableStudentsList" class="student-list">
+                        <div class="loading-placeholder" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <div class="spinner" style="display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border-primary); border-top: 2px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 0.5rem;"></div>
+                            <div>Loading available students...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer-modern">
+            <button type="button" class="btn-secondary-modern" onclick="closeStudentManagementModal()">Cancel</button>
+            <button type="button" class="btn-primary-modern" onclick="saveStudentChanges()">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Save Changes
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Class Modal -->
+<div id="cancelClassModal" class="modal-overlay-modern hidden" style="display: none;">
+    <div class="modal-modern">
+        <div class="modal-header-modern">
+            <div class="modal-title-section">
+                <h3 class="modal-title-modern">Cancel Class</h3>
+                <p class="modal-subtitle-modern">Cancel this class and notify enrolled students</p>
+            </div>
+            <button class="modal-close-modern" onclick="closeCancelClassModal()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+        </div>
+        <form id="cancelClassForm">
+            <div class="modal-body-modern">
+                <div class="alert alert-warning"
+                    style="background: var(--warning-light, #fff3cd); color: var(--warning-dark, #856404); padding: var(--spacing-md); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+                    <strong>Warning:</strong> This will cancel the class and notify all enrolled students.
+                </div>
+
+                <div class="class-details"
+                    style="margin-bottom: var(--spacing-lg); padding: var(--spacing-md); background: var(--bg-tertiary); border-radius: var(--radius-md);">
+                    <div style="margin-bottom: var(--spacing-sm);"><strong>Class:</strong> <span
+                            id="cancelClassName"></span></div>
+                    <div><strong>Scheduled:</strong> <span id="cancelClassTime"></span></div>
+                </div>
+
+                <div class="form-grid-modern">
+                    <div class="form-field-modern">
+                        <label for="cancel_reason" class="form-label-modern">
+                            <span class="label-text">Cancellation Reason</span>
+                            <span class="label-required">*</span>
+                        </label>
+                        <textarea name="reason" id="cancel_reason" class="form-input-modern" rows="3" required
+                            placeholder="Enter reason for cancellation" style="resize: vertical;"></textarea>
+                    </div>
+
+                    <div class="form-field-modern">
+                        <label for="cancel_type" class="form-label-modern">
+                            <span class="label-text">Cancellation Type</span>
+                        </label>
+                        <select name="cancellation_type" id="cancel_type" class="form-select-modern">
+                            <option value="manual">Manual</option>
+                            <option value="weather">Weather</option>
+                            <option value="facility">Facility Issue</option>
+                            <option value="emergency">Emergency</option>
+                            <option value="holiday">Holiday</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-field-modern">
+                    <label class="checkbox-label-modern">
+                        <input type="checkbox" name="refund_required" class="checkbox-modern">
+                        <span class="checkbox-text">Refund Required</span>
+                    </label>
+                    <div class="form-help-text">
+                        Check if students should receive a refund for this class.
+                    </div>
+                </div>
+
+                <div class="form-field-modern">
+                    <label class="checkbox-label-modern">
+                        <input type="checkbox" name="send_notifications" class="checkbox-modern" checked>
+                        <span class="checkbox-text">Send Notifications</span>
+                    </label>
+                    <div class="form-help-text">
+                        Uncheck to cancel without sending WhatsApp notifications.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer-modern">
+                <button type="button" class="btn-secondary-modern" onclick="closeCancelClassModal()">Cancel</button>
+                <button type="submit" class="btn-danger-modern">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                    Cancel Class
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bulk Cancel Confirmation Panel -->
+<div id="bulkCancelPanel" class="bulk-cancel-panel hidden" style="display: none;">
+    <div class="bulk-cancel-content">
+        <div class="bulk-cancel-header">
+            <div class="bulk-cancel-title-section">
+                <div class="bulk-cancel-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z">
+                        </path>
+                    </svg>
+                </div>
+                <div class="bulk-cancel-title-text">
+                    <h4>Cancel Selected Classes</h4>
+                    <div class="selected-classes-summary">
+                        <span class="selected-count" id="selectedClassCount">0</span>
+                        <span class="selected-text">classes selected for cancellation</span>
+                    </div>
+                </div>
+            </div>
+            <button class="close-bulk-panel" onclick="closeBulkCancelPanel()" title="Close">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+        </div>
+
+        <form id="bulkCancelForm">
+            <div class="bulk-cancel-body">
+                <div class="bulk-cancel-main-content">
+                    <div class="form-section">
+                        <div class="form-field-modern">
+                            <label for="bulk_reason" class="form-label-modern">
+                                <span class="label-text">Reason</span>
+                                <span class="label-required">*</span>
+                            </label>
+                            <textarea name="reason" id="bulk_reason" class="form-input-modern" rows="1" required
+                                placeholder="Enter cancellation reason..." style="resize: vertical;"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="options-section-compact">
+                        <div class="bulk-cancel-options-compact">
+                            <label class="checkbox-label-compact">
+                                <input type="checkbox" name="send_notifications" class="checkbox-modern" checked>
+                                <span class="checkbox-text">Send Notifications</span>
+                            </label>
+                            <label class="checkbox-label-compact">
+                                <input type="checkbox" name="refund_required" class="checkbox-modern">
+                                <span class="checkbox-text">Refund Required</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bulk-cancel-footer-compact">
+                <button type="button" class="btn-secondary-modern btn-sm"
+                    onclick="closeBulkCancelPanel()">Cancel</button>
+                <button type="submit" class="btn-danger-modern btn-sm">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                        </path>
+                    </svg>
+                    Cancel <span id="footerSelectedCount">0</span> Classes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="users-page">
+    <div class="page-header-modern">
+        <div class="page-header-content">
+            <div class="page-title-section">
+                <h1 class="page-title-modern">Class Management</h1>
+                <p class="page-subtitle-modern">Manage class schedules, cancellations, and notifications</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-secondary-modern" onclick="refreshClasses()">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
+                    </svg>
+                    Refresh
+                </button>
+                <button id="bulkSelectToggle" class="btn btn-primary-modern" onclick="toggleBulkSelectMode()">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span id="bulkSelectText">Select Classes</span>
+                </button>
+
+                <!-- Cancel Selected Button (hidden by default) -->
+                <button id="cancelSelectedButton" class="btn btn-danger-modern hidden" onclick="showBulkCancelPanel()"
+                    style="display: none;">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                        </path>
+                    </svg>
+                    Cancel <span id="headerSelectedCount">0</span> Selected
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="content-card-modern">
+        <div class="content-header-modern">
+            <h2 class="content-title-modern">
+                <svg class="content-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Upcoming Classes (Next 7 Days)
+            </h2>
+        </div>
+        <div class="content-body-modern">
+            {% if classes %}
+            <div class="table-container-modern">
+                <table class="table-modern">
+                    <thead class="table-header-sticky">
+                        <tr>
+                            <th class="bulk-select-column" style="display: none;">
+                                <div class="th-content">
+                                    <input type="checkbox" id="selectAllClasses" class="checkbox-modern"
+                                        onchange="toggleSelectAll()">
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Class</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Date & Time</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Students</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Status</span>
+                                </div>
+                            </th>
+                            <th class="actions-column">
+                                <div class="th-content">
+                                    <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for class in classes %}
+                        <tr class="table-row-modern" id="class-{{ class._id }}">
+                            <td class="bulk-select-column" style="display: none;">
+                                {% if class.status in ['scheduled', 'ongoing'] %}
+                                <input type="checkbox" class="class-select-checkbox checkbox-modern"
+                                    data-class-id="{{ class._id }}" data-class-title="{{ class.title }}"
+                                    onchange="updateBulkSelectCount()">
+                                {% endif %}
+                            </td>
+                            <td class="class-cell">
+                                <div class="class-info-modern">
+                                    <div class="class-title">{{ class.title }}</div>
+                                    {% if class.sport %}
+                                    <div class="class-meta">{{ class.sport }}</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="date-info">
+                                    <div class="date-primary">{{ class.scheduled_at.strftime('%A, %b %d, %Y') }}</div>
+                                    <div class="date-secondary">{{ class.scheduled_at.strftime('%I:%M %p') }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="student-count">
+                                    {{ class.student_ids|length + class.group_ids|length }} students
+                                </span>
+                            </td>
+                            <td>
+                                <span class="status-{{ class.status }}">
+                                    {{ class.status.title() }}
+                                </span>
+                            </td>
+                            <td class="actions-cell">
+                                <div class="actions-dropdown">
+                                    <button class="actions-button" type="button" onclick="toggleActionDropdown(this)">
+                                        <svg class="actions-dots" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                    <div class="actions-menu">
+                                        <button class="action-item" onclick="openViewClassModal('{{ class._id }}')">
+                                            <svg class="action-icon" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                                </path>
+                                            </svg>
+                                            View Details
+                                        </button>
+                                        {% if class.status in ['scheduled', 'ongoing'] %}
+                                        <button class="action-item"
+                                            onclick="showStudentManagementModal('{{ class._id }}', '{{ class.title }}')">
+                                            <svg class="action-icon" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                                </path>
+                                            </svg>
+                                            Manage Students
+                                        </button>
+                                        <div class="action-divider"></div>
+                                        <button class="action-item danger"
+                                            onclick="showCancelModal('{{ class._id }}', '{{ class.title }}', '{{ class.scheduled_at.strftime('%b %d, %Y at %I:%M %p') }}')">
+                                            <svg class="action-icon" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                                </path>
+                                            </svg>
+                                            Cancel Class
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3a2 2 0 012-2h6l2 2h3a2 2 0 012 2v4m-8 0V9a2 2 0 012-2h4m-6 0V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-8z">
+                        </path>
+                    </svg>
+                </div>
+                <h3 class="empty-state-title">No Upcoming Classes</h3>
+                <p class="empty-state-description">No classes are scheduled for the next 7 days.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+
+
+    <!-- Recent Cancellations -->
+    {% if cancelled_classes %}
+    <div class="content-card-modern mt-4">
+        <div class="content-header-modern">
+            <h2 class="content-title-modern">
+                <svg class="content-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                    </path>
+                </svg>
+                Recent Cancellations (Last 30 Days)
+            </h2>
+        </div>
+        <div class="content-body-modern">
+            <div class="table-container-modern">
+                <table class="table-modern">
+                    <thead class="table-header-sticky">
+                        <tr>
+                            <th>
+                                <div class="th-content">
+                                    <span>Class</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Date</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Cancelled</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Reason</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Type</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for class in cancelled_classes %}
+                        <tr class="table-row-modern">
+                            <td>
+                                <div class="class-title">{{ class.title }}</div>
+                            </td>
+                            <td>
+                                <span class="date-text">{{ class.scheduled_at.strftime('%b %d, %Y') }}</span>
+                            </td>
+                            <td>
+                                <span class="date-text">{{ class.cancelled_at.strftime('%b %d') if class.cancelled_at
+                                    else 'N/A' }}</span>
+                            </td>
+                            <td>
+                                <span class="reason-text">{{ class.cancellation_reason or 'No reason provided' }}</span>
+                            </td>
+                            <td>
+                                <span class="status-pill status-cancelled">
+                                    {{ class.cancellation_type or 'manual' }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Class Management Specific Styles */
+    .content-title-modern {
+        display: flex;
+        align-items: center;
+        padding: 20px;
+        gap: 10px;
+    }
+
+    .class-info-modern {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .class-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .class-meta {
+        font-size: 0.825rem;
+        color: var(--text-muted);
+        font-weight: 400;
+    }
+
+    .date-info {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .date-primary {
+        font-weight: 500;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        line-height: 1.3;
+    }
+
+    .date-secondary {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 400;
+    }
+
+    .student-count {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .reason-text {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        line-height: 1.4;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Class Detail Grid for Modal */
+    .class-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .class-detail-item {
+        padding: var(--spacing-md);
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        border-left: 3px solid var(--accent-primary);
+    }
+
+    .class-detail-item strong {
+        display: block;
+        margin-bottom: var(--spacing-xs);
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .class-detail-item span,
+    .class-detail-item div:not(strong) {
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    /* Student Management Styles */
+    .student-list {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid var(--border-primary);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-sm);
+        background: var(--bg-card);
+        min-height: 200px;
+    }
+
+    .student-search-container {
+        position: relative;
+    }
+
+    .search-results-count {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: var(--bg-tertiary);
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: var(--radius-sm);
+        margin-top: 4px;
+        z-index: 10;
+    }
+
+    .student-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm);
+        margin-bottom: var(--spacing-xs);
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+
+    .student-item:hover {
+        background: var(--bg-hover);
+        border-color: var(--border-secondary);
+    }
+
+    .student-item.selected {
+        background: var(--success-light, #d4edda);
+        border-color: var(--success, #28a745);
+    }
+
+    .student-info {
+        flex-grow: 1;
+    }
+
+    .student-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        margin-bottom: var(--spacing-xs);
+        line-height: 1.3;
+    }
+
+    .student-phone {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 400;
+    }
+
+    .student-action {
+        margin-left: var(--spacing-sm);
+    }
+
+    .btn-student-add,
+    .btn-student-remove {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.75rem;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        transition: all 0.2s ease;
+        min-width: 60px;
+        border: 1px solid;
+    }
+
+    .btn-student-add {
+        background: transparent;
+        border-color: var(--success);
+        color: var(--success);
+    }
+
+    .btn-student-add:hover {
+        background: var(--success);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .btn-student-remove {
+        background: transparent;
+        border-color: var(--danger);
+        color: var(--danger);
+    }
+
+    .btn-student-remove:hover {
+        background: var(--danger);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .empty-state {
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+        border: 2px dashed var(--border-secondary);
+    }
+
+    .student-count-badge {
+        transition: all 0.2s ease;
+    }
+
+    .loading-placeholder {
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md);
+    }
+
+    /* Loading spinner animation */
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loading-spinner {
+        border: 3px solid var(--border-light);
+        border-top: 3px solid var(--accent-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    /* Status Pills */
+    .status-pill.status-scheduled {
+        background: var(--success-light, #d4edda);
+        color: var(--success-dark, #155724);
+    }
+
+    .status-pill.status-ongoing {
+        background: var(--info-light, #cce7ff);
+        color: var(--info-dark, #0c5460);
+    }
+
+    .status-pill.status-cancelled {
+        background: var(--error-light, #f8d7da);
+        color: var(--error-dark, #721c24);
+    }
+
+    .status-pill.status-completed {
+        background: var(--primary-light, #e3f2fd);
+        color: var(--primary-dark, #1565c0);
+    }
+
+    /* Form Elements for Modals */
+    .checkbox-label-modern {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+        cursor: pointer;
+        margin-bottom: var(--spacing-md);
+    }
+
+    .checkbox-modern {
+        margin: 0;
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        accent-color: var(--accent-primary);
+    }
+
+    .checkbox-text {
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    .form-help-text {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: var(--spacing-xs);
+        line-height: 1.4;
+    }
+
+    .btn-danger-modern {
+        background: var(--error, #dc3545);
+        color: white;
+        border: 1px solid var(--error, #dc3545);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-danger-modern:hover {
+        background: var(--error-dark, #c82333);
+        border-color: var(--error-dark, #c82333);
+        transform: translateY(-1px);
+    }
+
+    .btn-danger-modern:active {
+        transform: translateY(0);
+    }
+
+    .btn-danger-modern .btn-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Bulk Cancel Panel Styles */
+    .bulk-cancel-panel {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--bg-card);
+        border-top: 2px solid var(--border-primary);
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+    }
+
+    .bulk-cancel-panel:not(.hidden) {
+        transform: translateY(0);
+    }
+
+    .bulk-cancel-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+
+    .bulk-cancel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-md);
+    }
+
+    .bulk-cancel-header h4 {
+        color: var(--text-primary);
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .close-bulk-panel {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: var(--spacing-xs);
+        border-radius: var(--radius-sm);
+        transition: all 0.2s ease;
+    }
+
+    .close-bulk-panel:hover {
+        color: var(--text-primary);
+        background: var(--bg-hover);
+    }
+
+    .close-bulk-panel svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Enhanced Bulk Cancel Panel Layout */
+    .bulk-cancel-title-section {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+
+    .bulk-cancel-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--warning-light, #fef3cd);
+        border-radius: var(--radius-lg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .bulk-cancel-icon svg {
+        width: 20px;
+        height: 20px;
+        color: var(--warning, #f59e0b);
+    }
+
+    .bulk-cancel-title-text h4 {
+        color: var(--text-primary);
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 var(--spacing-xs) 0;
+    }
+
+    .selected-classes-summary {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        font-size: 0.85rem;
+    }
+
+    .selected-count {
+        background: var(--accent-primary);
+        color: white;
+        padding: 2px 8px;
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        min-width: 24px;
+        text-align: center;
+    }
+
+    .selected-text {
+        color: var(--text-muted);
+    }
+
+    .bulk-cancel-body {
+        padding: var(--spacing-md) 0;
+    }
+
+    .bulk-cancel-main-content {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-lg);
+    }
+
+    .form-section {
+        flex: 1;
+    }
+
+    /* Compact Options Section */
+    .options-section-compact {
+        flex-shrink: 0;
+    }
+
+    .bulk-cancel-options-compact {
+        display: flex;
+        gap: var(--spacing-lg);
+    }
+
+    .checkbox-label-compact {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        cursor: pointer;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    /* Compact Footer */
+    .bulk-cancel-footer-compact {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: var(--spacing-md);
+        padding-top: var(--spacing-md);
+        border-top: 1px solid var(--border-primary);
+    }
+
+    .btn-sm {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.85rem;
+    }
+
+    /* Cancel Selected Button */
+    #cancelSelectedButton {
+        opacity: 0;
+        transform: translateX(20px);
+        transition: all 0.3s ease;
+    }
+
+    #cancelSelectedButton:not(.hidden) {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    #cancelSelectedButton.animate-slide-in-right {
+        animation: slideInRight 0.3s ease-out forwards;
+    }
+
+    /* Bulk Select Column */
+    .bulk-select-column {
+        width: 40px;
+        text-align: center;
+    }
+
+    .bulk-select-mode .bulk-select-column {
+        display: table-cell !important;
+    }
+
+    /* Student Management Grid */
+    .student-management-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-lg);
+    }
+
+    /* Additional Animation Classes */
+    .animate-fade-out {
+        animation: fadeOut 0.3s ease-out forwards;
+    }
+
+    .animate-slide-in-up {
+        animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-active {
+        background: var(--accent-primary) !important;
+        color: white !important;
+        transform: scale(1.05);
+    }
+
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        to {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .class-detail-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .reason-text {
+            max-width: none;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: initial;
+        }
+
+        .form-grid-modern {
+            grid-template-columns: 1fr;
+        }
+
+        .student-management-grid {
+            grid-template-columns: 1fr;
+        }
+
+        /* Mobile Bulk Cancel Panel */
+        .bulk-cancel-content {
+            padding: var(--spacing-sm) var(--spacing-md);
+        }
+
+        .bulk-cancel-title-section {
+            gap: var(--spacing-sm);
+        }
+
+        .bulk-cancel-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .bulk-cancel-icon svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .bulk-cancel-main-content {
+            flex-direction: column;
+            gap: var(--spacing-md);
+            align-items: stretch;
+        }
+
+        .bulk-cancel-options-compact {
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .bulk-cancel-footer-compact {
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            align-items: stretch;
+        }
+
+        .bulk-cancel-footer-compact button {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    let currentClassId = null;
+    let currentClassData = null;
+    let allStudents = [];
+    let currentStudents = [];
+    let availableStudents = [];
+    let studentChanges = { add: [], remove: [] };
+
+
+
+    // Modern Modal Functions (matching users page pattern)
+    function openViewClassModal(classId) {
+        currentClassId = classId;
+        const modal = document.getElementById('viewClassModal');
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+
+        // Add entrance animation using safe animation system
+        const modalContent = modal.querySelector('.modal-modern');
+        if (window.MicroAnimations) {
+            MicroAnimations.safeAddAnimation(modalContent, 'animate-scale-in', 400);
+        }
+
+        loadClassDetails(classId);
+    }
+
+    function closeViewClassModal() {
+        const modal = document.getElementById('viewClassModal');
+        const modalContent = modal.querySelector('.modal-modern');
+
+        // Add exit animation using safe animation system
+        if (window.MicroAnimations && MicroAnimations.safeAddAnimation(modalContent, 'animate-fade-out', 200)) {
+            setTimeout(() => {
+                modal.style.display = 'none';
+                modal.classList.add('hidden');
+                document.getElementById('classDetailsContent').innerHTML = `
+        <div style="display: flex; justify-content: center; align-items: center; padding: 2rem; text-align: center;">
+            <div>
+                <div class="loading-spinner" style="width: 40px; height: 40px; margin: 0 auto 1rem;"></div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Loading class details...</p>
+            </div>
+        </div>
+    `;
+            }, 400);
+        }
+    }
+
+    function loadClassDetails(classId) {
+        
+
+        fetch(`/api/classes/${classId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('classDetailsContent').innerHTML =
+                        `<div class="alert alert-danger">Error: ${data.error}</div>`;
+                } else {
+                    currentClassData = data.class;
+                    displayClassDetails(data.class);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('classDetailsContent').innerHTML =
+                    `<div class="alert alert-danger">Error loading class details</div>`;
+            });
+    }
+
+    function displayClassDetails(classData) {
+        const scheduledDate = new Date(classData.scheduled_at);
+        const content = `
+        <div class="class-detail-grid">
+            <div class="class-detail-item">
+                <strong>Class Title</strong>
+                <div>${classData.title}</div>
+            </div>
+            <div class="class-detail-item">
+                <strong>Status</strong>
+                <span class="status-pill status-${classData.status}">
+                    ${classData.status.charAt(0).toUpperCase() + classData.status.slice(1)}
+                </span>
+            </div>
+            <div class="class-detail-item">
+                <strong>Date & Time</strong>
+                <div>${scheduledDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })}</div>
+                <div style="margin-top: var(--spacing-xs); color: var(--text-muted); font-size: 0.85rem;">
+                    ${scheduledDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        })}
+                </div>
+            </div>
+            <div class="class-detail-item">
+                <strong>Duration</strong>
+                <div>${classData.duration_minutes || 60} minutes</div>
+            </div>
+            <div class="class-detail-item">
+                <strong>Coach</strong>
+                <div>${classData.coach ? classData.coach.name : 'Not assigned'}</div>
+            </div>
+            <div class="class-detail-item">
+                <strong>Student Count</strong>
+                <div>${classData.student_count || 0} students</div>
+            </div>
+            ${classData.sport ? `
+            <div class="class-detail-item">
+                <strong>Sport</strong>
+                <div>${classData.sport}</div>
+            </div>
+            ` : ''}
+            ${classData.level ? `
+            <div class="class-detail-item">
+                <strong>Level</strong>
+                <div>${classData.level}</div>
+            </div>
+            ` : ''}
+        </div>
+        ${classData.notes ? `
+        <div class="class-detail-item" style="grid-column: 1 / -1;">
+            <strong>Notes</strong>
+            <div style="margin-top: var(--spacing-sm); line-height: 1.5;">${classData.notes}</div>
+        </div>
+        ` : ''}
+        ${classData.location && Object.keys(classData.location).length > 0 ? `
+        <div class="class-detail-item" style="grid-column: 1 / -1;">
+            <strong>Location</strong>
+            <div style="margin-top: var(--spacing-sm);">${classData.location.name || classData.location.address || 'Location details available'}</div>
+        </div>
+        ` : ''}
+    `;
+
+        document.getElementById('classDetailsContent').innerHTML = content;
+    }
+
+    // Student Management Modal Functions
+    function showStudentManagementModal(classId, className) {
+        currentClassId = classId;
+        document.getElementById('studentMgmtClassName').textContent = className;
+        studentChanges = { add: [], remove: [] };
+
+        const modal = document.getElementById('studentManagementModal');
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        loadStudentData(classId);
+    }
+
+    function closeStudentManagementModal() {
+        const modal = document.getElementById('studentManagementModal');
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+        // Reset form if needed
+    }
+
+    function loadStudentData(classId) {
+
+        // Load current class students
+        fetch(`/api/classes/${classId}/students`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Error loading students:', data.error);
+                } else {
+                    currentStudents = data.students || [];
+                    loadAllStudents();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+
+    function loadAllStudents() {
+
+        // Load all organization students
+        fetch('/api/users?role=student', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Error loading all students:', data.error);
+                } else {
+                    allStudents = data.users || [];
+                    updateStudentLists();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Fallback: just show current students
+                updateStudentLists();
+            });
+    }
+
+    function updateStudentLists() {
+        // Get currently enrolled student IDs
+        const currentStudentIds = new Set(currentStudents.map(s => s.id));
+
+        // Filter available students (not currently enrolled)
+        availableStudents = allStudents.filter(s => !currentStudentIds.has(s.id));
+
+        // Render both lists
+        renderCurrentStudents();
+        renderAvailableStudents();
+    }
+
+    function renderCurrentStudents() {
+        const container = document.getElementById('currentStudentsList');
+        const countBadge = document.getElementById('currentStudentsCount');
+
+        // Update count badge
+        countBadge.textContent = currentStudents.length;
+
+        if (currentStudents.length === 0) {
+            container.innerHTML = '<div class="empty-state" style="text-align: center; padding: 2rem; color: var(--text-muted); font-style: italic;">No students currently enrolled</div>';
+            return;
+        }
+
+        const html = currentStudents.map(student => `
+        <div class="student-item" data-student-id="${student.id}">
+            <div class="student-info">
+                <div class="student-name">${student.name}</div>
+                <div class="student-phone">${student.phone_number || 'No phone'}</div>
+            </div>
+            <div class="student-action">
+                <button class="btn btn-sm btn-outline-danger btn-student-remove" 
+                        onclick="removeStudentFromClass('${student.id}', '${student.name}')">
+                    Remove
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+        container.innerHTML = html;
+    }
+
+    function renderAvailableStudents() {
+        const container = document.getElementById('availableStudentsList');
+        const countBadge = document.getElementById('availableStudentsCount');
+
+        // Update count badge
+        countBadge.textContent = availableStudents.length;
+
+        if (availableStudents.length === 0) {
+            container.innerHTML = '<div class="empty-state" style="text-align: center; padding: 2rem; color: var(--text-muted); font-style: italic;">No available students</div>';
+            return;
+        }
+
+        const html = availableStudents.map(student => `
+        <div class="student-item" data-student-id="${student.id}">
+            <div class="student-info">
+                <div class="student-name">${student.name}</div>
+                <div class="student-phone">${student.phone_number || 'No phone'}</div>
+            </div>
+            <div class="student-action">
+                <button class="btn btn-sm btn-outline-success btn-student-add" 
+                        onclick="addStudentToClass('${student.id}', '${student.name}')">
+                    Add
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+        container.innerHTML = html;
+    }
+
+    function addStudentToClass(studentId, studentName) {
+        // Find student in available list
+        const student = availableStudents.find(s => s.id === studentId);
+        if (!student) return;
+
+        // Move to current students
+        currentStudents.push(student);
+        availableStudents = availableStudents.filter(s => s.id !== studentId);
+
+        // Track change
+        studentChanges.add.push(studentId);
+        studentChanges.remove = studentChanges.remove.filter(id => id !== studentId);
+
+        // Update UI
+        updateStudentLists();
+    }
+
+    function removeStudentFromClass(studentId, studentName) {
+        // Find student in current list
+        const student = currentStudents.find(s => s.id === studentId);
+        if (!student) return;
+
+        // Move to available students
+        availableStudents.push(student);
+        currentStudents = currentStudents.filter(s => s.id !== studentId);
+
+        // Track change
+        studentChanges.remove.push(studentId);
+        studentChanges.add = studentChanges.add.filter(id => id !== studentId);
+
+        // Update UI
+        updateStudentLists();
+    }
+
+    function filterAvailableStudents() {
+        const searchTerm = document.getElementById('studentSearchInput').value.toLowerCase();
+        const studentItems = document.querySelectorAll('#availableStudentsList .student-item');
+        const searchResultsCount = document.getElementById('searchResultsCount');
+        
+        let visibleCount = 0;
+
+        studentItems.forEach(item => {
+            const studentName = item.querySelector('.student-name').textContent.toLowerCase();
+            const studentPhone = item.querySelector('.student-phone').textContent.toLowerCase();
+
+            if (!searchTerm || studentName.includes(searchTerm) || studentPhone.includes(searchTerm)) {
+                item.style.display = 'flex';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // Show/hide results count
+        if (searchTerm) {
+            searchResultsCount.textContent = `${visibleCount} student${visibleCount !== 1 ? 's' : ''} found`;
+            searchResultsCount.style.display = 'block';
+        } else {
+            searchResultsCount.style.display = 'none';
+        }
+
+        // Show message if no results
+        const availableList = document.getElementById('availableStudentsList');
+        if (visibleCount === 0 && searchTerm) {
+            if (!availableList.querySelector('.no-results-message')) {
+                const noResultsDiv = document.createElement('div');
+                noResultsDiv.className = 'no-results-message text-muted';
+                noResultsDiv.style.cssText = 'text-align: center; padding: 2rem; font-style: italic;';
+                noResultsDiv.textContent = 'No students found matching your search';
+                availableList.appendChild(noResultsDiv);
+            }
+        } else {
+            const noResultsMsg = availableList.querySelector('.no-results-message');
+            if (noResultsMsg) {
+                noResultsMsg.remove();
+            }
+        }
+    }
+
+    function showAvailableStudents() {
+        // This function can be used to show all students when focusing on the search input
+        const searchInput = document.getElementById('studentSearchInput');
+        
+        if (!searchInput.value) {
+            filterAvailableStudents(); // Reset filter to show all
+        } else {
+            availableStudents = {{ students | tojson }};
+            console.log(availableStudents);
+            renderAvailableStudents();
+        }
+    }
+
+    function saveStudentChanges() {
+        if (studentChanges.add.length === 0 && studentChanges.remove.length === 0) {
+            alert('No changes to save');
+            return;
+        }
+
+        const data = {
+            student_ids: currentStudents.map(s => s.id)
+        };
+
+        fetch(`/api/classes/${currentClassId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    alert('Student changes saved successfully!');
+                    closeStudentManagementModal();
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving changes. Please try again.');
+            });
+    }
+
+    // Cancel Modal Functions
+    function showCancelModal(classId, className, classTime) {
+        currentClassId = classId;
+        document.getElementById('cancelClassName').textContent = className;
+        document.getElementById('cancelClassTime').textContent = classTime;
+
+        const modal = document.getElementById('cancelClassModal');
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+    }
+
+    function closeCancelClassModal() {
+        const modal = document.getElementById('cancelClassModal');
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+        document.getElementById('cancelClassForm').reset();
+    }
+
+    // Bulk Selection Functions
+    let bulkSelectMode = false;
+    let selectedClasses = [];
+
+    function toggleBulkSelectMode() {
+        bulkSelectMode = !bulkSelectMode;
+
+        const toggleButton = document.getElementById('bulkSelectToggle');
+        const toggleText = document.getElementById('bulkSelectText');
+        const table = document.querySelector('.table-modern');
+        const bulkColumns = document.querySelectorAll('.bulk-select-column');
+
+        if (bulkSelectMode) {
+            // Enter bulk select mode
+            table.classList.add('bulk-select-mode');
+            bulkColumns.forEach(col => {
+                col.style.display = 'table-cell';
+                col.classList.add('animate-slide-in-left');
+            });
+            toggleButton.classList.add('btn-active');
+            toggleText.textContent = 'Cancel Selection';
+
+            // Animate button change using safe animation system
+            if (window.MicroAnimations) {
+                MicroAnimations.safeAddAnimation(toggleButton, 'animate-bounce-in', 500);
+            }
+        } else {
+            // Exit bulk select mode
+            table.classList.remove('bulk-select-mode');
+            bulkColumns.forEach(col => {
+                col.style.display = 'none';
+                col.classList.remove('animate-slide-in-left');
+            });
+            toggleButton.classList.remove('btn-active');
+            toggleText.textContent = 'Select Classes';
+
+            // Clear selections
+            selectedClasses = [];
+            document.querySelectorAll('.class-select-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAllClasses').checked = false;
+
+            // Hide cancel button
+            const cancelButton = document.getElementById('cancelSelectedButton');
+            cancelButton.style.display = 'none';
+            cancelButton.classList.add('hidden');
+
+            closeBulkCancelPanel();
+        }
+    }
+
+    function toggleSelectAll() {
+        const selectAllCheckbox = document.getElementById('selectAllClasses');
+        const classCheckboxes = document.querySelectorAll('.class-select-checkbox');
+
+        classCheckboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+            // Add animation to each checkbox
+            if (selectAllCheckbox.checked) {
+                checkbox.parentElement.parentElement.classList.add('animate-fade-in-up');
+            }
+        });
+
+        updateBulkSelectCount();
+    }
+
+    function updateBulkSelectCount() {
+        const checkedBoxes = document.querySelectorAll('.class-select-checkbox:checked');
+
+        selectedClasses = Array.from(checkedBoxes).map(cb => ({
+            id: cb.dataset.classId,
+            title: cb.dataset.classTitle
+        }));
+
+        const count = selectedClasses.length;
+
+        // Update count displays
+        const headerCount = document.getElementById('headerSelectedCount');
+        const cancelButton = document.getElementById('cancelSelectedButton');
+
+        if (headerCount) {
+            headerCount.textContent = count;
+        }
+
+        if (!cancelButton) {
+            console.error('Cancel button not found');
+            return;
+        }
+
+        // Show/hide the cancel selected button based on count
+        if (count > 0) {
+            cancelButton.style.display = 'inline-flex';
+            cancelButton.classList.remove('hidden');
+            if (window.MicroAnimations) {
+                MicroAnimations.safeAddAnimation(cancelButton, 'animate-slide-in-right', 300);
+            }
+        } else {
+            if (window.MicroAnimations && MicroAnimations.safeAddAnimation(cancelButton, 'animate-fade-out', 200)) {
+                setTimeout(() => {
+                    cancelButton.style.display = 'none';
+                    cancelButton.classList.add('hidden');
+                }, 200);
+            } else {
+                cancelButton.style.display = 'none';
+                cancelButton.classList.add('hidden');
+            }
+
+            // Also close panel if it's open
+            closeBulkCancelPanel();
+        }
+
+        // Update panel count if panel is open
+        const panelCount = document.getElementById('selectedClassCount');
+        const footerCount = document.getElementById('footerSelectedCount');
+        if (panelCount) {
+            panelCount.textContent = count;
+        }
+        if (footerCount) {
+            footerCount.textContent = count;
+        }
+    }
+
+    function showBulkCancelPanel() {
+        const panel = document.getElementById('bulkCancelPanel');
+        panel.style.display = 'block';
+        panel.classList.remove('hidden');
+
+        // Add animation
+        setTimeout(() => {
+            panel.classList.add('animate-slide-in-up');
+        }, 10);
+    }
+
+    function closeBulkCancelPanel() {
+        const panel = document.getElementById('bulkCancelPanel');
+        if (!panel.classList.contains('hidden')) {
+            panel.classList.add('animate-fade-out');
+
+            setTimeout(() => {
+                panel.style.display = 'none';
+                panel.classList.add('hidden');
+                panel.classList.remove('animate-fade-out', 'animate-slide-in-up');
+                document.getElementById('bulkCancelForm').reset();
+            }, 300);
+        }
+    }
+
+    function refreshClasses() {
+        location.reload();
+    }
+
+    // Handle single class cancellation
+    const cancelClassForm = document.getElementById('cancelClassForm');
+    if (cancelClassForm) {
+        cancelClassForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            if (!currentClassId) return;
+
+            const formData = new FormData(this);
+            const data = {
+                reason: formData.get('reason'),
+                cancellation_type: formData.get('cancellation_type'),
+                refund_required: formData.has('refund_required'),
+                send_notifications: formData.has('send_notifications')
+            };
+
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="icon-loader"></i> Cancelling...';
+            submitBtn.disabled = true;
+
+            const token = getAuthToken();
+
+            fetch(`/api/classes/${currentClassId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                    } else {
+                        alert('Class cancelled successfully!');
+                        closeCancelClassModal();
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error cancelling class. Please try again.');
+                })
+                .finally(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                });
+        });
+    } else {
+        console.error('Cancel class form not found');
+    }
+
+    // Handle bulk cancellation
+    const bulkCancelForm = document.getElementById('bulkCancelForm');
+    if (bulkCancelForm) {
+        bulkCancelForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+
+            if (selectedClasses.length === 0) {
+                alert('Please select at least one class to cancel.');
+                return;
+            }
+
+            const data = {
+                class_ids: selectedClasses.map(cls => cls.id),
+                reason: formData.get('reason'),
+                refund_required: formData.has('refund_required'),
+                send_notifications: formData.has('send_notifications')
+            };
+
+            // Show loading state with animation
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = `
+        <div class="loading-spinner" style="width: 16px; height: 16px; margin-right: 8px; display: inline-block;"></div>
+        Cancelling...
+    `;
+            submitBtn.disabled = true;
+            submitBtn.classList.add('animate-pulse');
+
+            const token = getAuthToken();
+
+            fetch('/api/classes/bulk-cancel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                        // Add shake animation for error
+                        submitBtn.classList.add('animate-shake');
+                        setTimeout(() => submitBtn.classList.remove('animate-shake'), 500);
+                    } else {
+                        const results = data.results;
+                        alert(`Cancelled ${results.successful.length} classes successfully. ${results.failed.length} failed.`);
+
+                        // Add success animation and close panel
+                        closeBulkCancelPanel();
+
+                        // Clear selections but stay in bulk select mode
+                        selectedClasses = [];
+                        document.querySelectorAll('.class-select-checkbox').forEach(cb => cb.checked = false);
+                        document.getElementById('selectAllClasses').checked = false;
+                        updateBulkSelectCount();
+
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error with bulk cancellation. Please try again.');
+                    submitBtn.classList.add('animate-shake');
+                    setTimeout(() => submitBtn.classList.remove('animate-shake'), 500);
+                })
+                .finally(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('animate-pulse');
+                });
+        });
+    } else {
+        console.error('Bulk cancel form not found');
+    }
+
+    // Actions Dropdown (matching users page pattern)
+    function toggleActionDropdown(button) {
+        const dropdown = button.parentElement;
+        const menu = dropdown.querySelector('.actions-menu');
+        const isOpen = menu.classList.contains('show');
+
+        // Close all other dropdowns
+        document.querySelectorAll('.actions-menu.show').forEach(openMenu => {
+            if (openMenu !== menu) {
+                openMenu.classList.remove('show');
+            }
+        });
+
+        // Toggle current dropdown
+        menu.classList.toggle('show', !isOpen);
+
+        // Close dropdown when clicking outside
+        if (!isOpen) {
+            setTimeout(() => {
+                document.addEventListener('click', function closeDropdown(e) {
+                    if (!dropdown.contains(e.target)) {
+                        menu.classList.remove('show');
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                });
+            }, 0);
+        }
+    }
+
+    // Close modals when clicking outside (matching users page pattern)
+    document.getElementById('viewClassModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeViewClassModal();
+        }
+    });
+
+    document.getElementById('cancelClassModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeCancelClassModal();
+        }
+    });
+
+    document.getElementById('bulkCancelPanel').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeBulkCancelPanel();
+        }
+    });
+</script>
+{% endblock %}

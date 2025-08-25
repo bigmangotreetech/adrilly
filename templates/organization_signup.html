@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join {{ organization.name }} - Adrilly Sports</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        .signup-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .org-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #e3f2fd;
+        }
+        
+        .org-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+            object-fit: cover;
+        }
+        
+        .org-banner {
+            width: 100%;
+            height: 150px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            object-fit: cover;
+        }
+        
+        .org-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1565c0;
+            margin-bottom: 0.5rem;
+        }
+        
+        .org-description {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        .activities-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        
+        .activity-tag {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .form-section {
+            margin-top: 2rem;
+        }
+        
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .center-code-info {
+            background: #fff3e0;
+            border: 1px solid #ffb74d;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .center-code-info .icon {
+            color: #f57c00;
+            margin-right: 0.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .required {
+            color: #d32f2f;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #1565c0;
+            box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.1);
+        }
+        
+        .center-code-input {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        
+        .btn-signup {
+            width: 100%;
+            background: linear-gradient(135deg, #1565c0, #42a5f5);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        .btn-signup:hover {
+            background: linear-gradient(135deg, #0d47a1, #1976d2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(21, 101, 192, 0.3);
+        }
+        
+        .btn-signup:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .contact-info {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .help-text {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.3rem;
+        }
+        
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #c62828;
+        }
+        
+        .success-message {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #2e7d32;
+        }
+        
+        @media (max-width: 768px) {
+            .signup-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+            
+            .org-title {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <!-- Organization Header -->
+        <div class="org-header">
+            {% if organization.banner_url %}
+                <img src="{{ organization.banner_url }}" alt="{{ organization.name }} Banner" class="org-banner">
+            {% endif %}
+            
+            {% if organization.logo_url %}
+                <img src="{{ organization.logo_url }}" alt="{{ organization.name }} Logo" class="org-logo">
+            {% endif %}
+            
+            <h1 class="org-title">Join {{ organization.name }}</h1>
+            
+            {% if organization.description %}
+                <p class="org-description">{{ organization.description }}</p>
+            {% endif %}
+            
+            {% if organization.activities %}
+                <div class="activities-list">
+                    {% for activity in organization.activities %}
+                        <span class="activity-tag">{{ activity }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="{{ 'error-message' if category == 'error' else 'success-message' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Signup Form -->
+        <div class="form-section">
+            <h2 class="section-title">Create Your Account</h2>
+            
+            <div class="center-code-info">
+                <span class="icon">🔐</span>
+                <strong>Center Code Required:</strong> Please ask your coach or gym admin for the 6-digit center code to complete your registration.
+            </div>
+            
+            <form method="POST" action="{{ url_for('org_signup.submit_signup', slug=slug) }}" id="signupForm">
+                <input type="hidden" name="token" value="{{ token }}">
+                
+                <div class="form-group">
+                    <label for="name">Full Name <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" required maxlength="100" 
+                           placeholder="Enter your full name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone_number">Phone Number <span class="required">*</span></label>
+                    <input type="tel" id="phone_number" name="phone_number" required 
+                           placeholder="+1234567890 or 1234567890">
+                    <div class="help-text">Include country code (e.g., +91 for India, +1 for US)</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email Address (Optional)</label>
+                    <input type="email" id="email" name="email" maxlength="254"
+                           placeholder="your.email@example.com">
+                    <div class="help-text">Optional: For important notifications and updates</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="center_code">Center Code <span class="required">*</span></label>
+                    <input type="text" id="center_code" name="center_code" required 
+                           class="center-code-input" maxlength="6" pattern="[0-9]{6}"
+                           placeholder="000000">
+                    <div class="help-text">Ask your coach for the 6-digit verification code</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password (Optional)</label>
+                    <input type="password" id="password" name="password" minlength="10"
+                           placeholder="At least 10 characters with letters and numbers">
+                    <div class="help-text">Optional: If not set, you'll login with OTP only</div>
+                </div>
+                
+                <button type="submit" class="btn-signup">
+                    Join {{ organization.name }}
+                </button>
+            </form>
+        </div>
+        
+        <!-- Contact Information -->
+        {% if organization.contact_info or organization.address %}
+            <div class="contact-info">
+                <strong>Need help?</strong><br>
+                {% if organization.contact_info.phone %}
+                    📞 {{ organization.contact_info.phone }}<br>
+                {% endif %}
+                {% if organization.contact_info.email %}
+                    ✉️ {{ organization.contact_info.email }}<br>
+                {% endif %}
+                {% if organization.address.street or organization.address.city %}
+                    📍 {{ organization.address.street or '' }} {{ organization.address.city or '' }}
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    
+    <script>
+        // Form validation and enhancement
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
+            const centerCode = document.getElementById('center_code').value.trim();
+            const phoneNumber = document.getElementById('phone_number').value.trim();
+            const name = document.getElementById('name').value.trim();
+            
+            // Validate center code
+            if (!/^\d{6}$/.test(centerCode)) {
+                alert('Center code must be exactly 6 digits');
+                e.preventDefault();
+                return;
+            }
+            
+            // Validate phone number
+            const phoneRegex = /^\+?[1-9]\d{7,14}$/;
+            if (!phoneRegex.test(phoneNumber.replace(/[\s\-\(\)]/g, ''))) {
+                alert('Please enter a valid phone number');
+                e.preventDefault();
+                return;
+            }
+            
+            // Validate name
+            if (name.length < 2) {
+                alert('Please enter your full name');
+                e.preventDefault();
+                return;
+            }
+            
+            // Disable button to prevent double submission
+            const submitBtn = document.querySelector('.btn-signup');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Account...';
+        });
+        
+        // Center code input formatting
+        document.getElementById('center_code').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            if (value.length > 6) {
+                value = value.substring(0, 6);
+            }
+            e.target.value = value;
+        });
+        
+        // Phone number formatting helper
+        document.getElementById('phone_number').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^\d\+\-\(\)\s]/g, ''); // Keep only valid phone chars
+            e.target.value = value;
+        });
+        
+        // Password validation feedback
+        document.getElementById('password').addEventListener('input', function(e) {
+            const password = e.target.value;
+            const helpText = e.target.nextElementSibling;
+            
+            if (password.length === 0) {
+                helpText.textContent = 'Optional: If not set, you\'ll login with OTP only';
+                helpText.style.color = '#666';
+            } else if (password.length < 10) {
+                helpText.textContent = 'Password must be at least 10 characters';
+                helpText.style.color = '#d32f2f';
+            } else if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+                helpText.textContent = 'Password must contain both letters and numbers';
+                helpText.style.color = '#d32f2f';
+            } else {
+                helpText.textContent = 'Password looks good!';
+                helpText.style.color = '#2e7d32';
+            }
+        });
+    </script>
+</body>
+</html>

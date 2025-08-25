@@ -1,0 +1,979 @@
+{% extends "base.html" %}
+
+{% block title %}Organization Settings - Adrilly Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="page-header-modern">
+    <div class="page-header-content">
+        <div class="page-title-section">
+            <h1 class="page-title-modern">Organization Settings</h1>
+            <p class="page-subtitle-modern">Manage your organization profile and configuration</p>
+        </div>
+        <div class="page-header-actions">
+            <button type="button" class="btn btn-outline" onclick="resetForm()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Reset
+            </button>
+            <button type="submit" form="settingsForm" class="btn btn-primary">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Save Changes
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="settings-container">
+    <form method="POST" action="{{ url_for('web.organization_settings') }}" id="settingsForm" enctype="multipart/form-data">
+        <div class="settings-main">
+            <div class="card-modern">
+            <div class="card-header-modern">
+                <div class="card-title-section">
+                    <h3 class="card-title-modern">Organization Profile</h3>
+                    <p class="card-subtitle-modern">Basic information about your organization</p>
+                </div>
+                <div class="card-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-body-modern">
+                <div class="form-field-modern">
+                    <label for="name" class="form-label-modern">Organization Name</label>
+                    <input type="text" class="form-input-modern" id="name" name="name" 
+                           value="{{ org.name if org else '' }}" required>
+                    <div class="form-hint">The official name of your organization</div>
+                </div>
+                
+                <div class="form-field-modern">
+                    <label for="description" class="form-label-modern">Description</label>
+                    <textarea class="form-textarea-modern" id="description" name="description" rows="3" placeholder="Brief description of your organization...">{{ org.description if org else '' }}</textarea>
+                    <div class="form-hint">A short description that helps members understand your organization</div>
+                </div>
+                
+                <div class="form-grid-2">
+                    <div class="form-field-modern">
+                        <label for="logo" class="form-label-modern">Organization Logo</label>
+                        <div class="file-upload-container">
+                            <input type="file" class="form-file-modern" id="logo" name="logo" 
+                                   accept="image/*" onchange="previewImage(this, 'logoPreview')">
+                            <div class="file-upload-placeholder" onclick="document.getElementById('logo').click()">
+                                <div class="upload-icon">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                </div>
+                                <div class="upload-text">
+                                    <span class="upload-primary">Click to upload logo</span>
+                                    <span class="upload-secondary">PNG, JPG up to 10MB</span>
+                                </div>
+                            </div>
+                            <div class="image-preview" id="logoPreview" style="display: none;">
+                                <img src="" alt="Logo preview">
+                                <button type="button" class="remove-image" onclick="removeImage('logo', 'logoPreview')">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-hint">Upload your organization's logo (optional)</div>
+                    </div>
+                    <div class="form-field-modern">
+                        <label for="banner" class="form-label-modern">Banner Image</label>
+                        <div class="file-upload-container">
+                            <input type="file" class="form-file-modern" id="banner" name="banner" 
+                                   accept="image/*" onchange="previewImage(this, 'bannerPreview')">
+                            <div class="file-upload-placeholder" onclick="document.getElementById('banner').click()">
+                                <div class="upload-icon">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                </div>
+                                <div class="upload-text">
+                                    <span class="upload-primary">Click to upload banner</span>
+                                    <span class="upload-secondary">PNG, JPG up to 10MB</span>
+                                </div>
+                            </div>
+                            <div class="image-preview" id="bannerPreview" style="display: none;">
+                                <img src="" alt="Banner preview">
+                                <button type="button" class="remove-image" onclick="removeImage('banner', 'bannerPreview')">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-hint">Upload your organization's banner image (optional)</div>
+                    </div>
+                </div>
+                
+                <div class="form-field-modern">
+                    <label for="whatsapp_number" class="form-label-modern">WhatsApp Number</label>
+                    <input type="tel" class="form-input-modern" id="whatsapp_number" name="whatsapp_number" 
+                           value="{{ org.whatsapp_number if org else '' }}" placeholder="+1234567890">
+                    <div class="form-hint">WhatsApp number for communication with members</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-modern">
+            <div class="card-header-modern">
+                <div class="card-title-section">
+                    <h3 class="card-title-modern">Contact Information</h3>
+                    <p class="card-subtitle-modern">How members can reach your organization</p>
+                </div>
+                <div class="card-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-body-modern">
+                <div class="form-grid-2">
+                    <div class="form-field-modern">
+                        <label for="contact_email" class="form-label-modern">Email</label>
+                        <input type="email" class="form-input-modern" id="contact_email" name="contact_info[email]" 
+                               value="{{ org.contact_info.email if org and org.contact_info else '' }}" placeholder="contact@yourorg.com">
+                        <div class="form-hint">Primary email for inquiries</div>
+                    </div>
+                    <div class="form-field-modern">
+                        <label for="contact_phone" class="form-label-modern">Phone</label>
+                        <input type="tel" class="form-input-modern" id="contact_phone" name="contact_info[phone]" 
+                               value="{{ org.contact_info.phone if org and org.contact_info else '' }}" placeholder="+1234567890">
+                        <div class="form-hint">Primary phone number for contact</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-modern">
+            <div class="card-header-modern">
+                <div class="card-title-section">
+                    <h3 class="card-title-modern">Address</h3>
+                    <p class="card-subtitle-modern">Physical location of your organization</p>
+                </div>
+                <div class="card-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-body-modern">
+                <div class="form-field-modern">
+                    <label for="street" class="form-label-modern">Street Address</label>
+                    <input type="text" class="form-input-modern" id="street" name="address[street]" 
+                           value="{{ org.address.street if org and org.address else '' }}" placeholder="123 Main Street">
+                    <div class="form-hint">Street address and building number</div>
+                </div>
+                
+                <div class="form-grid-3">
+                    <div class="form-field-modern">
+                        <label for="city" class="form-label-modern">City</label>
+                        <input type="text" class="form-input-modern" id="city" name="address[city]" 
+                               value="{{ org.address.city if org and org.address else '' }}" placeholder="New York">
+                        <div class="form-hint">City name</div>
+                    </div>
+                    <div class="form-field-modern">
+                        <label for="state" class="form-label-modern">State</label>
+                        <input type="text" class="form-input-modern" id="state" name="address[state]" 
+                               value="{{ org.address.state if org and org.address else '' }}" placeholder="NY">
+                        <div class="form-hint">State or province</div>
+                    </div>
+                    <div class="form-field-modern">
+                        <label for="zip" class="form-label-modern">ZIP Code</label>
+                        <input type="text" class="form-input-modern" id="zip" name="address[zip]" 
+                               value="{{ org.address.zip if org and org.address else '' }}" placeholder="10001">
+                        <div class="form-hint">Postal code</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-modern">
+            <div class="card-header-modern">
+                <div class="card-title-section">
+                    <h3 class="card-title-modern">Activities Offered</h3>
+                    <p class="card-subtitle-modern">The activities and services your organization provides</p>
+                </div>
+                <div class="card-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-body-modern">
+                <div class="form-field-modern">
+                    <label for="activities" class="form-label-modern">Activities</label>
+                    <input type="text" class="form-input-modern" id="activities" name="activities"
+                           value="{% if org %}{% if org.activities %}{{ org.activities | join(', ') }}{% elif org.sports %}{{ org.sports | join(', ') }}{% endif %}{% endif %}"
+                           placeholder="e.g. Football, Basketball, Yoga, Chess, Academic Tuition, Dance">
+                    <div class="form-hint">Enter activities separated by commas (e.g., Football, Yoga, Chess, Academic Tuition)</div>
+                </div>
+                
+                <div class="activity-suggestions">
+                    <div class="activity-suggestions-header">
+                        <span class="suggestions-label">Popular Activities:</span>
+                    </div>
+                    <div class="activity-tags">
+                        <button type="button" class="activity-tag" onclick="addActivity('Football')">⚽ Football</button>
+                        <button type="button" class="activity-tag" onclick="addActivity('Basketball')">🏀 Basketball</button>
+                        <button type="button" class="activity-tag" onclick="addActivity('Tennis')">🎾 Tennis</button>
+                        <button type="button" class="activity-tag" onclick="addActivity('Swimming')">🏊 Swimming</button>
+                        <button type="button" class="activity-tag" onclick="addActivity('Yoga')">🧘 Yoga</button>
+                        <button type="button" class="activity-tag" onclick="addActivity('Dance')">💃 Dance</button>
+                        <button type="button" class="activity-tag" onclick="addActivity('Chess')">♟️ Chess</button>
+                        <button type="button" class="activity-tag" onclick="addActivity('Academic Tuition')">📚 Academic Tuition</button>
+                        <button type="button" class="activity-tag" onclick="addActivity('Martial Arts')">🥋 Martial Arts</button>
+                        <button type="button" class="activity-tag" onclick="addActivity('Cricket')">🏏 Cricket</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </form>
+    
+    <div class="settings-sidebar">
+        <div class="card-modern">
+            <div class="card-header-modern">
+                <div class="card-title-section">
+                    <h3 class="card-title-modern">Organization Stats</h3>
+                    <p class="card-subtitle-modern">Current organization metrics</p>
+                </div>
+                <div class="card-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-body-modern">
+                <div class="stats-grid">
+                    <div class="stat-card-modern">
+                        <div class="stat-value">{{ centers|length or 0 }}</div>
+                        <div class="stat-label">Training Centers</div>
+                    </div>
+                    <div class="stat-card-modern">
+                        <div class="stat-value">{{ org.user_count or 0 }}</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                    <div class="stat-card-modern">
+                        <div class="stat-value">{{ org.subscription_status|title if org else 'Unknown' }}</div>
+                        <div class="stat-label">Subscription</div>
+                    </div>
+                    {% if org and org.created_at %}
+                    <div class="stat-card-modern">
+                        <div class="stat-value">{{ org.created_at.strftime('%Y') }}</div>
+                        <div class="stat-label">Established</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-modern">
+            <div class="card-header-modern">
+                <div class="card-title-section">
+                    <h3 class="card-title-modern">Quick Actions</h3>
+                    <p class="card-subtitle-modern">Common management tasks</p>
+                </div>
+                <div class="card-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-body-modern">
+                <div class="quick-actions">
+                    <a href="{{ url_for('web.centers') }}" class="quick-action-btn">
+                        <div class="action-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-title">Manage Centers</div>
+                            <div class="action-subtitle">Training locations</div>
+                        </div>
+                    </a>
+                    <a href="{{ url_for('web.users') }}" class="quick-action-btn">
+                        <div class="action-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-title">Manage Users</div>
+                            <div class="action-subtitle">Staff and members</div>
+                        </div>
+                    </a>
+                    <a href="{{ url_for('web.calendar') }}" class="quick-action-btn">
+                        <div class="action-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-title">View Calendar</div>
+                            <div class="action-subtitle">Schedule overview</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+/* Settings Page Layout */
+.settings-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.settings-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.settings-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Form Grid Layouts */
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+}
+
+/* Card Icons */
+.card-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    opacity: 0.8;
+}
+
+.card-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Button Icons */
+.btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* Form Field Styles */
+.form-field-modern {
+    margin-bottom: 1.5rem;
+}
+
+.form-label-modern {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.form-input-modern, .form-textarea-modern {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease;
+    font-family: inherit;
+}
+
+.form-input-modern:focus, .form-textarea-modern:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+.form-textarea-modern {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-hint {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* File Upload Styles */
+.file-upload-container {
+    position: relative;
+}
+
+.form-file-modern {
+    display: none;
+}
+
+.file-upload-placeholder {
+    border: 2px dashed var(--border-primary);
+    border-radius: 8px;
+    padding: 2rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--bg-secondary);
+}
+
+.file-upload-placeholder:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-bg);
+}
+
+.upload-icon {
+    margin-bottom: 1rem;
+    color: var(--text-muted);
+}
+
+.upload-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+.upload-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.upload-primary {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.upload-secondary {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Image Preview */
+.image-preview {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-card);
+}
+
+.image-preview img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+}
+
+.remove-image {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.remove-image:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.remove-image svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Card Modern Styles */
+.card-modern {
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.5rem;
+}
+
+.card-header-modern {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.card-title-section {
+    flex: 1;
+}
+
+.card-title-modern {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.card-subtitle-modern {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.card-body-modern {
+    padding: 1.5rem 2rem;
+}
+
+/* Page Header Modern */
+.page-header-modern {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-primary);
+    margin-bottom: 2rem;
+}
+
+.page-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-title-section {
+    flex: 1;
+}
+
+.page-title-modern {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.page-subtitle-modern {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.page-header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* Activity Suggestions */
+.activity-suggestions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-primary);
+}
+
+.activity-suggestions-header {
+    margin-bottom: 0.75rem;
+}
+
+.suggestions-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.activity-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.activity-tag {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.activity-tag:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.stat-card-modern {
+    text-align: center;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-primary);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.quick-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.quick-action-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.action-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.action-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.action-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.action-title {
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.action-subtitle {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .settings-container {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .settings-sidebar {
+        order: -1;
+    }
+    
+    .form-grid-3 {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .settings-container {
+        padding: 0 0.5rem;
+    }
+    
+    .form-grid-2,
+    .form-grid-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .activity-tags {
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Handle form submission preprocessing
+document.getElementById('settingsForm').addEventListener('submit', function(e) {
+    // Parse activities from input field
+    const activitiesInput = document.getElementById('activities');
+    if (activitiesInput && activitiesInput.value.trim()) {
+        const activities = activitiesInput.value.split(',').map(s => s.trim()).filter(s => s);
+        // Add activities as separate form fields for backward compatibility
+        activities.forEach(activity => {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'sports';
+            hiddenInput.value = activity.toLowerCase();
+            this.appendChild(hiddenInput);
+        });
+    }
+});
+
+function addActivity(activityName) {
+    const activitiesInput = document.getElementById('activities');
+    const currentValue = activitiesInput.value.trim();
+    
+    // Check if activity is already added
+    const activities = currentValue ? currentValue.split(',').map(s => s.trim()) : [];
+    if (activities.includes(activityName)) {
+        return; // Activity already exists
+    }
+    
+    // Add the activity
+    if (currentValue) {
+        activitiesInput.value = currentValue + ', ' + activityName;
+    } else {
+        activitiesInput.value = activityName;
+    }
+    
+    // Trigger input event to update any preview
+    activitiesInput.dispatchEvent(new Event('input'));
+}
+
+function resetForm() {
+    if (confirm('Are you sure you want to reset all changes? This will restore the original values.')) {
+        document.getElementById('settingsForm').reset();
+    }
+}
+
+// Auto-save preview functionality (optional)
+document.addEventListener('DOMContentLoaded', function() {
+    // Add input listeners for real-time preview updates
+    const inputs = document.querySelectorAll('#settingsForm input, #settingsForm textarea');
+    inputs.forEach(input => {
+        input.addEventListener('input', updatePreview);
+    });
+});
+
+function updatePreview() {
+    // This can be extended to show live preview of changes
+    console.log('Form updated - preview could be updated here');
+}
+
+// File upload functions
+async function previewImage(input, previewId) {
+    const file = input.files[0];
+    const preview = document.getElementById(previewId);
+    const placeholder = input.parentElement.querySelector('.file-upload-placeholder');
+    
+    if (file) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            Adrilly.showAlert('Please select an image file.', 'error');
+            input.value = '';
+            return;
+        }
+        
+        // Validate file size (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            Adrilly.showAlert('File size must be less than 10MB.', 'error');
+            input.value = '';
+            return;
+        }
+        
+        // Show local preview first
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = preview.querySelector('img');
+            img.src = e.target.result;
+            placeholder.style.display = 'none';
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+        
+        // Upload to S3
+        await uploadImageToS3(file, input.id, previewId);
+    }
+}
+
+async function uploadImageToS3(file, inputId, previewId) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Determine upload type and endpoint
+    let uploadType, endpoint;
+    if (inputId === 'logo') {
+        uploadType = 'logo';
+        endpoint = `/api/uploads/organization/${organizationId}/logo`;
+    } else if (inputId === 'banner') {
+        uploadType = 'banner';
+        endpoint = `/api/uploads/organization/${organizationId}/banner`;
+    } else {
+        Adrilly.showAlert('Unknown upload type', 'error');
+        return;
+    }
+    
+    try {
+        // Show uploading state
+        const preview = document.getElementById(previewId);
+        const img = preview.querySelector('img');
+        const originalSrc = img.src;
+        
+        // Add uploading overlay
+        const uploadingOverlay = document.createElement('div');
+        uploadingOverlay.className = 'uploading-overlay';
+        uploadingOverlay.innerHTML = `
+            <div class="upload-spinner"></div>
+            <span>Uploading...</span>
+        `;
+        preview.appendChild(uploadingOverlay);
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Update the image with S3 URL
+            img.src = result[uploadType + '_url'];
+            
+            // Store the URL for form submission
+            const hiddenInput = document.getElementById(inputId + '_url') || createHiddenInput(inputId + '_url');
+            hiddenInput.value = result[uploadType + '_url'];
+            
+            Adrilly.showAlert(`${uploadType.charAt(0).toUpperCase() + uploadType.slice(1)} uploaded successfully!`, 'success');
+        } else {
+            // Restore original preview on error
+            img.src = originalSrc;
+            Adrilly.showAlert(result.error || `Failed to upload ${uploadType}`, 'error');
+        }
+        
+        // Remove uploading overlay
+        uploadingOverlay.remove();
+        
+    } catch (error) {
+        console.error(`Error uploading ${uploadType}:`, error);
+        Adrilly.showAlert(`Failed to upload ${uploadType}. Please try again.`, 'error');
+        
+        // Remove uploading overlay if it exists
+        const uploadingOverlay = preview.querySelector('.uploading-overlay');
+        if (uploadingOverlay) {
+            uploadingOverlay.remove();
+        }
+    }
+}
+
+function createHiddenInput(name) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.id = name;
+    input.name = name;
+    document.getElementById('settingsForm').appendChild(input);
+    return input;
+}
+
+function removeImage(inputId, previewId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+    const placeholder = input.parentElement.querySelector('.file-upload-placeholder');
+    
+    input.value = '';
+    preview.style.display = 'none';
+    placeholder.style.display = 'block';
+}
+
+// Show existing images on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if there are existing logo/banner URLs and show them
+    {% if org and org.logo_url %}
+    const logoPreview = document.getElementById('logoPreview');
+    const logoPlaceholder = document.querySelector('#logo').parentElement.querySelector('.file-upload-placeholder');
+    if (logoPreview && logoPlaceholder) {
+        logoPreview.querySelector('img').src = '{{ org.logo_url }}';
+        logoPlaceholder.style.display = 'none';
+        logoPreview.style.display = 'block';
+    }
+    {% endif %}
+    
+    {% if org and org.banner_url %}
+    const bannerPreview = document.getElementById('bannerPreview');
+    const bannerPlaceholder = document.querySelector('#banner').parentElement.querySelector('.file-upload-placeholder');
+    if (bannerPreview && bannerPlaceholder) {
+        bannerPreview.querySelector('img').src = '{{ org.banner_url }}';
+        bannerPlaceholder.style.display = 'none';
+        bannerPreview.style.display = 'block';
+    }
+    {% endif %}
+});
+</script>
+{% endblock %} 

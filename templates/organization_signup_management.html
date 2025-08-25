@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+
+{% block title %}Signup Link Management - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="icon-link"></i>
+            Signup Link Management
+        </h1>
+        <p class="page-description">Manage your organization's student signup link and settings</p>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Signup Link Card -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="icon-share"></i>
+                        Shareable Signup Link
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="signup-link-section">
+                        <label class="form-label">Your Organization's Signup URL:</label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control signup-url" 
+                                   value="{{ organization.get_signup_url() }}" 
+                                   readonly 
+                                   id="signupUrl">
+                            <button class="btn btn-secondary" 
+                                    type="button" 
+                                    onclick="copyToClipboard('signupUrl')"
+                                    title="Copy to clipboard">
+                                <i class="icon-copy"></i> Copy
+                            </button>
+                        </div>
+                        <div class="help-text">
+                            Share this link with potential students. They'll need the center code to complete registration.
+                        </div>
+                    </div>
+
+                    <div class="center-code-section">
+                        <label class="form-label">Center Verification Code:</label>
+                        <div class="center-code-display">
+                            <span class="center-code">{{ organization.center_code }}</span>
+                            <button class="btn btn-sm btn-outline-secondary" 
+                                    onclick="copyToClipboard('centerCodeText')"
+                                    title="Copy center code">
+                                <i class="icon-copy"></i>
+                            </button>
+                        </div>
+                        <input type="hidden" id="centerCodeText" value="{{ organization.center_code }}">
+                        <div class="help-text">
+                            Students need this 6-digit code to verify they belong to your organization.
+                        </div>
+                    </div>
+
+                    <div class="link-actions">
+                        <form method="POST" action="{{ url_for('web.regenerate_signup_credentials') }}" 
+                              onsubmit="return confirm('This will invalidate the current signup link and generate new credentials. Are you sure?')">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="icon-refresh"></i>
+                                Regenerate Credentials
+                            </button>
+                        </form>
+                        <div class="help-text">
+                            Use this if you suspect the link has been compromised or want to change the center code.
+                        </div>
+                    </div>
+
+                    <div class="qr-code-section">
+                        <h4>QR Code</h4>
+                        <div class="qr-code-container">
+                            <canvas id="qrcode"></canvas>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="downloadQRCode()">
+                            <i class="icon-download"></i>
+                            Download QR Code
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Card -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="icon-chart"></i>
+                        Signup Statistics
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ stats.total_students }}</div>
+                        <div class="stat-label">Total Students</div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-number">{{ stats.signups_today }}</div>
+                        <div class="stat-label">Signups Today</div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-number">{{ stats.signups_week }}</div>
+                        <div class="stat-label">This Week</div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-number">{{ stats.signups_month }}</div>
+                        <div class="stat-label">This Month</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Card -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="icon-settings"></i>
+                        Signup Settings
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('web.update_signup_settings') }}">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <input type="checkbox" 
+                                               name="signup_enabled" 
+                                               {{ 'checked' if organization.signup_enabled else '' }}>
+                                        Enable Student Signups
+                                    </label>
+                                    <div class="help-text">
+                                        When disabled, the signup link will show an error message.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="form-label">Max Signups Per Day</label>
+                                    <input type="number" 
+                                           name="max_signups_per_day" 
+                                           class="form-control" 
+                                           value="{{ organization.max_signups_per_day }}"
+                                           min="1" 
+                                           max="1000" 
+                                           required>
+                                    <div class="help-text">
+                                        Limit daily signups to prevent spam (1-1000).
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <input type="checkbox" 
+                                               name="signup_requires_approval" 
+                                               {{ 'checked' if organization.signup_requires_approval else '' }}>
+                                        Require Admin Approval
+                                    </label>
+                                    <div class="help-text">
+                                        New students will need approval before they can access the system.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="icon-save"></i>
+                                Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions Card -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="icon-info"></i>
+                        How to Use
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <ol class="instructions-list">
+                        <li>
+                            <strong>Share the Signup Link:</strong>
+                            Copy the signup URL and share it with potential students via WhatsApp, email, or social media.
+                        </li>
+                        <li>
+                            <strong>Provide the Center Code:</strong>
+                            When students visit the signup page, they'll need the 6-digit center code to verify they belong to your organization.
+                        </li>
+                        <li>
+                            <strong>QR Code Option:</strong>
+                            Print or share the QR code for easy access. Students can scan it with their phone camera.
+                        </li>
+                        <li>
+                            <strong>Monitor Signups:</strong>
+                            Check the statistics regularly to track new student registrations.
+                        </li>
+                        <li>
+                            <strong>Security:</strong>
+                            If you suspect the link has been compromised, regenerate the credentials to get a new link and center code.
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.signup-link-section {
+    margin-bottom: 2rem;
+}
+
+.signup-url {
+    font-family: monospace;
+    font-size: 0.9em;
+    background-color: #f8f9fa;
+}
+
+.center-code-section {
+    margin-bottom: 2rem;
+}
+
+.center-code-display {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.center-code {
+    font-size: 2rem;
+    font-weight: bold;
+    font-family: monospace;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    letter-spacing: 0.2em;
+}
+
+.link-actions {
+    margin-bottom: 2rem;
+}
+
+.qr-code-section h4 {
+    margin-bottom: 1rem;
+}
+
+.qr-code-container {
+    background: white;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.instructions-list {
+    line-height: 1.8;
+}
+
+.instructions-list li {
+    margin-bottom: 1rem;
+}
+
+.help-text {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 0.3rem;
+}
+
+.form-actions {
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+    margin-top: 1.5rem;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script>
+// Generate QR code
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('qrcode');
+    const signupUrl = document.getElementById('signupUrl').value;
+    
+    QRCode.toCanvas(canvas, signupUrl, {
+        width: 200,
+        height: 200,
+        margin: 2,
+        color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+        }
+    }, function (error) {
+        if (error) console.error(error);
+    });
+});
+
+// Copy to clipboard function
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    const text = element.value || element.textContent;
+    
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function() {
+            showCopySuccess();
+        }, function(err) {
+            fallbackCopy(text);
+        });
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showCopySuccess();
+    } catch (err) {
+        console.error('Copy failed:', err);
+        alert('Copy failed. Please select and copy manually.');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+function showCopySuccess() {
+    // Create temporary success message
+    const successMsg = document.createElement('div');
+    successMsg.textContent = 'Copied to clipboard!';
+    successMsg.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        z-index: 1050;
+    `;
+    
+    document.body.appendChild(successMsg);
+    
+    setTimeout(function() {
+        document.body.removeChild(successMsg);
+    }, 2000);
+}
+
+// Download QR code
+function downloadQRCode() {
+    const canvas = document.getElementById('qrcode');
+    const link = document.createElement('a');
+    link.download = '{{ organization.name }}_signup_qr.png';
+    link.href = canvas.toDataURL();
+    link.click();
+}
+</script>
+{% endblock %}

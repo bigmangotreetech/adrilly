@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block title %}Calendar - Adrilly Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Training Calendar</h1>
+    <p class="page-subtitle">View and manage your training schedule</p>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">Schedule Overview</h3>
+        <div class="btn-group">
+            {% if session.user_role in ['coach', 'coach_admin'] %}
+            <a href="{{ url_for('web.schedule_class') }}" class="btn btn-primary">Schedule Class</a>
+            {% endif %}
+            <button class="btn btn-outline" onclick="toggleView()">Toggle View</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Calendar Views -->
+        <div id="weekView" class="calendar-view">
+            <h4>Weekly Schedule</h4>
+            <div class="week-navigation">
+                <button class="btn btn-sm btn-outline" onclick="changeWeek(-1)">← Previous</button>
+                <span id="currentWeek">Current Week</span>
+                <button class="btn btn-sm btn-outline" onclick="changeWeek(1)">Next →</button>
+            </div>
+            
+            <div class="weekly-grid">
+                <div class="time-column">
+                    <div class="time-slot">6:00 AM</div>
+                    <div class="time-slot">7:00 AM</div>
+                    <div class="time-slot">8:00 AM</div>
+                    <div class="time-slot">9:00 AM</div>
+                    <div class="time-slot">10:00 AM</div>
+                    <div class="time-slot">11:00 AM</div>
+                    <div class="time-slot">12:00 PM</div>
+                    <div class="time-slot">1:00 PM</div>
+                    <div class="time-slot">2:00 PM</div>
+                    <div class="time-slot">3:00 PM</div>
+                    <div class="time-slot">4:00 PM</div>
+                    <div class="time-slot">5:00 PM</div>
+                    <div class="time-slot">6:00 PM</div>
+                    <div class="time-slot">7:00 PM</div>
+                    <div class="time-slot">8:00 PM</div>
+                </div>
+                <div class="days-container">
+                    <div class="day-column" data-day="monday">
+                        <div class="day-header">Monday</div>
+                        <div class="day-slots" id="monday-slots"></div>
+                    </div>
+                    <div class="day-column" data-day="tuesday">
+                        <div class="day-header">Tuesday</div>
+                        <div class="day-slots" id="tuesday-slots"></div>
+                    </div>
+                    <div class="day-column" data-day="wednesday">
+                        <div class="day-header">Wednesday</div>
+                        <div class="day-slots" id="wednesday-slots"></div>
+                    </div>
+                    <div class="day-column" data-day="thursday">
+                        <div class="day-header">Thursday</div>
+                        <div class="day-slots" id="thursday-slots"></div>
+                    </div>
+                    <div class="day-column" data-day="friday">
+                        <div class="day-header">Friday</div>
+                        <div class="day-slots" id="friday-slots"></div>
+                    </div>
+                    <div class="day-column" data-day="saturday">
+                        <div class="day-header">Saturday</div>
+                        <div class="day-slots" id="saturday-slots"></div>
+                    </div>
+                    <div class="day-column" data-day="sunday">
+                        <div class="day-header">Sunday</div>
+                        <div class="day-slots" id="sunday-slots"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="listView" class="calendar-view hidden">
+            <h4>Upcoming Classes</h4>
+            <div class="classes-list">
+                {% if events %}
+                {% for event in events %}
+                <div class="class-item" data-sport="{{ event.sport }}">
+                    <div class="class-time">
+                        <strong>{{ event.start[:10] }}</strong><br>
+                        <small>{{ event.start[11:16] }} ({{ event.duration }}min)</small>
+                    </div>
+                    <div class="class-details">
+                        <h5>{{ event.title }}</h5>
+                        <p>Coach: {{ event.coach }}</p>
+                        {% if event.location.name %}
+                        <p>Location: {{ event.location.name }}</p>
+                        {% endif %}
+                        <span class="badge badge-{{ 'success' if event.status == 'scheduled' else 'warning' if event.status == 'ongoing' else 'secondary' }}">
+                            {{ event.status|title }}
+                        </span>
+                        <span class="badge badge-primary">{{ event.sport|title }}</span>
+                    </div>
+                    <div class="class-actions">
+                        {% if session.user_role in ['coach', 'coach_admin'] %}
+                        <button class="btn btn-sm btn-outline" onclick="editClass('{{ event.id }}')">Edit</button>
+                        <button class="btn btn-sm btn-primary" onclick="markAttendance('{{ event.id }}')">Attendance</button>
+                        {% endif %}
+                        <button class="btn btn-sm btn-secondary" onclick="viewClass('{{ event.id }}')">View</button>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center">
+                    <p class="text-muted">No classes scheduled.</p>
+                    {% if session.user_role in ['coach', 'coach_admin'] %}
+                    <a href="{{ url_for('web.schedule_class') }}" class="btn btn-primary">Schedule Your First Class</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="card mt-3">
+    <div class="card-body">
+        <h5>Legend</h5>
+        <div class="legend-items">
+            <span class="legend-item"><span class="badge badge-success">Scheduled</span> Upcoming class</span>
+            <span class="legend-item"><span class="badge badge-warning">Ongoing</span> Class in progress</span>
+            <span class="legend-item"><span class="badge badge-secondary">Completed</span> Finished class</span>
+            <span class="legend-item"><span class="badge badge-danger">Cancelled</span> Cancelled class</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+.calendar-view {
+    margin-bottom: 2rem;
+}
+
+.week-navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.weekly-grid {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.time-column {
+    flex: 0 0 80px;
+    background: var(--bg-tertiary);
+    border-right: 1px solid var(--border-color);
+}
+
+.time-slot {
+    height: 60px;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+}
+
+.days-container {
+    flex: 1;
+    display: flex;
+}
+
+.day-column {
+    flex: 1;
+    border-right: 1px solid var(--border-color);
+}
+
+.day-column:last-child {
+    border-right: none;
+}
+
+.day-header {
+    height: 40px;
+    padding: 0.5rem;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+.day-slots {
+    position: relative;
+    height: 900px; /* 15 hours * 60px */
+}
+
+.class-slot {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.class-slot:hover {
+    opacity: 0.8;
+}
+
+.classes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.class-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+}
+
+.class-time {
+    flex: 0 0 120px;
+    text-align: center;
+}
+
+.class-details {
+    flex: 1;
+}
+
+.class-details h5 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.class-details p {
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.class-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .weekly-grid {
+        flex-direction: column;
+    }
+    
+    .days-container {
+        flex-direction: column;
+    }
+    
+    .day-column {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .class-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .class-time {
+        flex: none;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentView = 'week';
+let currentWeekOffset = 0;
+
+// Calendar data from server
+const calendarEvents = {{ events|tojson if events else '[]' }};
+
+function toggleView() {
+    const weekView = document.getElementById('weekView');
+    const listView = document.getElementById('listView');
+    
+    if (currentView === 'week') {
+        weekView.classList.add('hidden');
+        listView.classList.remove('hidden');
+        currentView = 'list';
+    } else {
+        listView.classList.add('hidden');
+        weekView.classList.remove('hidden');
+        currentView = 'week';
+    }
+}
+
+function changeWeek(direction) {
+    currentWeekOffset += direction;
+    updateWeekView();
+}
+
+function updateWeekView() {
+    // Update week display
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() + (currentWeekOffset * 7));
+    
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    
+    document.getElementById('currentWeek').textContent = 
+        `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
+    
+    // Clear existing events
+    document.querySelectorAll('.day-slots').forEach(slot => {
+        slot.innerHTML = '';
+    });
+    
+    // Render events for current week
+    calendarEvents.forEach(event => {
+        renderEventInWeek(event, weekStart);
+    });
+}
+
+function renderEventInWeek(event, weekStart) {
+    const eventDate = new Date(event.start);
+    const daysDiff = Math.floor((eventDate - weekStart) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff >= 0 && daysDiff < 7) {
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const dayName = dayNames[eventDate.getDay()];
+        const daySlots = document.getElementById(`${dayName}-slots`);
+        
+        if (daySlots) {
+            const hour = eventDate.getHours();
+            const minutes = eventDate.getMinutes();
+            const top = ((hour - 6) * 60) + (minutes); // 6 AM = 0px
+            
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'class-slot';
+            eventDiv.style.top = `${top}px`;
+            eventDiv.style.height = `${event.duration}px`;
+            eventDiv.innerHTML = `
+                <div><strong>${event.title}</strong></div>
+                <div>${event.coach}</div>
+                <div>${event.sport}</div>
+            `;
+            eventDiv.onclick = () => viewClass(event.id);
+            
+            daySlots.appendChild(eventDiv);
+        }
+    }
+}
+
+function viewClass(classId) {
+    window.location.href = `/classes/${classId}`;
+}
+
+function editClass(classId) {
+    window.location.href = `/classes/${classId}/edit`;
+}
+
+function markAttendance(classId) {
+    window.location.href = `/classes/${classId}/attendance`;
+}
+
+// Initialize calendar
+document.addEventListener('DOMContentLoaded', function() {
+    updateWeekView();
+});
+</script>
+{% endblock %} 

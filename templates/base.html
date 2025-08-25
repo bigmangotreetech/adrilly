@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Adrilly Sports Coaching Management{% endblock %}</title>
+    <!-- Design System CSS - Modern UI Framework -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
+    <!-- Consistent Scrollbar Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/scrollbar-styles.css') }}">
+    <!-- Main Application CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    <!-- Google Fonts for better typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+
+    
+    <!-- Page Loading Animation CSS -->
+    <style>
+        /* Page Loading Animation */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* glass effect */
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            opacity: 1;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .page-loader.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loader-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .loader-logo {
+            font-size: 10rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            animation: logoFloat 2s ease-in-out infinite;
+            letter-spacing: -0.02em;
+        }
+        
+        .loader-spinner {
+            width: 100px;
+            height: 100px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: loaderSpin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        .loader-text {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            animation: textPulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes loaderSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes textPulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+        
+        /* Hide content until loaded */
+        .app-content {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        
+        .app-content.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Micro Animations */
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        .animate-slide-up {
+            animation: slideUp 0.5s ease-out forwards;
+        }
+        
+        .animate-scale-in {
+            animation: scaleIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes scaleIn {
+            from { 
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-primary antialiased scrollbar-primary">
+    <!-- Page Loading Animation -->
+    <div id="pageLoader" class="page-loader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Loading your workspace...</div>
+        </div>
+    </div>
+    
+    <div class="" id="appContent">
+    {% if session.get('user_id') %}
+    <!-- Header -->
+    <header class="header">
+        <div class="">
+            <div class="header-content">
+                <a href="{{ url_for('web.dashboard') }}" class="logo">Adrilly</a>
+                
+                <nav class="nav">
+                    <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+                    
+                </nav>
+                
+                
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-nav">
+            <a href="{{ url_for('web.dashboard') }}" class="{% if request.endpoint == 'web.dashboard' %}active{% endif %}">Dashboard</a>
+            
+            {% if session.role == 'super_admin' %}
+            <div class="nav-group">
+                <div class="nav-group-title">Platform Management</div>
+                <a href="{{ url_for('web.organizations') }}" class="{% if request.endpoint == 'web.organizations' %}active{% endif %}">Organizations</a>
+                <a href="{{ url_for('web.users') }}" class="{% if request.endpoint == 'web.users' %}active{% endif %}">All Users</a>
+            </div>
+            {% endif %}
+            
+            {% if session.role in ['org_admin', 'coach_admin'] %}
+            <div class="nav-group">
+                <div class="nav-group-title">Management</div>
+                <a href="{{ url_for('web.users') }}" class="{% if request.endpoint == 'web.users' %}active{% endif %}">Users</a>
+                {% if session.role == 'org_admin' %}
+                <a href="{{ url_for('web.centers') }}" class="{% if request.endpoint == 'web.centers' %}active{% endif %}">Centers</a>
+                {% endif %}
+                <a href="{{ url_for('class_cancellation.class_management') }}" class="{% if request.endpoint == 'class_cancellation.class_management' %}active{% endif %}">Class Management</a>
+                <a href="{{ url_for('class_cancellation.holidays_management') }}" class="{% if request.endpoint == 'class_cancellation.holidays_management' %}active{% endif %}">Holidays</a>
+                <a href="{{ url_for('web.payments') }}" class="{% if request.endpoint == 'web.payments' %}active{% endif %}">Payments</a>
+                <a href="{{ url_for('payment_web.payment_management') }}" class="{% if request.endpoint == 'payment_web.payment_management' %}active{% endif %}">Payment Management</a>
+            </div>
+            {% endif %}
+            
+            {% if session.role in ['coach', 'coach_admin'] %}
+            <div class="nav-group">
+                <div class="nav-group-title">Teaching</div>
+                <a href="{{ url_for('web.classes') }}" class="{% if request.endpoint == 'web.classes' %}active{% endif %}">Classes</a>
+                <a href="{{ url_for('web.calendar') }}" class="{% if request.endpoint == 'web.calendar' %}active{% endif %}">Calendar</a>
+            </div>
+            {% endif %}
+            
+            {% if session.role == 'student' %}
+            <div class="nav-group">
+                <div class="nav-group-title">My Learning</div>
+                <a href="{{ url_for('web.classes') }}" class="{% if request.endpoint == 'web.classes' %}active{% endif %}">My Classes</a>
+                <a href="{{ url_for('web.calendar') }}" class="{% if request.endpoint == 'web.calendar' %}active{% endif %}">My Calendar</a>
+                <a href="{{ url_for('web.equipment') }}" class="{% if request.endpoint == 'web.equipment' %}active{% endif %}">Equipment</a>
+            </div>
+            {% endif %}
+            
+            {% if session.role in ['org_admin', 'center_admin', 'coach', 'student'] %}
+            <div class="nav-group">
+                <div class="nav-group-title">Community</div>
+                <a href="{{ url_for('feed.feed_page') }}" class="{% if request.endpoint == 'feed.feed_page' %}active{% endif %}">Feed</a>
+                {% if session.role in ['org_admin', 'center_admin', 'coach'] %}
+                <a href="{{ url_for('feed.create_post_page') }}" class="{% if request.endpoint == 'feed.create_post_page' %}active{% endif %}">Create Post</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% if session.role == 'org_admin' %}
+            <div class="nav-group">
+                <div class="nav-group-title">Organization</div>
+                <a href="{{ url_for('web.organization_settings') }}" class="{% if request.endpoint == 'web.organization_settings' %}active{% endif %}">Settings</a>
+                <a href="{{ url_for('web.organization_signup_management') }}" class="{% if request.endpoint == 'web.organization_signup_management' %}active{% endif %}">Signup Links</a>
+            </div>
+            {% endif %}
+            
+            <div class="nav-group">
+                <div class="nav-group-title">Account</div>
+                <a href="{{ url_for('web.profile') }}" class="{% if request.endpoint == 'web.profile' %}active{% endif %}">My Profile</a>
+                <a href="{{ url_for('web.logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content overflow-y-auto scrollbar-primary h-full">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alerts-container p-4">
+                    {% for category, message in messages %}
+                        <div class="alert bg-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-50 border border-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-200 text-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-700 p-4 rounded-lg mb-4 animate-slide-up">
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg">
+                                    {% if category == 'error' %}❌{% elif category == 'success' %}✅{% else %}⚠️{% endif %}
+                                </span>
+                                <span>{{ message }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <div class="content-wrapper p-6 h-full overflow-y-auto scrollbar-primary">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    {% else %}
+    <!-- Non-authenticated content -->
+    {% block login_content %}{% endblock %}
+    {% endif %}
+
+    </div> <!-- End app-content -->
+    
+    <script>
+        
+        
+        function addStaggeredAnimations() {
+            // Animate cards with staggered delay
+            const cards = document.querySelectorAll('.content-card-modern, .table-row-modern, .user-card-mobile');
+            cards.forEach((card, index) => {
+                // Mark as being animated to prevent conflicts
+                card.dataset.animating = 'true';
+                card.dataset.staggerAnimated = 'true';
+                
+                setTimeout(() => {
+                    card.classList.add('animate-slide-up');
+                    // Remove animation class after completion to prevent conflicts
+                    setTimeout(() => {
+                        card.classList.remove('animate-slide-up');
+                        card.dataset.animating = 'false';
+                    }, 500);
+                }, index * 50);
+            });
+            
+            // Animate buttons and interactive elements
+            const buttons = document.querySelectorAll('.btn, .actions-button');
+            buttons.forEach((btn, index) => {
+                setTimeout(() => {
+                    btn.classList.add('animate-fade-in');
+                    // Remove animation class after completion
+                    setTimeout(() => {
+                        btn.classList.remove('animate-fade-in');
+                    }, 500);
+                }, index * 25);
+            });
+        }
+        
+        // Add micro animations on interactions
+        document.addEventListener('click', function(e) {
+            // Add ripple effect to buttons
+            if (e.target.matches('button, .btn, .action-item')) {
+                addRippleEffect(e.target, e);
+            }
+        });
+        
+        function addRippleEffect(element, event) {
+            const ripple = document.createElement('span');
+            const rect = element.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = event.clientX - rect.left - size / 2;
+            const y = event.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.3);
+                transform: scale(0);
+                animation: ripple 0.6s ease-out;
+                left: ${x}px;
+                top: ${y}px;
+                width: ${size}px;
+                height: ${size}px;
+                pointer-events: none;
+            `;
+            
+            element.style.position = 'relative';
+            element.style.overflow = 'hidden';
+            element.appendChild(ripple);
+            
+            setTimeout(() => ripple.remove(), 600);
+        }
+        
+        // Add CSS for ripple animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(2);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

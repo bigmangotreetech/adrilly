@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Adrilly Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Welcome back, {{ session.first_name or 'User' }}</p>
+</div>
+
+<!-- Super Admin Dashboard -->
+{% if session.role == 'super_admin' %}
+<div class="row">
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_organizations or 0 }}</div>
+            <div class="stats-label">Organizations</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_users or 0 }}</div>
+            <div class="stats-label">Total Users</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_classes or 0 }}</div>
+            <div class="stats-label">Active Classes</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_revenue or 0 }}</div>
+            <div class="stats-label">Total Revenue</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Recent Organizations</h3>
+            </div>
+            <div class="card-body">
+                {% if recent_organizations %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Organization</th>
+                                <th>Admin</th>
+                                <th>Users</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for org in recent_organizations %}
+                            <tr>
+                                <td>{{ org.name }}</td>
+                                <td>{{ org.admin_name }}</td>
+                                <td>{{ org.user_count }}</td>
+                                <td>{{ org.created_at.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No organizations yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Quick Actions</h3>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('web.organizations') }}" class="btn btn-primary btn-block mb-2">Manage Organizations</a>
+                <a href="{{ url_for('web.users') }}" class="btn btn-outline btn-block mb-2">Manage Users</a>
+                <a href="#" onclick="Adrilly.showAlert('Reports coming soon!', 'info')" class="btn btn-outline btn-block">View Reports</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Organization Admin Dashboard -->
+{% elif session.role == 'org_admin' %}
+<div class="row">
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_students or 0 }}</div>
+            <div class="stats-label">Students</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_coaches or 0 }}</div>
+            <div class="stats-label">Coaches</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_classes or 0 }}</div>
+            <div class="stats-label">Classes This Month</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">${{ stats.monthly_revenue or 0 }}</div>
+            <div class="stats-label">Monthly Revenue</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Upcoming Classes</h3>
+            </div>
+            <div class="card-body">
+                {% if upcoming_classes %}
+                {% for class in upcoming_classes %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ class.title }}</strong><br>
+                        <small class="text-muted">{{ class.scheduled_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <span class="badge badge-primary">{{ class.sport }}</span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">No upcoming classes.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Recent Payments</h3>
+            </div>
+            <div class="card-body">
+                {% if recent_payments %}
+                {% for payment in recent_payments %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>${{ payment.amount }}</strong><br>
+                        <small class="text-muted">{{ payment.student_name }}</small>
+                    </div>
+                    <span class="badge badge-{{ 'success' if payment.status == 'paid' else 'warning' }}">
+                        {{ payment.status }}
+                    </span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">No recent payments.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Coach Dashboard -->
+{% elif session.role in ['coach', 'coach_admin'] %}
+<div class="row">
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.my_students or 0 }}</div>
+            <div class="stats-label">My Students</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.classes_this_week or 0 }}</div>
+            <div class="stats-label">Classes This Week</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.attendance_rate or 0 }}%</div>
+            <div class="stats-label">Attendance Rate</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_groups or 0 }}</div>
+            <div class="stats-label">My Groups</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Today's Classes</h3>
+            </div>
+            <div class="card-body">
+                {% if todays_classes %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Class</th>
+                                <th>Time</th>
+                                <th>Students</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for class in todays_classes %}
+                            <tr>
+                                <td>{{ class.title }}</td>
+                                <td>{{ class.scheduled_at.strftime('%H:%M') }}</td>
+                                <td>{{ class.student_count }}</td>
+                                <td>
+                                    <a href="{{ url_for('web.class_detail', class_id=class._id) }}" 
+                                       class="btn btn-sm btn-primary">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No classes scheduled for today.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Quick Actions</h3>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('web.schedule_class') }}" class="btn btn-primary btn-block mb-2">Schedule Class</a>
+                <a href="{{ url_for('web.attendance') }}" class="btn btn-outline btn-block mb-2">Mark Attendance</a>
+                <a href="{{ url_for('web.progress') }}" class="btn btn-outline btn-block">Track Progress</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Student Dashboard -->
+{% elif session.role == 'student' %}
+<div class="row">
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.my_classes or 0 }}</div>
+            <div class="stats-label">My Classes</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.attendance_rate or 0 }}%</div>
+            <div class="stats-label">Attendance Rate</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.pending_payments or 0 }}</div>
+            <div class="stats-label">Pending Payments</div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.progress_score or 0 }}</div>
+            <div class="stats-label">Progress Score</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Upcoming Classes</h3>
+            </div>
+            <div class="card-body">
+                {% if upcoming_classes %}
+                {% for class in upcoming_classes %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ class.title }}</strong><br>
+                        <small class="text-muted">{{ class.scheduled_at.strftime('%Y-%m-%d %H:%M') }}</small><br>
+                        <small class="text-muted">Coach: {{ class.coach_name }}</small>
+                    </div>
+                    <span class="badge badge-primary">{{ class.sport }}</span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">No upcoming classes.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Recent Progress</h3>
+            </div>
+            <div class="card-body">
+                {% if recent_progress %}
+                {% for progress in recent_progress %}
+                <div class="mb-2">
+                    <strong>{{ progress.skill_name }}</strong>
+                    <div class="d-flex justify-content-between">
+                        <span>Score: {{ progress.score }}/10</span>
+                        <small class="text-muted">{{ progress.date.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">No progress records yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %} 
