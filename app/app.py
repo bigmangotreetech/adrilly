@@ -4,6 +4,7 @@ from flask_cors import CORS
 from config import config
 from app.extensions import mongo, jwt, cors, make_celery
 import os
+import logging
 
 def create_app(config_name=None):
     """Application factory pattern"""
@@ -14,6 +15,7 @@ def create_app(config_name=None):
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     template_folder = os.path.join(project_root, 'templates')
     static_folder = os.path.join(project_root, 'static')
+    
     
     # Create Flask app with correct template and static folders
     app = Flask(__name__, 
@@ -42,6 +44,9 @@ def create_app(config_name=None):
     
     # Register error handlers
     register_error_handlers(app)
+    
+    # Initialize startup scripts
+    initialize_startup_scripts(app, celery)
     
     # Health check endpoint
     @app.route('/health')
@@ -73,6 +78,8 @@ def register_blueprints(app):
     from app.routes.enhanced_payments import register_payment_blueprints
     from app.routes.performance_monitoring import register_performance_blueprints
     from app.routes.security_monitoring import register_security_blueprints
+    from app.routes.mobile_api import mobile_api_bp
+    from app.routes.payment_api import payment_api_bp
     
     # Register API blueprints (they already have /api prefix in their definitions)
     app.register_blueprint(auth_bp)
@@ -109,6 +116,12 @@ def register_blueprints(app):
     # Register security monitoring blueprints
     register_security_blueprints(app)
 
+    # Register mobile API blueprint
+    app.register_blueprint(mobile_api_bp)
+    
+    # Register payment API blueprint
+    app.register_blueprint(payment_api_bp)
+
 def register_error_handlers(app):
     """Register error handlers"""
     
@@ -132,6 +145,52 @@ def register_error_handlers(app):
     def forbidden(error):
         return jsonify({'error': 'Forbidden'}), 403
 
+def initialize_startup_scripts(app, celery):
+    """Initialize all startup scripts and tasks"""
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Only run initialization in production or when explicitly requested
+        skip_init = os.environ.get('SKIP_STARTUP_INIT', 'false').lower() == 'true'
+        
+        if skip_init:
+            logger.info("[SKIP] Skipping startup initialization (SKIP_STARTUP_INIT=true)")
+            return
+        
+        logger.info("[STARTUP] Running startup initialization...")
+        
+        # Import and run the initialization
+        from app.startup.initialization import initialize_app
+        
+        # Run initialization in a separate thread to avoid blocking app startup
+        import threading
+        
+        def run_init():
+            try:
+                with app.app_context():
+                    from app.tasks.class_creation_tasks import (
+                        create_daily_classes_function,
+                    )
+                    create_daily_classes = create_daily_classes_function()
+            
+                    result = initialize_app(app, celery)
+                    if result:
+                        logger.info("[SUCCESS] Startup initialization completed successfully")
+                    else:
+                        logger.warning(f"[WARNING] Startup initialization completed with issues: {result.get('summary', 'Unknown')}")
+            except Exception as e:
+                logger.error(f"[ERROR] Startup initialization failed: {str(e)}")
+        
+        # Start initialization in background thread
+        init_thread = threading.Thread(target=run_init, daemon=True)
+        init_thread.start()
+        
+        logger.info("[INFO] Startup initialization started in background")
+        
+    except Exception as e:
+        logger.error(f"[ERROR] Failed to start initialization: {str(e)}")
+        # Don't fail app startup if initialization fails
+
 # JWT error handlers
 @jwt.expired_token_loader
 def expired_token_callback(jwt_header, jwt_payload):
@@ -145,10 +204,10 @@ def invalid_token_callback(error):
 def missing_token_callback(error):
     return jsonify({'error': 'Authorization token is required'}), 401
 
-if __name__ == '__main__':
-    app, celery = create_app()
-    app.run(
-        host=app.config['APP_HOST'],
-        port=app.config['APP_PORT'],
-        debug=app.config['DEBUG']
-    ) 
+# if __name__ == '__main__':
+#     app, celery = create_app()
+#     app.run(
+#         host=app.config['APP_HOST'],
+#         port=app.config['APP_PORT'],
+#         debug=app.config['DEBUG']
+#     ) 

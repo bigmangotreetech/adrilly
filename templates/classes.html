@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Classes - Adrilly Sports Coaching{% endblock %}
+{% block title %}Classes - botle Sports Coaching{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -31,7 +31,7 @@
                            value="{{ request.args.get('end_date', '') }}" placeholder="End Date">
                 </div>
                 <div class="form-group">
-                    <select name="sport" class="form-control form-select">
+                    <select name="sport" class="form-control form-select select2" data-placeholder="Filter by sport">
                         <option value="">All Sports</option>
                         <option value="football" {{ 'selected' if request.args.get('sport') == 'football' }}>Football</option>
                         <option value="basketball" {{ 'selected' if request.args.get('sport') == 'basketball' }}>Basketball</option>
@@ -41,7 +41,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <select name="status" class="form-control form-select">
+                    <select name="status" class="form-control form-select select2" data-placeholder="Filter by status">
                         <option value="">All Status</option>
                         <option value="scheduled" {{ 'selected' if request.args.get('status') == 'scheduled' }}>Scheduled</option>
                         <option value="ongoing" {{ 'selected' if request.args.get('status') == 'ongoing' }}>Ongoing</option>

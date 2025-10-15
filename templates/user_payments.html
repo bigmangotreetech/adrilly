@@ -1,0 +1,471 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.name }} - Payments - botle Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <div>
+            <h1 class="page-title">{{ user.name }}'s Payments</h1>
+            <p class="page-subtitle">
+                {% if user.email %}{{ user.email }}{% endif %}
+                {% if user.phone_number %}
+                    {% if user.email %} • {% endif %}{{ user.phone_number }}
+                {% endif %}
+                {% if user.billing_start_date %}
+                    • Bills on {{ user.billing_start_date }}{{ 'st' if user.billing_start_date|string|last == '1' and user.billing_start_date != 11 else 'nd' if user.billing_start_date|string|last == '2' and user.billing_start_date != 12 else 'rd' if user.billing_start_date|string|last == '3' and user.billing_start_date != 13 else 'th' }}
+                {% endif %}
+            </p>
+        </div>
+        <div class="page-actions">
+            <a href="{{ url_for('web.payments') }}" class="btn btn-outline">← Back to All Students</a>
+            {% if session.role in ['org_admin', 'coach_admin'] %}
+            <a href="{{ url_for('web.create_payment', user_id=user._id) }}" class="btn btn-primary">Record New Payment</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Payment Summary Cards -->
+{% if payments %}
+<div class="stats-row row mx-0">
+    {% set total_payments = payments|length %}
+    {% set paid_payments = payments|selectattr('status', 'equalto', 'paid')|list %}
+    {% set pending_payments = payments|selectattr('status', 'equalto', 'pending')|list %}
+    {% set overdue_payments = payments|selectattr('status', 'equalto', 'overdue')|list %}
+    {% set total_amount = payments|sum(attribute='amount') %}
+    {% set paid_amount = paid_payments|sum(attribute='amount') %}
+    {% set pending_amount = pending_payments|sum(attribute='amount') %}
+
+    <div class="col-12 col-md-6 col-lg-3">
+    <div class="stats-card ">
+        <div class="stats-number">{{ total_payments }}</div>
+        <div class="stats-label">Total Payments</div>
+    </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+    <div class="stats-card">
+        <div class="stats-number">₹{{ "%.0f"|format(total_amount) }}</div>
+        <div class="stats-label">Total Amount</div>
+    </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+    <div class="stats-card success">
+        <div class="stats-number">{{ paid_payments|length }}</div>
+        <div class="stats-label">Paid (₹{{ "{:.0f}".format(paid_amount) }})</div>
+    </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+    <div class="stats-card warning">
+        <div class="stats-number">{{ pending_payments|length }}</div>
+        <div class="stats-label">Pending (₹{{ "{:.0f}".format(pending_amount) }})</div>
+    </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-3">
+    {% if overdue_payments %}
+    <div class="stats-card danger">
+        <div class="stats-number">{{ overdue_payments|length }}</div>
+        <div class="stats-label">Overdue (₹{{ "{:.0f}".format(overdue_payments|sum(attribute='amount')) }})</div>
+    </div>
+    {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="card mx-2 mt-4">
+    <div class="card-header">
+        <h3 class="card-title mt-4">Payment History</h3>
+    </div>
+    <div class="card-body">
+        {% if payments %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date Created</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Type</th>
+                        {% if session.role in ['org_admin', 'coach_admin'] %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td>
+                            {{ payment.created_at.strftime('%Y-%m-%d') if payment.created_at else 'N/A' }}
+                            <br><small class="text-muted">{{ payment.created_at.strftime('%I:%M %p') if payment.created_at else '' }}</small>
+                        </td>
+                        <td>
+                            <strong>{{ payment.description }}</strong>
+                            {% if payment.notes %}
+                            <br><small class="text-muted">{{ payment.notes }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>₹{{ "%.0f"|format(payment.amount) }}</strong>
+                        </td>
+                        <td>
+                            {{ payment.due_date if payment.due_date else 'N/A' }}
+                            {% if payment.status == 'overdue' %}
+                            <br><small class="text-danger">Overdue</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ 'success' if payment.status == 'paid' else 'danger' if payment.status == 'overdue' else 'warning' }}">
+                                {{ payment.status|title }}
+                            </span>
+                            {% if payment.status == 'paid' and payment.paid_date %}
+                            <br><small class="text-muted">Paid: {{ payment.paid_date.strftime('%Y-%m-%d') }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ payment.payment_type|title if payment.payment_type else 'N/A' }}
+                            {% if payment.payment_method %}
+                            <br><small class="text-muted">{{ payment.payment_method|title }}</small>
+                            {% endif %}
+                        </td>
+                        {% if session.role in ['org_admin', 'coach_admin'] %}
+                        <td>
+                            <div class="btn-group">
+                                {% if payment.status != 'paid' %}
+                                <button class="btn btn-sm btn-success mark-paid-btn" data-payment-id="{{ payment._id }}" data-amount="{{ payment.amount }}">
+                                    Mark Paid
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-sm btn-outline edit-payment-btn" data-payment-id="{{ payment._id }}">
+                                    Edit
+                                </button>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <p class="text-muted">No payments found for {{ user.name }}.</p>
+            {% if session.role in ['org_admin', 'coach_admin'] %}
+            <a href="{{ url_for('web.create_payment', user_id=user._id) }}" class="btn btn-primary">Record First Payment</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Mark as Paid Modal - Bootstrap 5 -->
+<div class="modal fade" id="markPaidModal" tabindex="-1" aria-labelledby="markPaidModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="markPaidModalLabel">Mark Payment as Paid</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="markPaidForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="paid_amount" class="form-label">Amount Paid (₹) *</label>
+                                <input type="number" class="form-control" id="paid_amount" name="paid_amount" 
+                                       step="1" min="0" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="payment_method" class="form-label">Payment Method *</label>
+                                <select class="form-select select2" id="payment_method" name="payment_method" required data-placeholder="Select payment method">
+                                    <option value="">Select method</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="credit_card">Credit Card</option>
+                                    <option value="debit_card">Debit Card</option>
+                                    <option value="upi">UPI</option>
+                                    <option value="check">Check</option>
+                                    <option value="online">Online Payment</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="payment_reference" class="form-label">Reference/Transaction ID</label>
+                        <input type="text" class="form-control" id="payment_reference" name="payment_reference" 
+                               placeholder="Enter transaction ID, check number, etc.">
+                        <div class="form-text">Optional: Enter any reference number for this payment</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="payment_notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="payment_notes" name="notes" rows="3" 
+                                  placeholder="Add any additional notes about this payment..."></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info d-flex align-items-center" role="alert">
+                        <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Info:">
+                            <use xlink:href="#info-fill"/>
+                        </svg>
+                        <div>
+                            <strong>Note:</strong> This action will mark the payment as received and update the payment status.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <svg class="bi me-1" width="16" height="16">
+                            <use xlink:href="#check-circle"/>
+                        </svg>
+                        Mark as Paid
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Icons -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="info-fill" fill="currentColor" viewBox="0 0 16 16">
+        <path d="m8.982 1.566 6.452 11.5A1 1 0 0 1 14.5 15H1.5a1 1 0 0 1-.934-1.934l6.452-11.5a1 1 0 0 1 1.964 0zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+    </symbol>
+    <symbol id="check-circle" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+        <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.061L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
+    </symbol>
+</svg>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPaymentId = null;
+let markPaidModal = null;
+
+// Initialize modal when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    markPaidModal = new bootstrap.Modal(document.getElementById('markPaidModal'));
+    
+    // Reset form when modal is hidden
+    document.getElementById('markPaidModal').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('markPaidForm').reset();
+        currentPaymentId = null;
+        
+        // Reset Select2 if it exists
+        if (window.jQuery && jQuery.fn.select2) {
+            $('#payment_method').val('').trigger('change');
+        }
+    });
+    
+    // Add event listeners for mark paid buttons
+    document.querySelectorAll('.mark-paid-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const paymentId = this.getAttribute('data-payment-id');
+            const amount = this.getAttribute('data-amount');
+            markAsPaid(paymentId, amount);
+        });
+    });
+    
+    // Add event listeners for edit payment buttons
+    document.querySelectorAll('.edit-payment-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const paymentId = this.getAttribute('data-payment-id');
+            editPayment(paymentId);
+        });
+    });
+});
+
+function markAsPaid(paymentId, amount) {
+    currentPaymentId = paymentId;
+    document.getElementById('paid_amount').value = amount;
+    
+    if (markPaidModal) {
+        markPaidModal.show();
+    }
+}
+
+function closePaidModal() {
+    if (markPaidModal) {
+        markPaidModal.hide();
+    }
+}
+
+function editPayment(paymentId) {
+    // TODO: Implement edit payment functionality
+    alert('Edit payment functionality coming soon!');
+}
+
+// Handle mark as paid form submission
+document.getElementById('markPaidForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!currentPaymentId) {
+        showNotification('No payment selected', 'error');
+        return;
+    }
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await fetch(`/api/payments/${currentPaymentId}/mark-paid`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showNotification('Payment marked as paid successfully!', 'success');
+            closePaidModal();
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            throw new Error(result.error || 'Failed to mark payment as paid');
+        }
+    } catch (error) {
+        console.error('Error marking payment as paid:', error);
+        showNotification('Error: ' + error.message, 'error');
+    } finally {
+        // Reset button state
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    }
+});
+
+// Notification system
+function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.toast-notification');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `toast-notification alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    
+    notification.innerHTML = `
+        <div class="d-flex align-items-center">
+            <svg class="bi me-2" width="16" height="16" role="img">
+                <use xlink:href="#${type === 'success' ? 'check-circle' : 'info-fill'}"/>
+            </svg>
+            <div>${message}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.page-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.page-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stats-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.stats-card.success {
+    border-color: var(--success);
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.stats-card.warning {
+    border-color: var(--warning);
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.stats-card.danger {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.stats-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.stats-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .page-header-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .page-actions {
+        justify-content: stretch;
+    }
+    
+    .page-actions .btn {
+        flex: 1;
+        text-align: center;
+    }
+    
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-row {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

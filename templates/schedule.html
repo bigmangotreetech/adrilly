@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Schedule Management - {{ center.name }} - Adrilly Sports Coaching{% endblock %}
+{% block title %}Schedule Management - {{ center.name }} - botle Sports Coaching{% endblock %}
 
 {% block content %}
 <div class="schedule-page">
@@ -19,7 +19,7 @@
                     </div>
                 </div>
             </div>
-            <div class="page-actions">
+            <div class="page-actions d-flex flex-wrap">
                 <div class="view-toggle-container">
                     <div class="view-toggle">
                         <button class="toggle-btn active" id="weeklyViewBtn" onclick="switchToWeeklyView()">
@@ -49,6 +49,9 @@
                     </svg>
                     Add Activity
                 </button>
+                    <button class="btn btn-success" id="signupLinkBtn" onclick="startScheduleSelection()">
+                        <i class="bi bi-link-45deg"></i> Create Sign Up Link
+                    </button>
                 <button class="btn btn-primary-modern" onclick="saveSchedule()">
                     <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -58,6 +61,17 @@
             </div>
         </div>
     </div>
+
+    <div class="sign-up-link-instruction d-none ms-5">
+        <div class="instruction-title text-warning pb-2">
+            <p>Click on one or more classes to create a sign up link</p>
+        </div>
+        <div class="selected-classes-summary">
+            Selected Classes: <span id="selectedClassCount">0</span>
+        </div>
+    </div>
+
+    
 
     <div class="schedule-container">
         <!-- Activities Sidebar -->
@@ -91,6 +105,11 @@
                         <span class="activity-name">{{ activity.name }}</span>
                         <div class="activity-actions">
                             <span class="activity-duration">{{ activity.duration_minutes }}min</span>
+                            <button class="activity-edit-btn" onclick="openEditActivityModal('{{ activity._id }}')" title="Edit activity">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
                             <button class="activity-delete-btn" onclick="deleteActivity('{{ activity._id }}', '{{ activity.name }}')" title="Delete activity">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -158,297 +177,281 @@
 </div>
 
 <!-- Day Time Slots Modal -->
-<div id="dayTimeSlotsModal" class="modal-overlay-modern" style="display: none;">
-    <div class="modal-modern" style="max-width: 600px;">
-        <div class="modal-header-modern">
-            <div class="modal-title-section">
-                <h3 class="modal-title-modern" id="dayTimeSlotsTitle">Add Time Slots for Monday</h3>
-                <p class="modal-subtitle-modern">Create multiple time slots for the selected day</p>
+<div id="dayTimeSlotsModal" class="modal fade" tabindex="-1" aria-labelledby="dayTimeSlotsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="dayTimeSlotsTitle">Add Time Slots for Monday</h5>
+                    <p class="text-muted mb-0">Create multiple time slots for the selected day</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button class="modal-close-modern" onclick="closeDayTimeSlotsModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
-        <form id="dayTimeSlotsForm">
-            <div class="modal-body-modern">
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="day_start_time" class="form-label-modern">
-                            <span class="label-text">Start Time</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <input type="time" class="form-input-modern" id="day_start_time" name="start_time" value="08:00" required>
+            <form id="dayTimeSlotsForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="day_start_time" class="form-label">
+                                Start Time <span class="text-danger">*</span>
+                            </label>
+                            <input type="time" class="form-control" id="day_start_time" name="start_time" value="08:00" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="day_end_time" class="form-label">
+                                End Time <span class="text-danger">*</span>
+                            </label>
+                            <input type="time" class="form-control" id="day_end_time" name="end_time" value="18:00" required>
+                        </div>
                     </div>
-                    <div class="form-field-modern">
-                        <label for="day_end_time" class="form-label-modern">
-                            <span class="label-text">End Time</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <input type="time" class="form-input-modern" id="day_end_time" name="end_time" value="18:00" required>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="slot_duration_minutes" class="form-label">
+                                Slot Duration (minutes) <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="slot_duration_minutes" name="duration_minutes" required>
+                                <option value="30">30 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60" selected>60 minutes</option>
+                                <option value="90">90 minutes</option>
+                                <option value="120">120 minutes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="slot_break_minutes" class="form-label">
+                                Break Between Slots (minutes)
+                            </label>
+                            <select class="form-select" id="slot_break_minutes" name="break_minutes">
+                                <option value="0">No break</option>
+                                <option value="5">5 minutes</option>
+                                <option value="10" selected>10 minutes</option>
+                                <option value="15">15 minutes</option>
+                                <option value="30">30 minutes</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="slot_duration_minutes" class="form-label-modern">
-                            <span class="label-text">Slot Duration (minutes)</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <select class="form-select-modern" id="slot_duration_minutes" name="duration_minutes" required>
-                            <option value="30">30 minutes</option>
-                            <option value="45">45 minutes</option>
-                            <option value="60" selected>60 minutes</option>
-                            <option value="90">90 minutes</option>
-                            <option value="120">120 minutes</option>
-                        </select>
+                    
+                    <div class="time-slots-preview mb-3" id="timeSlotsPreview">
+                        <h6>Preview of Time Slots:</h6>
+                        <div class="preview-slots" id="previewSlots">
+                            <!-- Generated slots will appear here -->
+                        </div>
                     </div>
-                    <div class="form-field-modern">
-                        <label for="slot_break_minutes" class="form-label-modern">
-                            <span class="label-text">Break Between Slots (minutes)</span>
-                        </label>
-                        <select class="form-select-modern" id="slot_break_minutes" name="break_minutes">
-                            <option value="0">No break</option>
-                            <option value="5">5 minutes</option>
-                            <option value="10" selected>10 minutes</option>
-                            <option value="15">15 minutes</option>
-                            <option value="30">30 minutes</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="time-slots-preview" id="timeSlotsPreview">
-                    <h4>Preview of Time Slots:</h4>
-                    <div class="preview-slots" id="previewSlots">
-                        <!-- Generated slots will appear here -->
+                    
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-outline-secondary" onclick="generateTimeSlotPreview()">
+                            <i class="bi bi-eye"></i> Preview Time Slots
+                        </button>
                     </div>
                 </div>
-                
-                <div class="form-field-modern">
-                    <button type="button" class="btn btn-outline" onclick="generateTimeSlotPreview()">
-                        Preview Time Slots
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="createTimeSlotsBtn">
+                        <i class="bi bi-plus-lg"></i> Create Time Slots
                     </button>
                 </div>
-            </div>
-            <div class="modal-footer-modern">
-                <button type="button" class="btn-secondary-modern" onclick="closeDayTimeSlotsModal()">
-                    Cancel
-                </button>
-                <button type="submit" class="btn-primary-modern" id="createTimeSlotsBtn">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Create Time Slots
-                </button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 
 <!-- Activity Modal -->
-<div id="activityModal" class="modal-overlay-modern" style="display: none;">
-    <div class="modal-modern">
-        <div class="modal-header-modern">
-            <div class="modal-title-section">
-                <h3 class="modal-title-modern">Add Activity</h3>
-                <p class="modal-subtitle-modern">Create a new activity for scheduling</p>
+<div id="activityModal" class="modal fade" tabindex="-1" aria-labelledby="activityModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="activityModalTitle">Add Activity</h5>
+                    <p class="text-muted mb-0" id="activityModalSubtitle">Create a new activity for scheduling</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button class="modal-close-modern" onclick="closeActivityModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
-        <form id="activityForm">
-            <div class="modal-body-modern">
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="activity_name" class="form-label-modern">
-                            <span class="label-text">Activity Name</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <input type="text" class="form-input-modern" id="activity_name" name="name" required
-                               placeholder="e.g., Yoga Class, Football Training">
+            <form id="activityForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="activity_name" class="form-label">
+                                Activity Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="activity_name" name="name" required
+                                   placeholder="e.g., Yoga, Football, Tennis">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="default_coach_id" class="form-label">
+                                Coach <span class="text-danger">*</span>
+                            </label>
+
+                            <select class="form-select" id="default_coach_id" name="default_coach_id" required>
+                                <option value="">Select coach</option>
+                                {% for coach in coaches %}
+                                <option value="{{ coach._id }}">{{ coach.name }}</option>
+                                {% endfor %}
+                            </select>
+
+                            
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="activity_price" class="form-label">Price for one time booking (in INR)</label>
+                            <input type="number" class="form-control" id="activity_price" name="price" value="0">
+                        </div>
                     </div>
-                    <div class="form-field-modern">
-                        <label for="activity_type" class="form-label-modern">
-                            <span class="label-text">Type</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <select class="form-select-modern" id="activity_type" name="type" required>
-                            <option value="">Select type</option>
-                            <option value="fitness">Fitness</option>
-                            <option value="sports">Sports</option>
-                            <option value="wellness">Wellness</option>
-                            <option value="martial_arts">Martial Arts</option>
-                            <option value="dance">Dance</option>
-                            <option value="strength">Strength Training</option>
-                            <option value="cardio">Cardio</option>
-                            <option value="flexibility">Flexibility</option>
-                        </select>
+                    <div class="mb-3">
+                        <label for="activity_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="activity_description" name="description" rows="3"
+                                  placeholder="Brief description of the activity"></textarea>
                     </div>
-                </div>
-                <div class="form-field-modern">
-                    <label for="activity_description" class="form-label-modern">
-                        <span class="label-text">Description</span>
-                    </label>
-                    <textarea class="form-input-modern" id="activity_description" name="description" rows="3"
-                              placeholder="Brief description of the activity"></textarea>
-                </div>
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="activity_duration" class="form-label-modern">
-                            <span class="label-text">Default Duration (minutes)</span>
-                        </label>
-                        <select class="form-select-modern" id="activity_duration" name="duration_minutes">
-                            <option value="30">30 minutes</option>
-                            <option value="45">45 minutes</option>
-                            <option value="60" selected>60 minutes</option>
-                            <option value="90">90 minutes</option>
-                            <option value="120">120 minutes</option>
-                        </select>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="activity_duration" class="form-label">Default Duration (minutes)</label>
+                            <select class="form-select" id="activity_duration" name="duration_minutes">
+                                <option value="30">30 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60" selected>60 minutes</option>
+                                <option value="90">90 minutes</option>
+                                <option value="120">120 minutes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="activity_capacity" class="form-label">Max Participants</label>
+                            <input type="number" class="form-control" id="activity_capacity" name="max_participants" 
+                                   min="1" max="100" value="20">
+                        </div>
                     </div>
-                    <div class="form-field-modern">
-                        <label for="activity_capacity" class="form-label-modern">
-                            <span class="label-text">Max Participants</span>
-                        </label>
-                        <input type="number" class="form-input-modern" id="activity_capacity" name="max_participants" 
-                               min="1" max="100" value="20">
-                    </div>
-                </div>
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="activity_level" class="form-label-modern">
-                            <span class="label-text">Skill Level</span>
-                        </label>
-                        <select class="form-select-modern" id="activity_level" name="skill_level">
-                            <option value="beginner">Beginner</option>
-                            <option value="intermediate">Intermediate</option>
-                            <option value="advanced">Advanced</option>
-                            <option value="all">All Levels</option>
-                        </select>
-                    </div>
-                    <div class="form-field-modern">
-                        <label for="activity_color" class="form-label-modern">
-                            <span class="label-text">Color</span>
-                        </label>
-                        <div class="color-picker-container">
-                            <input type="color" class="form-input-modern color-input" id="activity_color" name="color" value="#3B82F6">
-                            <div class="color-presets">
-                                <button type="button" class="color-preset" data-color="#3B82F6" style="background: #3B82F6;"></button>
-                                <button type="button" class="color-preset" data-color="#10B981" style="background: #10B981;"></button>
-                                <button type="button" class="color-preset" data-color="#F59E0B" style="background: #F59E0B;"></button>
-                                <button type="button" class="color-preset" data-color="#EF4444" style="background: #EF4444;"></button>
-                                <button type="button" class="color-preset" data-color="#8B5CF6" style="background: #8B5CF6;"></button>
-                                <button type="button" class="color-preset" data-color="#EC4899" style="background: #EC4899;"></button>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="activity_level" class="form-label">Skill Level</label>
+                            <select class="form-select" id="activity_level" name="skill_level">
+                                <option value="beginner">Beginner</option>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="advanced">Advanced</option>
+                                <option value="all">All Levels</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="activity_color" class="form-label">Color</label>
+                            <div class="color-picker-container">
+                                <input type="color" class="form-control color-input" id="activity_color" name="color" value="#3B82F6">
+                                <div class="color-presets mt-2">
+                                    <button type="button" class="btn btn-sm color-preset me-1" data-color="#3B82F6" style="background: #3B82F6; width: 30px; height: 30px;"></button>
+                                    <button type="button" class="btn btn-sm color-preset me-1" data-color="#10B981" style="background: #10B981; width: 30px; height: 30px;"></button>
+                                    <button type="button" class="btn btn-sm color-preset me-1" data-color="#F59E0B" style="background: #F59E0B; width: 30px; height: 30px;"></button>
+                                    <button type="button" class="btn btn-sm color-preset me-1" data-color="#EF4444" style="background: #EF4444; width: 30px; height: 30px;"></button>
+                                    <button type="button" class="btn btn-sm color-preset me-1" data-color="#8B5CF6" style="background: #8B5CF6; width: 30px; height: 30px;"></button>
+                                    <button type="button" class="btn btn-sm color-preset" data-color="#EC4899" style="background: #EC4899; width: 30px; height: 30px;"></button>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Custom Feedback Metrics Section -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Custom Feedback Metrics
+                            <small class="text-muted d-block">Add metrics that coaches will use to evaluate students in this activity</small>
+                        </label>
+                        <div id="feedbackMetricsList" class="mb-2">
+                            <!-- Feedback metrics will be dynamically added here -->
+                        </div>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="newFeedbackMetric" placeholder="e.g., Technique, Teamwork, Endurance" maxlength="50">
+                            <button type="button" class="btn btn-outline-primary" onclick="addFeedbackMetric()">
+                                <i class="bi bi-plus-lg"></i> Add Metric
+                            </button>
+                        </div>
+                        <small class="text-muted">Examples: Technique, Stamina, Teamwork, Accuracy, Speed, Flexibility</small>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer-modern">
-                <button type="button" class="btn-secondary-modern" onclick="closeActivityModal()">
-                    Cancel
-                </button>
-                <button type="submit" class="btn-primary-modern">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Add Activity
-                </button>
-            </div>
-        </form>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="activitySubmitBtn">
+                        <i class="bi bi-plus-lg"></i> <span id="activitySubmitBtnText">Add Activity</span>
+                    </button>
+                    
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 <!-- Schedule Item Detail Modal -->
-<div id="scheduleItemModal" class="modal-overlay-modern" style="display: none;">
-    <div class="modal-modern">
-        <div class="modal-header-modern">
-            <div class="modal-title-section">
-                <h3 class="modal-title-modern" id="scheduleItemTitle">Edit Schedule Item</h3>
-                <p class="modal-subtitle-modern">Update activity assignment details</p>
+<div id="scheduleItemModal" class="modal fade" tabindex="-1" aria-labelledby="scheduleItemTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="scheduleItemTitle">Edit Schedule Item</h5>
+                    <p class="text-muted mb-0">Update activity assignment details</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button class="modal-close-modern" onclick="closeScheduleItemModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
-        <form id="scheduleItemForm">
-            <div class="modal-body-modern">
-                <div class="form-field-modern">
-                    <label for="schedule_coach" class="form-label-modern">
-                        <span class="label-text">Assigned Coach</span>
-                    </label>
-                    <select class="form-select-modern" id="schedule_coach" name="coach_id">
-                        <option value="">Select coach</option>
-                        <!-- Options will be populated by JavaScript -->
-                    </select>
-                </div>
-                <div class="form-field-modern">
-                    <label for="schedule_capacity" class="form-label-modern">
-                        <span class="label-text">Max Participants</span>
-                    </label>
-                    <input type="number" class="form-input-modern" id="schedule_capacity" name="max_participants" 
-                           min="1" max="100">
-                </div>
-                <div class="form-field-modern">
-                    <label for="schedule_notes" class="form-label-modern">
-                        <span class="label-text">Notes</span>
-                    </label>
-                    <textarea class="form-input-modern" id="schedule_notes" name="notes" rows="3"
-                              placeholder="Additional notes or instructions"></textarea>
-                </div>
-                
-                <!-- Students Assignment Section -->
-                <div class="form-field-modern">
-                    <label class="form-label-modern">
-                        <span class="label-text">Assigned Students</span>
-                        <span class="label-subtitle">Select students for this session</span>
-                    </label>
+            <form id="scheduleItemForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="schedule_coach" class="form-label">Assigned Coach</label>
+                        <select class="form-select" id="schedule_coach" name="coach_id">
+                            <option value="">Select coach</option>
+                            <!-- Options will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="schedule_capacity" class="form-label">Max Participants</label>
+                        <input type="number" class="form-control" id="schedule_capacity" name="max_participants" 
+                               min="1" max="100">
+                    </div>
+                    <div class="mb-3">
+                        <label for="schedule_notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="schedule_notes" name="notes" rows="3"
+                                  placeholder="Additional notes or instructions"></textarea>
+                    </div>
                     
-                    <div class="assignment-type-section">
-                        <div class="assignment-type-description">
+                    <!-- Students Assignment Section -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Assigned Students
+                            <small class="text-muted d-block">Select students for this session</small>
+                        </label>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
                             <span id="assignmentTypeDesc">Student assigned from this page will be assigned to all recurring sessions of this activity and time slot. To add or remove a student one time, please visit class management page.</span>
                         </div>
-                    </div>
-                    
-                    <div class="students-assignment-container">
-                        <div class="students-search-section">
-                            <input type="text" class="form-input-modern" id="student_search" 
-                                   placeholder="Search students by name..." autocomplete="off">
-                            <div class="students-dropdown" id="studentsDropdown" style="display: none;">
-                                <!-- Students will be populated here -->
+                        
+                        <div class="students-assignment-container">
+                            <div class="students-search-section mb-3">
+                                <input type="text" class="form-control" id="student_search" 
+                                       placeholder="Search students by name..." autocomplete="off">
+                                <div class="students-dropdown" id="studentsDropdown" style="display: none;">
+                                    <!-- Students will be populated here -->
+                                </div>
                             </div>
-                        </div>
-                        <div class="assigned-students-list" id="assignedStudentsList">
-                            <!-- Assigned students will appear here -->
-                        </div>
-                        <div class="students-summary">
-                            <span id="studentsCount">0 students assigned</span>
-                            <span id="capacityIndicator"></span>
+                            <div class="assigned-students-list mb-3" id="assignedStudentsList">
+                                <!-- Assigned students will appear here -->
+                            </div>
+                            <div class="students-summary d-flex justify-content-between align-items-center">
+                                <span class="badge bg-secondary" id="studentsCount">0 students assigned</span>
+                                <span id="capacityIndicator"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer-modern">
-                <button type="button" class="btn-secondary-modern" onclick="closeScheduleItemModal()">
-                    Cancel
-                </button>
-                <button type="button" class="btn btn-danger" onclick="removeScheduleItem()" id="removeItemBtn">
-                    Remove
-                </button>
-                <button type="submit" class="btn-primary-modern">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    Update
-                </button>
-            </div>
-        </form>
-            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="removeScheduleItem()" id="removeItemBtn">
+                        <i class="bi bi-trash"></i> Remove
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> Update
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
+</div>
 
 <!-- Monthly View Container (Initially Hidden) -->
 <div class="monthly-view-container" id="monthlyViewContainer" style="display: none;">
@@ -480,28 +483,26 @@
 </div>
 
     <!-- Activity Selection Modal -->
-<div id="activitySelectionModal" class="modal-overlay-modern" style="display: none;">
-    <div class="modal-modern">
-        <div class="modal-header-modern">
-            <div class="modal-title-section">
-                <h3 class="modal-title-modern" id="activitySelectionTitle">Select Activity</h3>
-                <p class="modal-subtitle-modern" id="activitySelectionSubtitle">Choose an activity to schedule</p>
+<div id="activitySelectionModal" class="modal fade" tabindex="-1" aria-labelledby="activitySelectionTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="activitySelectionTitle">Select Activity</h5>
+                    <p class="text-muted mb-0" id="activitySelectionSubtitle">Choose an activity to schedule</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button class="modal-close-modern" onclick="closeActivitySelectionModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
-        <div class="modal-body-modern">
-            <div class="activity-selection-grid" id="activitySelectionGrid">
-                <!-- Activities will be populated here -->
+            <div class="modal-body">
+                <div class="activity-selection-grid" id="activitySelectionGrid">
+                    <!-- Activities will be populated here -->
+                </div>
             </div>
-        </div>
-        <div class="modal-footer-modern">
-            <button type="button" class="btn-secondary-modern" onclick="closeActivitySelectionModal()">
-                Cancel
-            </button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg"></i> Cancel
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -1224,6 +1225,7 @@
     justify-content: center;
     background: var(--bg-tertiary);
     transition: background-color 0.2s ease;
+    min-height: 80px !important;
 }
 
 .day-cell.clickable-day {
@@ -1259,6 +1261,18 @@
     gap: 0.5rem;
 }
 
+.activity-edit-btn {
+    background: var(--bg-secondary);
+    color: var(--primary-color);
+    border: none;
+    border-radius: 4px;
+    padding: 0.25rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    margin-right: 0.25rem;
+}
+
 .activity-delete-btn {
     background: var(--error-bg);
     color: var(--error-color);
@@ -1270,8 +1284,14 @@
     transition: opacity 0.2s ease;
 }
 
+.activity-card:hover .activity-edit-btn,
 .activity-card:hover .activity-delete-btn {
     opacity: 1;
+}
+
+.activity-edit-btn:hover {
+    background: var(--primary-color);
+    color: white;
 }
 
 .activity-delete-btn:hover {
@@ -1400,31 +1420,8 @@
     text-overflow: ellipsis;
 }
 
-/* Modal styles */
-.modal-overlay-modern {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-}
-
-.modal-modern {
-    background: var(--bg-card);
-    border-radius: 16px;
-    border: 1px solid var(--border-primary);
-    max-width: 500px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: var(--shadow-xl);
-}
+/* Bootstrap Modal Enhancements */
+/* Old modal styles removed - now using Bootstrap modals */
 
 .modal-header-modern {
     padding: 1.5rem 2rem;
@@ -1985,6 +1982,26 @@ function initializeSchedule() {
         card.addEventListener('dragstart', handleActivityDragStart);
         card.addEventListener('dragend', handleActivityDragEnd);
         
+        // Prevent edit button from interfering with drag
+        const editBtn = card.querySelector('.activity-edit-btn');
+        if (editBtn) {
+            editBtn.addEventListener('mousedown', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+            });
+            editBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                // Call the edit function directly
+                const activityId = card.dataset.activityId;
+                openEditActivityModal(activityId);
+            });
+            editBtn.addEventListener('dragstart', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+            });
+        }
+        
         // Prevent delete button from interfering with drag
         const deleteBtn = card.querySelector('.activity-delete-btn');
         if (deleteBtn) {
@@ -2052,14 +2069,26 @@ function setupEventListeners() {
         }
     });
     
-    // Modal click outside to close
-    document.querySelectorAll('.modal-overlay-modern').forEach(modal => {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.style.display = 'none';
+    // Feedback metric input - handle Enter key
+    const feedbackMetricInput = document.getElementById('newFeedbackMetric');
+    if (feedbackMetricInput) {
+        feedbackMetricInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addFeedbackMetric();
             }
         });
+    }
+    
+    // Color preset buttons
+    document.querySelectorAll('.color-preset').forEach(button => {
+        button.addEventListener('click', function() {
+            const color = this.dataset.color;
+            document.getElementById('activity_color').value = color;
+        });
     });
+    
+    // Bootstrap modals handle click outside to close automatically
 }
 
 // Drag and Drop functionality
@@ -2254,6 +2283,9 @@ function createScheduleElement(scheduleItem) {
     // Set color from activity data
     const activityColor = activity?.color || '#3B82F6';
     div.style.borderLeftColor = activityColor;
+
+    div.dataset.activityId = scheduleItem.activity_id;
+    div.dataset.scheduleItemId = scheduleItem._id;
     
     const maxParticipants = scheduleItem.max_participants || 0;
     const assignedStudents = scheduleItem.assigned_students || [];
@@ -2362,7 +2394,11 @@ function openDayTimeSlotsModal(dayIndex = null, dayName = '') {
     selectedDayName = dayName || DAYS[dayIndex] || 'Day';
     
     document.getElementById('dayTimeSlotsTitle').textContent = `Add Time Slots for ${selectedDayName}`;
-    document.getElementById('dayTimeSlotsModal').style.display = 'flex';
+    const modalElement = document.getElementById('dayTimeSlotsModal');
+    if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
     
     // Reset form and preview
     document.getElementById('dayTimeSlotsForm').reset();
@@ -2375,22 +2411,153 @@ function openDayTimeSlotsModal(dayIndex = null, dayName = '') {
 }
 
 function closeDayTimeSlotsModal() {
-    document.getElementById('dayTimeSlotsModal').style.display = 'none';
+    const modalElement = document.getElementById('dayTimeSlotsModal');
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+    }
     document.getElementById('dayTimeSlotsForm').reset();
     selectedDay = null;
     selectedDayName = '';
 }
 
+let currentEditingActivityId = null;
+let feedbackMetrics = [];
+
 function openActivityModal() {
-    document.getElementById('activityModal').style.display = 'flex';
+    currentEditingActivityId = null;
+    feedbackMetrics = [];
+    document.getElementById('activityModalTitle').textContent = 'Add Activity';
+    document.getElementById('activityModalSubtitle').textContent = 'Create a new activity for scheduling';
+    document.getElementById('activitySubmitBtnText').textContent = 'Add Activity';
+    document.getElementById('activityForm').reset();
+    renderFeedbackMetrics();
+    
+    const modalElement = document.getElementById('activityModal');
+    if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
+}
+
+async function openEditActivityModal(activityId) {
+    try {
+        currentEditingActivityId = activityId;
+        
+        // Fetch activity details
+        const response = await fetch(`/api/organizations/${organizationId}/activities`);
+        const result = await response.json();
+        
+        if (!response.ok) {
+            alert('Error fetching activity details');
+            return;
+        }
+        
+        const activity = result.activities.find(a => a._id === activityId);
+        if (!activity) {
+            alert('Activity not found');
+            return;
+        }
+        
+        // Populate form
+        document.getElementById('activity_name').value = activity.name || '';
+        document.getElementById('default_coach_id').value = activity.default_coach_id || '';
+        document.getElementById('activity_price').value = activity.price || 0;
+        document.getElementById('activity_description').value = activity.description || '';
+        document.getElementById('activity_duration').value = activity.duration_minutes || 60;
+        document.getElementById('activity_capacity').value = activity.max_participants || 20;
+        document.getElementById('activity_level').value = activity.skill_level || 'beginner';
+        document.getElementById('activity_color').value = activity.color || '#3B82F6';
+        
+        // Load feedback metrics
+        feedbackMetrics = activity.feedback_metrics || [];
+        renderFeedbackMetrics();
+        
+        // Update modal title, subtitle and button
+        document.getElementById('activityModalTitle').textContent = 'Edit Activity';
+        document.getElementById('activityModalSubtitle').textContent = 'Update activity details and custom feedback metrics';
+        document.getElementById('activitySubmitBtnText').textContent = 'Update Activity';
+        
+        // Show modal
+        const modalElement = document.getElementById('activityModal');
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        }
+    } catch (error) {
+        console.error('Error opening edit modal:', error);
+        alert('Error loading activity details');
+    }
 }
 
 function closeActivityModal() {
-    document.getElementById('activityModal').style.display = 'none';
+    const modalElement = document.getElementById('activityModal');
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+    }
     document.getElementById('activityForm').reset();
+    currentEditingActivityId = null;
+    feedbackMetrics = [];
+}
+
+function addFeedbackMetric() {
+    const input = document.getElementById('newFeedbackMetric');
+    const metric = input.value.trim();
+    
+    if (!metric) {
+        return;
+    }
+    
+    if (feedbackMetrics.includes(metric)) {
+        alert('This metric already exists');
+        return;
+    }
+    
+    if (feedbackMetrics.length >= 10) {
+        alert('Maximum 10 metrics allowed');
+        return;
+    }
+    
+    feedbackMetrics.push(metric);
+    input.value = '';
+    renderFeedbackMetrics();
+}
+
+function removeFeedbackMetric(index) {
+    feedbackMetrics.splice(index, 1);
+    renderFeedbackMetrics();
+}
+
+function renderFeedbackMetrics() {
+    const container = document.getElementById('feedbackMetricsList');
+    
+    if (feedbackMetrics.length === 0) {
+        container.innerHTML = '<p class="text-muted small mb-2">No custom metrics added yet</p>';
+        return;
+    }
+    
+    let html = '<div class="d-flex flex-wrap gap-2">';
+    feedbackMetrics.forEach((metric, index) => {
+        html += `
+            <div class="rounded px-4 bg-primary d-flex align-items-center gap-1" style="font-size: 1rem; padding: 0.5rem 0.75rem;">
+                <span>${metric}</span>
+                <button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;" onclick="removeFeedbackMetric(${index})" aria-label="Remove"></button>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
 }
 
 function openScheduleItemModal(scheduleItem) {
+    if(isSelectionMode)
+    return;
     currentEditingItem = scheduleItem;
     
     // Populate coaches dropdown
@@ -2406,7 +2573,11 @@ function openScheduleItemModal(scheduleItem) {
     document.getElementById('scheduleItemTitle').textContent = 
         `Edit ${activity ? activity.name : 'Activity'} - ${DAYS[scheduleItem.day_of_week]}`;
     
-    document.getElementById('scheduleItemModal').style.display = 'flex';
+    const modalElement = document.getElementById('scheduleItemModal');
+    if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
 
     console.log(scheduleItem.assigned_students);
     window.assignedStudents = [];
@@ -2445,7 +2616,13 @@ function populateCoachesDropdown() {
 }
 
 function closeScheduleItemModal() {
-    document.getElementById('scheduleItemModal').style.display = 'none';
+    const modalElement = document.getElementById('scheduleItemModal');
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+    }
     document.getElementById('scheduleItemForm').reset();
     currentEditingItem = null;
 }
@@ -2641,29 +2818,46 @@ async function handleActivitySubmit(e) {
         duration_minutes: parseInt(formData.get('duration_minutes')),
         max_participants: parseInt(formData.get('max_participants')),
         skill_level: formData.get('skill_level'),
-        color: formData.get('color')
+        color: formData.get('color'),
+        default_coach_id: formData.get('default_coach_id'),
+        price: parseFloat(formData.get('price')),
+        feedback_metrics: feedbackMetrics
+
     };
     
     try {
-        const response = await fetch(`/api/organizations/${organizationId}/activities`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        });
+        let response;
+        if (currentEditingActivityId) {
+            // Update existing activity
+            response = await fetch(`/api/organizations/${organizationId}/activities/${currentEditingActivityId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+        } else {
+            // Create new activity
+            response = await fetch(`/api/organizations/${organizationId}/activities`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+        }
         
         const result = await response.json();
         
         if (response.ok) {
             closeActivityModal();
-            location.reload(); // Reload to show new activity
+            location.reload(); // Reload to show updated/new activity
         } else {
-            alert(result.error || 'Error creating activity');
+            alert(result.error || `Error ${currentEditingActivityId ? 'updating' : 'creating'} activity`);
         }
     } catch (error) {
-        console.error('Error creating activity:', error);
-        alert('Error creating activity');
+        console.error(`Error ${currentEditingActivityId ? 'updating' : 'creating'} activity:`, error);
+        alert(`Error ${currentEditingActivityId ? 'updating' : 'creating'} activity`);
     }
 }
 
@@ -2718,11 +2912,122 @@ async function handleScheduleItemSubmit(e) {
 async function removeScheduleItem() {
     if (!currentEditingItem) return;
     
-    if (!confirm('Are you sure you want to remove this scheduled activity?')) return;
-    
     try {
+        // First get affected classes
+        const response = await fetch(`/api/centers/${centerId}/schedule/${currentEditingItem._id}/affected-classes`);
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to get affected classes');
+        }
+        
+        const { classes, total_count } = result;
+        
+        // Get the modal body
+        const modalBody = document.querySelector('#scheduleItemModal .modal-body');
+        const modalFooter = document.querySelector('#scheduleItemModal .modal-footer');
+        const modalTitle = document.querySelector('#scheduleItemModal .modal-title');
+        
+        // Store the original content to restore if user cancels
+        const originalContent = modalBody.innerHTML;
+        const originalFooter = modalFooter.innerHTML;
+        const originalTitle = modalTitle.innerHTML;
+        
+        // Update modal title
+        modalTitle.innerHTML = 'Confirm Schedule Deletion';
+        
+        // Create confirmation content
+        let confirmationContent = `
+            <p>Are you sure you want to delete this schedule item?</p>`;
+        
+        if (total_count > 0) {
+            confirmationContent += `
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This schedule has ${total_count} future classes:
+                </div>
+                <div class="affected-classes" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Class</th>
+                                <th>Coach</th>
+                                <th>Students</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+            
+            classes.forEach(classInfo => {
+                confirmationContent += `
+                    <tr>
+                        <td>${classInfo.scheduled_at}</td>
+                        <td>${classInfo.title}</td>
+                        <td>${classInfo.coach_name}</td>
+                        <td>${classInfo.student_count} students, ${classInfo.group_count} groups</td>
+                    </tr>`;
+            });
+            
+            confirmationContent += `
+                        </tbody>
+                    </table>
+                </div>
+                <div class="form-group mt-3">
+                    <div class="alert alert-info">
+                        Choose how to handle the future classes:
+                    </div>
+                    <div class="custom-control custom-radio mb-2">
+                        <input type="radio" class="custom-control-input" id="deleteClasses" name="classAction" value="delete" checked>
+                        <label class="custom-control-label" for="deleteClasses">
+                            <strong>Delete all future classes</strong>
+                            <div class="text-muted small">All future classes will be permanently deleted</div>
+                        </label>
+                    </div>
+                    <div class="custom-control custom-radio">
+                        <input type="radio" class="custom-control-input" id="keepClasses" name="classAction" value="keep">
+                        <label class="custom-control-label" for="keepClasses">
+                            <strong>Keep classes as independent sessions</strong>
+                            <div class="text-muted small">Classes will remain but won't be linked to this schedule</div>
+                        </label>
+                    </div>
+                </div>`;
+        }
+        
+        // Update modal body
+        modalBody.innerHTML = confirmationContent;
+        
+        // Update footer buttons
+        modalFooter.innerHTML = `
+            <button type="button" class="btn btn-secondary" onclick="restoreModalContent()">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="confirmRemoveScheduleItem()">
+                Delete Schedule
+            </button>
+        `;
+        
+        // Add function to restore original content
+        window.restoreModalContent = function() {
+            modalBody.innerHTML = originalContent;
+            modalFooter.innerHTML = originalFooter;
+            modalTitle.innerHTML = originalTitle;
+            delete window.restoreModalContent;
+        };
+        
+    } catch (error) {
+        console.error('Error preparing delete confirmation:', error);
+        alert('Error preparing delete confirmation: ' + error.message);
+    }
+}
+
+async function confirmRemoveScheduleItem() {
+    try {
+        const deleteClasses = document.querySelector('input[name="classAction"]:checked')?.value === 'delete';
+        
         const response = await fetch(`/api/centers/${centerId}/schedule/${currentEditingItem._id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ delete_classes: deleteClasses })
         });
         
         const result = await response.json();
@@ -2731,15 +3036,24 @@ async function removeScheduleItem() {
             // Remove from current data
             currentScheduleData = currentScheduleData.filter(item => item._id !== currentEditingItem._id);
             window.currentScheduleData = currentScheduleData;
-            renderScheduleItems();
+            
+            // Close modal and update UI
             closeScheduleItemModal();
-            showSuccessMessage('Schedule item removed successfully!');
+            renderScheduleItems();
+            showSuccessMessage(result.message);
+            
+            // Refresh the page to show updated classes
+            if (deleteClasses) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
         } else {
-            alert(result.error || 'Error removing schedule item');
+            throw new Error(result.error || 'Failed to delete schedule');
         }
     } catch (error) {
         console.error('Error removing schedule item:', error);
-        alert('Error removing schedule item');
+        alert('Error removing schedule item: ' + error.message);
     }
 }
 
@@ -2865,11 +3179,21 @@ function openActivitySelectionModal(dayIndex, slotId) {
     document.getElementById('activitySelectionSubtitle').textContent = `For ${dayName} at ${slotName}`;
     
     populateActivityOptions();
-    document.getElementById('activitySelectionModal').style.display = 'flex';
+    const modalElement = document.getElementById('activitySelectionModal');
+    if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
 }
 
 function closeActivitySelectionModal() {
-    document.getElementById('activitySelectionModal').style.display = 'none';
+    const modalElement = document.getElementById('activitySelectionModal');
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+    }
     selectedDayIndex = null;
     selectedSlotId = null;
 }
@@ -3647,6 +3971,332 @@ function showDayTooltip(event, date, classes) {
 function hideDayTooltip() {
     document.getElementById('dayTooltip').style.display = 'none';
 }
+
+// Add this function to handle schedule deletion
+async function handleScheduleDelete(scheduleId) {
+    try {
+        // First get affected classes
+        const response = await fetch(`/api/centers/${centerId}/schedule/${scheduleId}/affected-classes`);
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to get affected classes');
+        }
+        
+        const { classes, total_count } = result;
+        
+        // Create confirmation dialog content
+        let dialogContent = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Schedule Deletion</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this schedule item?</p>`;
+        
+        if (total_count > 0) {
+            dialogContent += `
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This will affect ${total_count} future classes:
+                </div>
+                <div class="affected-classes" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Class</th>
+                                <th>Coach</th>
+                                <th>Students</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+            
+            classes.forEach(classInfo => {
+                dialogContent += `
+                    <tr>
+                        <td>${classInfo.scheduled_at}</td>
+                        <td>${classInfo.title}</td>
+                        <td>${classInfo.coach_name}</td>
+                        <td>${classInfo.student_count} students, ${classInfo.group_count} groups</td>
+                    </tr>`;
+            });
+            
+            dialogContent += `
+                        </tbody>
+                    </table>
+                </div>
+                <div class="form-group mt-3">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="deleteClasses" checked>
+                        <label class="custom-control-label" for="deleteClasses">
+                            Also cancel affected classes
+                        </label>
+                    </div>
+                </div>`;
+        }
+        
+        dialogContent += `
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmScheduleDelete('${scheduleId}')">
+                        Delete Schedule
+                    </button>
+                </div>
+            </div>`;
+        
+        // Show the modal
+        const modalDiv = document.createElement('div');
+        modalDiv.className = 'modal fade';
+        modalDiv.id = 'deleteConfirmationModal';
+        modalDiv.innerHTML = dialogContent;
+        document.body.appendChild(modalDiv);
+        
+        $('#deleteConfirmationModal').modal('show');
+        
+        // Clean up modal when closed
+        $('#deleteConfirmationModal').on('hidden.bs.modal', function () {
+            document.body.removeChild(modalDiv);
+        });
+        
+    } catch (error) {
+        console.error('Error preparing delete confirmation:', error);
+        alert('Error preparing delete confirmation');
+    }
+}
+
+async function confirmScheduleDelete(scheduleId) {
+    try {
+        const deleteClasses = document.getElementById('deleteClasses')?.checked ?? false;
+        
+        const response = await fetch(`/api/centers/${centerId}/schedule/${scheduleId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',  // This header was missing
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ delete_classes: deleteClasses })  // Need to properly stringify the data
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Close the modal
+            $('#deleteConfirmationModal').modal('hide');
+            
+            // Remove the schedule item from the UI
+            const scheduleElement = document.querySelector(`[data-schedule-id="${scheduleId}"]`);
+            if (scheduleElement) {
+                scheduleElement.remove();
+            }
+            
+            // Show success message
+            showSuccessMessage(result.message);
+            
+            // Refresh the schedule display
+            loadScheduleData();
+        } else {
+            throw new Error(result.error || 'Failed to delete schedule');
+        }
+    } catch (error) {
+        console.error('Error deleting schedule:', error);
+        alert('Error deleting schedule: ' + error.message);
+    }
+}
+
+// Update your existing delete button click handler to use the new function
+function setupDeleteButtons() {
+    document.querySelectorAll('.delete-schedule-btn').forEach(button => {
+        button.onclick = (e) => {
+            e.preventDefault();
+            const scheduleId = button.dataset.scheduleId;
+            handleScheduleDelete(scheduleId);
+        };
+    });
+}
+
+let isSelectionMode = false;
+let selectedClasses = new Set();
+
+async function startScheduleSelection() {
+    document.getElementsByClassName('sign-up-link-instruction')[0].classList.remove('d-none');
+    if (isSelectionMode) {
+        // If already in selection mode, confirm selections and show modal
+        if (selectedClasses.size === 0) {
+            alert('Please select at least one class');
+            return;
+        }
+
+        const scheduleItemIds = Array.from(selectedClasses)
+    
+        try {
+            const response = await fetch('/generate-activity-link', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    schedule_item_ids: scheduleItemIds
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate link');
+            }
+
+            const data = await response.json();
+            document.getElementById('signupLink').value = data.link;
+            new bootstrap.Modal(document.getElementById('selectionModeModal')).show();
+        } catch (error) {
+            console.error('Error generating link:', error);
+            alert('Failed to generate signup link. Please try again.');
+        }
+        exitSelectionMode();
+    } else {
+        // Enter selection mode
+        isSelectionMode = true;
+        selectedClasses.clear();
+        document.querySelectorAll('.schedule-item').forEach(item => {
+            item.classList.add('selectable');
+            item.addEventListener('click', toggleClassSelection);
+        });
+        const btn = document.getElementById('signupLinkBtn');
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Confirm and Create';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-primary');
+    }
+    updateSelectedCount();
+}
+
+function exitSelectionMode() {
+    document.getElementsByClassName('sign-up-link-instruction')[0].classList.add('d-none');
+    isSelectionMode = false;
+    selectedClasses.clear();
+    document.querySelectorAll('.schedule-item').forEach(item => {
+        item.classList.remove('selectable', 'selected');
+        item.removeEventListener('click', toggleClassSelection);
+    });
+    const btn = document.getElementById('signupLinkBtn');
+    btn.innerHTML = '<i class="bi bi-link-45deg"></i> Create Sign Up Link';
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-success');
+}
+
+function toggleClassSelection(event) {
+    
+    const item = event.currentTarget;
+    const scheduleItemId = item.getAttribute('data-schedule-item-id');
+    
+    if (selectedClasses.has(scheduleItemId)) {
+        selectedClasses.delete(scheduleItemId);
+        item.classList.remove('selected');
+    } else {
+        selectedClasses.add(scheduleItemId);
+        item.classList.add('selected');
+    }
+    
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    document.getElementById('selectedClassCount').textContent = selectedClasses.size;
+}
+
+// Replace the existing link generation code with:
+async function generateSignupLink() {
+    const selectedClasses = document.querySelectorAll('input[name="selected_classes"]:checked');
+    if (selectedClasses.length === 0) {
+        alert('Please select at least one class');
+        return;
+    }
+
+    const scheduleItemIds = Array.from(selectedClasses);
+    
+    try {
+        const response = await fetch('/generate-activity-link', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                schedule_item_ids: scheduleItemIds
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to generate link');
+        }
+
+        const data = await response.json();
+        document.getElementById('signupLink').value = data.link;
+    } catch (error) {
+        console.error('Error generating link:', error);
+        alert('Failed to generate signup link. Please try again.');
+    }
+}
+
+function copySignupLink() {
+    const linkInput = document.getElementById('signupLink');
+    linkInput.select();
+    document.execCommand('copy');
+    
+    const copyButton = document.querySelector('#signupLink + button');
+    const originalHtml = copyButton.innerHTML;
+    copyButton.innerHTML = '<i class="bi bi-check"></i>';
+    setTimeout(() => {
+        copyButton.innerHTML = originalHtml;
+    }, 2000);
+}
 </script>
+
+<style>
+    .schedule-item.selectable {
+        opacity: 0.5;
+        cursor: pointer;
+        transition: opacity 0.3s;
+    }
+    .schedule-item.selected {
+        opacity: 1;
+        border: 2px solid #198754;
+    }
+    .schedule-item.selected::after {
+        content: '✓';
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        color: #198754;
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+</style>
+
+<!-- Selection Mode Modal -->
+<div class="modal fade" id="selectionModeModal" tabindex="-1" aria-labelledby="selectionModeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="selectionModeModalLabel">Class Sign Up Link</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="signupLink">Sign Up Link:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="signupLink" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copySignupLink()">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 {% endblock %}
 

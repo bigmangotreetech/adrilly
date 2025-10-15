@@ -9,12 +9,13 @@ from flask import current_app
 from werkzeug.utils import secure_filename
 from PIL import Image
 import io
+import os
 
 class FileUploadService:
     """Service for handling file uploads to AWS S3"""
     
     # Allowed file types for different upload types
-    ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+    ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif'}
     ALLOWED_DOCUMENT_EXTENSIONS = {'.pdf', '.doc', '.docx', '.txt'}
     
     # Maximum file sizes (in bytes)
@@ -26,15 +27,17 @@ class FileUploadService:
         'profile': {'max_width': 400, 'max_height': 400, 'quality': 85},
         'banner': {'max_width': 1200, 'max_height': 400, 'quality': 90},
         'logo': {'max_width': 300, 'max_height': 300, 'quality': 90},
-        'center_image': {'max_width': 800, 'max_height': 600, 'quality': 85}
+        'center_image': {'max_width': 800, 'max_height': 600, 'quality': 85},
+        'class_picture': {'max_width': 1200, 'max_height': 1200, 'quality': 90},
+        'post_image': {'max_width': 1200, 'max_height': 1200, 'quality': 90}
     }
     
     def __init__(self):
-        self.bucket_name = current_app.config.get('AWS_S3_BUCKET')
-        self.region = current_app.config.get('AWS_REGION', 'us-east-1')
-        self.aws_access_key = current_app.config.get('AWS_ACCESS_KEY_ID')
-        self.aws_secret_key = current_app.config.get('AWS_SECRET_ACCESS_KEY')
-        
+        self.bucket_name = os.environ.get('AWS_BUCKET_NAME')
+        self.region = os.environ.get('AWS_REGION', 'us-east-1')
+        self.aws_access_key = os.environ.get('AWS_ACCESS_KEY')
+        self.aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+
         # Initialize S3 client
         self._init_s3_client()
     
@@ -71,7 +74,7 @@ class FileUploadService:
         file_ext = os.path.splitext(filename)[1].lower()
         
         # Check file type
-        if upload_type in ['profile', 'banner', 'logo', 'center_image']:
+        if upload_type in ['profile', 'banner', 'logo', 'center_image', 'class_picture', 'post_image']:
             if file_ext not in self.ALLOWED_IMAGE_EXTENSIONS:
                 return False, f"Invalid file type. Allowed: {', '.join(self.ALLOWED_IMAGE_EXTENSIONS)}"
             max_size = self.MAX_IMAGE_SIZE
@@ -148,6 +151,10 @@ class FileUploadService:
             return f"organizations/{organization_id}/{upload_type}/{timestamp}_{unique_id}{ext}"
         elif upload_type == 'center_image':
             return f"centers/{organization_id}/{timestamp}_{unique_id}{ext}"
+        elif upload_type == 'class_picture':
+            return f"class_pictures/{organization_id}/{timestamp}_{unique_id}{ext}"
+        elif upload_type == 'post_image':
+            return f"posts/{organization_id}/{timestamp}_{unique_id}{ext}"
         else:
             return f"uploads/{organization_id}/{upload_type}/{timestamp}_{unique_id}{ext}"
     
@@ -158,7 +165,7 @@ class FileUploadService:
         
         Args:
             file: File object from request
-            upload_type: Type of upload ('profile', 'banner', 'logo', 'center_image')
+            upload_type: Type of upload ('profile', 'banner', 'logo', 'center_image', 'class_picture', 'post_image')
             organization_id: Organization ID for file organization
             user_id: User ID (for profile pictures)
             center_id: Center ID (for center images)
@@ -212,6 +219,7 @@ class FileUploadService:
             file_url = f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{s3_key}"
             
             current_app.logger.info(f"File uploaded successfully: {s3_key}")
+            print(f"File uploaded successfully: {s3_key}")
             return True, "File uploaded successfully", file_url
             
         except ClientError as e:

@@ -119,6 +119,14 @@
   --space-20: 5rem;       /* 80px */
   --space-24: 6rem;       /* 96px */
   
+  /* Semantic Spacing (aliases for common use) */
+  --spacing-xs: var(--space-1);    /* 4px */
+  --spacing-sm: var(--space-2);    /* 8px */
+  --spacing-md: var(--space-4);    /* 16px */
+  --spacing-lg: var(--space-6);    /* 24px */
+  --spacing-xl: var(--space-8);    /* 32px */
+  --spacing-2xl: var(--space-12);  /* 48px */
+  
   /* Border Radius */
   --radius-none: 0;
   --radius-sm: 0.125rem;   /* 2px */
@@ -162,6 +170,50 @@
   --breakpoint-lg: 1024px;
   --breakpoint-xl: 1280px;
   --breakpoint-2xl: 1536px;
+  
+  /* Semantic Colors - Light Mode */
+  --primary: #a1de56;
+  --primary-dark: #8bc34a;
+  --primary-light: #c8e6c9;
+  --secondary: #2196f3;
+  --secondary-dark: #1976d2;
+  --secondary-light: #bbdefb;
+  --accent-primary: #ff9800;
+  --accent-secondary: #e91e63;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --error: #f44336;
+  --info: #2196f3;
+  
+  /* Background colors - Light Mode */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: #f1f5f9;
+  --bg-active: #e2e8f0;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --accent-bg: #f0f9ff;
+  
+  /* Text colors - Light Mode */
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-inverse: #ffffff;
+  
+  /* Border colors - Light Mode */
+  --border-primary: #e2e8f0;
+  --border-secondary: #f1f5f9;
+  --border-input: #d1d5db;
+  --border-light: #f3f4f6;
+  
+  /* Component specific - Light Mode */
+  --table-bg: #ffffff;
+  --table-border: #e2e8f0;
+  --modal-bg: #ffffff;
+  --card-bg: #ffffff;
+  --dropdown-bg: #ffffff;
 }
 
 /* ===================================
@@ -626,7 +678,6 @@ p {
 
 .card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
 }
 
 .card-header {
@@ -727,11 +778,12 @@ p {
 
 .modal {
   position: fixed;
-  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -739,9 +791,10 @@ p {
   opacity: 0;
   visibility: hidden;
   transition: all var(--transition-base);
+  margin: auto
 }
 
-.modal.active {
+.modal.show {
   opacity: 1;
   visibility: visible;
 }
@@ -757,7 +810,7 @@ p {
   transition: transform var(--transition-base);
 }
 
-.modal.active .modal-content {
+.modal.show .modal-content {
   transform: scale(1) translateY(0);
 }
 
@@ -969,14 +1022,142 @@ p {
 
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Override gray colors for dark mode */
     --gray-50: #1f2937;
     --gray-100: #374151;
     --gray-200: #4b5563;
-    --gray-900: #f9fafb;
+    --gray-300: #6b7280;
+    --gray-400: #9ca3af;
+    --gray-500: #d1d5db;
+    --gray-600: #e5e7eb;
+    --gray-700: #f3f4f6;
+    --gray-800: #f9fafb;
+    --gray-900: #ffffff;
+    
+    /* Semantic colors for dark mode */
+    --primary: #a1de56;
+    --primary-dark: #8bc34a;
+    --primary-light: #c8e6c9;
+    --secondary: #2196f3;
+    --secondary-dark: #1976d2;
+    --secondary-light: #bbdefb;
+    --accent-primary: #ff9800;
+    --accent-secondary: #e91e63;
+    --success: #4caf50;
+    --warning: #ff9800;
+    --error: #f44336;
+    --info: #2196f3;
+    
+    /* Background colors for dark mode */
+    --bg-primary: #1f2937;
+    --bg-secondary: #111827;
+    --bg-tertiary: #374151;
+    --bg-card: #1f2937;
+    --bg-input: #374151;
+    --bg-hover: #4b5563;
+    --bg-active: #6b7280;
+    --bg-overlay: rgba(0, 0, 0, 0.75);
+    --accent-bg: #1e3a8a;
+    
+    /* Text colors for dark mode */
+    --text-primary: #f9fafb;
+    --text-secondary: #e5e7eb;
+    --text-muted: #9ca3af;
+    --text-inverse: #1f2937;
+    
+    /* Border colors for dark mode */
+    --border-primary: #4b5563;
+    --border-secondary: #374151;
+    --border-input: #6b7280;
+    --border-light: #4b5563;
+    
+    /* Component specific overrides */
+    --table-bg: #1f2937;
+    --table-border: #4b5563;
+    --modal-bg: #1f2937;
+    --card-bg: #1f2937;
+    --dropdown-bg: #1f2937;
   }
   
   body {
-    background-color: var(--gray-800);
-    color: var(--gray-100);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+  
+  /* Ensure Bootstrap components work in dark mode */
+  .table {
+    --bs-table-bg: var(--table-bg);
+    --bs-table-border-color: var(--table-border);
+    color: var(--text-primary);
+  }
+  
+  .card {
+    background-color: var(--card-bg);
+    border-color: var(--border-primary);
+    color: var(--text-primary);
+  }
+  
+  .modal-content {
+    background-color: var(--modal-bg);
+    color: var(--text-primary);
+  }
+  
+  .dropdown-menu {
+    background-color: var(--dropdown-bg);
+    border-color: var(--border-primary);
+    color: var(--text-primary);
+  }
+  
+  .dropdown-item {
+    color: var(--text-primary);
+  }
+  
+  .dropdown-item:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  
+  /* Form controls in dark mode */
+  .form-control {
+    background-color: var(--bg-input);
+    border-color: var(--border-input);
+    color: var(--text-primary);
+  }
+  
+  .form-control:focus {
+    background-color: var(--bg-input);
+    border-color: var(--primary);
+    color: var(--text-primary);
+  }
+  
+  /* Badge colors for dark mode */
+  .badge.bg-secondary {
+    background-color: var(--gray-600) !important;
+    color: var(--text-primary);
+  }
+  
+  /* Alert colors for dark mode */
+  .alert-info {
+    background-color: rgba(33, 150, 243, 0.15);
+    border-color: var(--info);
+    color: var(--info);
+  }
+  
+  .alert-success {
+    background-color: rgba(76, 175, 80, 0.15);
+    border-color: var(--success);
+    color: var(--success);
+  }
+  
+  .alert-warning {
+    background-color: rgba(255, 152, 0, 0.15);
+    border-color: var(--warning);
+    color: var(--warning);
+  }
+  
+  .alert-danger {
+    background-color: rgba(244, 67, 54, 0.15);
+    border-color: var(--error);
+    color: var(--error);
   }
 }

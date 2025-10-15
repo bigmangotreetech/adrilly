@@ -6,8 +6,10 @@ from app.models.post import Post
 from app.models.user import User
 from app.extensions import mongo
 from app.routes.auth import require_role
+from app.utils.auth import jwt_or_session_required, require_role_hybrid, get_current_user_info
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timedelta
+from app.services.file_upload_service import FileUploadService
 
 feed_bp = Blueprint('feed', __name__)
 
@@ -23,18 +25,28 @@ class CreatePostSchema(Schema):
     visibility = fields.Str(required=False, missing='public',
                            validate=lambda x: x in ['public', 'students_only', 'coaches_only'])
     scheduled_for = fields.DateTime(required=False, allow_none=True)
+    associated_class_id = fields.Str(required=False, allow_none=True)
 
 class CommentSchema(Schema):
     content = fields.Str(required=True, validate=lambda x: 1 <= len(x.strip()) <= 1000)
     parent_comment_id = fields.Str(required=False, allow_none=True)
 
 # API Routes
-@feed_bp.route('/api/organizations/<organization_id>/feed', methods=['GET'])
-@jwt_required()
-def api_get_feed(organization_id):
-    """Get organization feed"""
+@feed_bp.route('/api/organizations/feed', methods=['GET'])
+@jwt_or_session_required()
+def api_get_feed():
+    """Get organization feed for user's organization"""
     try:
-        current_user_id = get_jwt_identity()
+        user_info = get_current_user_info()
+        if not user_info:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        current_user_id = ObjectId(user_info.get('user_id'))
+        organization_id = ObjectId(user_info.get('organization_id'))
+        
+        if not organization_id:
+            return jsonify({'error': 'User not associated with any organization'}), 400
+        
         page = request.args.get('page', 1, type=int)
         per_page = min(request.args.get('per_page', 10, type=int), 50)  # Max 50 per page
         post_type = request.args.get('type')
@@ -48,6 +60,7 @@ def api_get_feed(organization_id):
             post_type=post_type,
             category=category
         )
+        print(feed_data)
         
         if success:
             return jsonify(feed_data), 200
@@ -97,11 +110,15 @@ def api_create_post(organization_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @feed_bp.route('/api/posts/<post_id>/like', methods=['POST'])
-@jwt_required()
+@jwt_or_session_required()
 def api_like_post(post_id):
     """Like or unlike a post"""
     try:
-        current_user_id = get_jwt_identity()
+        user_info = get_current_user_info()
+        if not user_info:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        current_user_id = user_info.get('user_id')
         
         success, message, like_data = FeedService.like_post(post_id, current_user_id)
         
@@ -118,10 +135,14 @@ def api_like_post(post_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @feed_bp.route('/api/posts/<post_id>/comments', methods=['GET'])
-@jwt_required()
+@jwt_or_session_required()
 def api_get_comments(post_id):
     """Get comments for a post"""
     try:
+        user_info = get_current_user_info()
+        if not user_info:
+            return jsonify({'error': 'Authentication required'}), 401
+        
         page = request.args.get('page', 1, type=int)
         per_page = min(request.args.get('per_page', 20, type=int), 50)
         
@@ -140,15 +161,84 @@ def api_get_comments(post_id):
         current_app.logger.error(f"Error getting comments: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
+@feed_bp.route('/api/posts/<post_id>/associate-class', methods=['POST'])
+@jwt_or_session_required()
+@require_role(['org_admin', 'center_admin'])
+def api_associate_class(post_id):
+    """Associate a class with an announcement post"""
+    try:
+        user_info = get_current_user_info()
+        if not user_info:
+            return jsonify({'error': 'Authentication required'}), 401
+
+        # Validate request data
+        if not request.is_json:
+            return jsonify({'error': 'Request must be JSON'}), 400
+
+        data = request.get_json()
+        if 'class_id' not in data:
+            return jsonify({'error': 'class_id is required'}), 400
+
+        class_id = data['class_id']
+
+        # Get post and verify ownership
+        post_data = mongo.db.posts.find_one({'_id': ObjectId(post_id)})
+        if not post_data:
+            return jsonify({'error': 'Post not found'}), 404
+
+        post = Post.from_dict(post_data)
+        if not post.can_be_edited_by(user_info['user_id'], user_info['role'], user_info['organization_id']):
+            return jsonify({'error': 'Access denied'}), 403
+
+        # Get class data
+        class_data = mongo.db.classes.find_one({'_id': ObjectId(class_id)})
+        if not class_data:
+            return jsonify({'error': 'Class not found'}), 404
+
+        # Get additional class info
+        coach_data = mongo.db.users.find_one({'_id': class_data['coach_id']})
+        center_data = mongo.db.centers.find_one({'_id': class_data['center_id']})
+
+        # Create class info
+        associated_class = {
+            '_id': str(class_data['_id']),
+            'name': class_data['name'],
+            'scheduled_at': class_data['scheduled_at'],
+            'coach_name': coach_data['name'] if coach_data else None,
+            'center_name': center_data['name'] if center_data else None
+        }
+
+        # Update post
+        mongo.db.posts.update_one(
+            {'_id': ObjectId(post_id)},
+            {'$set': {
+                'associated_class': associated_class,
+                'updated_at': datetime.utcnow()
+            }}
+        )
+
+        return jsonify({
+            'message': 'Class associated successfully',
+            'associated_class': associated_class
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error associating class: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @feed_bp.route('/api/posts/<post_id>/comments', methods=['POST'])
-@jwt_required()
+@jwt_or_session_required()
 def api_add_comment(post_id):
     """Add a comment to a post"""
     try:
+        user_info = get_current_user_info()
+        if not user_info:
+            return jsonify({'error': 'Authentication required'}), 401
+        
         schema = CommentSchema()
         data = schema.load(request.json)
         
-        current_user_id = get_jwt_identity()
+        current_user_id = user_info.get('user_id')
         
         success, message, comment_data = FeedService.add_comment(
             post_id=post_id,
@@ -172,17 +262,27 @@ def api_add_comment(post_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @feed_bp.route('/api/organizations/<organization_id>/search', methods=['GET'])
-@jwt_required()
+@jwt_or_session_required()
 def api_search_posts(organization_id):
     """Search posts in organization"""
     try:
+        user_info = get_current_user_info()
+        if not user_info:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        current_user_id = ObjectId(user_info.get('user_id'))
+        user_org_id = ObjectId(user_info.get('organization_id'))
+        
+        # Verify user belongs to the organization
+        if user_org_id != ObjectId(organization_id):
+            return jsonify({'error': 'Access denied'}), 403
+        
         query = request.args.get('q', '').strip()
         if not query or len(query) < 2:
             return jsonify({'error': 'Search query must be at least 2 characters'}), 400
         
         page = request.args.get('page', 1, type=int)
         per_page = min(request.args.get('per_page', 10, type=int), 50)
-        current_user_id = get_jwt_identity()
         
         success, message, search_data = FeedService.search_posts(
             organization_id=organization_id,
@@ -209,17 +309,17 @@ def feed_page():
     
     @login_required
     def _feed_page():
-        try:
-            org_id = session.get('organization_id')
+        # try:
+            org_id = ObjectId(session.get('organization_id'))
             if not org_id:
                 flash('Organization not found.', 'error')
                 return redirect(url_for('web.dashboard'))
             
             user_role = session.get('role')
-            user_id = session.get('user_id')
+            user_id = ObjectId(session.get('user_id'))
             
             # Get organization info
-            org_data = mongo.db.organizations.find_one({'_id': ObjectId(org_id)})
+            org_data = mongo.db.organizations.find_one({'_id': org_id})
             if not org_data:
                 flash('Organization not found.', 'error')
                 return redirect(url_for('web.dashboard'))
@@ -241,17 +341,21 @@ def feed_page():
                 'category': {'$ne': None, '$ne': ''}
             })
             categories = list(categories_cursor)
+
             
-            return render_template('feed.html',
+
+
+            
+            return render_template('feed.html', 
                                  organization=org_data,
                                  posts=posts,
                                  categories=categories,
                                  can_create_posts=user_role in ['org_admin', 'center_admin', 'coach'])
         
-        except Exception as e:
-            current_app.logger.error(f"Error loading feed page: {str(e)}")
-            flash('Error loading feed page.', 'error')
-            return redirect(url_for('web.dashboard'))
+        # except Exception as e:
+        #     current_app.logger.error(f"Error loading feed page: {str(e)}")
+        #     flash('Error loading feed page.', 'error')
+        #     return redirect(url_for('web.dashboard'))
     
     return _feed_page()
 
@@ -264,18 +368,33 @@ def create_post_page():
     @role_required(['org_admin', 'center_admin', 'coach'])
     def _create_post_page():
         try:
-            org_id = session.get('organization_id')
+            org_id = ObjectId(session.get('organization_id'))
             if not org_id:
                 flash('Organization not found.', 'error')
                 return redirect(url_for('web.dashboard'))
             
             # Get organization info
-            org_data = mongo.db.organizations.find_one({'_id': ObjectId(org_id)})
+            org_data = mongo.db.organizations.find_one({'_id': org_id})
             if not org_data:
                 flash('Organization not found.', 'error')
                 return redirect(url_for('web.dashboard'))
             
-            return render_template('create_post.html', organization=org_data)
+            today = datetime.now()
+            next_week = today + timedelta(days=7)
+
+            classes_cursor = mongo.db.classes.find({
+                'organization_id': org_id,
+                'scheduled_at': {'$gte': today, '$lte': next_week},
+            }).sort('scheduled_at', 1)
+            
+            
+            
+            classes = []
+            for class_data in classes_cursor:
+                classes.append(class_data)
+            
+            
+            return render_template('create_post.html', organization=org_data, classes=classes)
         
         except Exception as e:
             current_app.logger.error(f"Error loading create post page: {str(e)}")
@@ -293,8 +412,8 @@ def submit_post():
     @role_required(['org_admin', 'center_admin', 'coach'])
     def _submit_post():
         try:
-            org_id = session.get('organization_id')
-            user_id = session.get('user_id')
+            org_id = ObjectId(session.get('organization_id'))
+            user_id = ObjectId(session.get('user_id'))
             
             if not org_id or not user_id:
                 flash('Invalid session.', 'error')
@@ -307,10 +426,23 @@ def submit_post():
             category = request.form.get('category', '').strip() or None
             visibility = request.form.get('visibility', 'public')
             tags_str = request.form.get('tags', '').strip()
-            
+            associated_class_id = request.form.get('associated_class', '').strip() or None
+            featured_image_urls = []
             # Process tags
             tags = [tag.strip() for tag in tags_str.split(',') if tag.strip()] if tags_str else []
             
+            if 'featured_images' in request.files:
+                featured_images = request.files.getlist('featured_images')
+                for image in featured_images:
+                    if image.filename == '':
+                        continue
+                    upload_service = FileUploadService()
+                    success, message, image_url = upload_service.upload_file(image, 'post_image', str(org_id), str(user_id))
+                    if not success:
+                        flash(f'Error uploading featured image: {message}', 'error')
+                        return redirect(url_for('feed.create_post_page'))
+                    featured_image_urls.append(image_url)
+
             # Basic validation
             if not title or len(title) < 5:
                 flash('Title must be at least 5 characters long.', 'error')
@@ -329,7 +461,9 @@ def submit_post():
                 post_type=post_type,
                 category=category,
                 tags=tags,
-                visibility=visibility
+                visibility=visibility,
+                associated_class_id=associated_class_id,
+                media_urls=featured_image_urls
             )
             
             if success:

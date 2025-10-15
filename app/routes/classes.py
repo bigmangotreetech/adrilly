@@ -9,32 +9,10 @@ from marshmallow import Schema, fields, ValidationError
 from datetime import datetime
 from bson import ObjectId
 from app.utils.auth import jwt_or_session_required, require_role_hybrid, get_current_user_info
-
+from app.helpers.app_helper import get_user_info_from_session_or_claims
 classes_bp = Blueprint('classes', __name__, url_prefix='/api/classes')
 
-def get_user_info_from_session_or_claims():
-    """
-    Get user information from session first, fall back to JWT claims if not available
-    Returns: dict with user_id, role, organization_id
-    """
-    # Try session first
-    if 'user_id' in session and session.get('user_id'):
-        return {
-            'user_id': session['user_id'],
-            'role': session.get('role'),
-            'organization_id': session.get('organization_id')
-        }
-    
-    # Fall back to JWT claims
-    try:
-        claims = get_jwt()
-        return {
-            'user_id': get_jwt_identity(),
-            'role': claims.get('role'),
-            'organization_id': claims.get('organization_id')
-        }
-    except Exception:
-        return None
+
 
 # Request schemas
 class CreateClassSchema(Schema):
@@ -86,13 +64,13 @@ def create_class():
         # Create new class
         new_class = Class(
             title=data['title'],
-            organization_id=organization_id,
-            coach_id=data['coach_id'],
+            organization_id=ObjectId(organization_id),
+            coach_id=ObjectId(data['coach_id']),
             scheduled_at=data['scheduled_at'],
             duration_minutes=data.get('duration_minutes', 60),
             location=data.get('location', {}),
-            group_ids=data.get('group_ids', []),
-            student_ids=data.get('student_ids', []),
+            group_ids=[ObjectId(gid) for gid in data.get('group_ids', [])],
+            student_ids=[ObjectId(sid) for sid in data.get('student_ids', [])],
             sport=data.get('sport'),
             level=data.get('level'),
             notes=data.get('notes')
@@ -117,8 +95,8 @@ def create_class():
 @classes_bp.route('', methods=['GET'])
 @jwt_or_session_required()
 def get_classes():
-    """Get classes (filtered by user role and organization)"""
-    try:
+    # """Get classes (filtered by user role and organization)"""
+    # try:
         user_info = get_user_info_from_session_or_claims()
         if not user_info:
             return jsonify({'error': 'Authentication required'}), 401
@@ -144,7 +122,7 @@ def get_classes():
                 ]
         elif user_role == 'coach':
             # Coaches can see classes they're assigned to
-            query['coach_id'] = ObjectId(user_id)
+            query['coach_id'] = user_id
         # Admins can see all classes in their organization
         
         # Get query parameters
@@ -185,9 +163,49 @@ def get_classes():
         classes_cursor = mongo.db.classes.find(query).sort('scheduled_at', 1).skip(skip).limit(per_page)
         classes = [Class.from_dict(class_data).to_dict() for class_data in classes_cursor]
         
+        for class_doc in classes:
+            class_doc['_id'] = str(class_doc['_id'])
+            if class_doc.get('coach_id'):
+                class_doc['coach_id'] = str(class_doc['coach_id'])
+            if class_doc.get('organization_id'):
+                class_doc['organization_id'] = str(class_doc['organization_id'])
+            if class_doc.get('student_ids'):
+                class_doc['student_ids'] = [str(s) for s in class_doc['student_ids']]
+            if class_doc['scheduled_at']:
+                class_doc['scheduled_at'] = class_doc['scheduled_at'].isoformat()
+            if class_doc['created_at']:
+                class_doc['created_at'] = class_doc['created_at'].isoformat()
+            if class_doc['updated_at']:
+                class_doc['updated_at'] = class_doc['updated_at'].isoformat()
+            if class_doc['cancelled_at']:
+                class_doc['cancelled_at'] = class_doc['cancelled_at'].isoformat()
+            if class_doc['recurring']:
+                class_doc['recurring'] = str(class_doc['recurring'])
+            else:
+                class_doc['recurring'] = 'No'
+            if class_doc.get('organization_id'):
+                class_doc['organization_id'] = str(class_doc['organization_id'])
+            if class_doc.get('coach_id'):
+                class_doc['coach_id'] = str(class_doc['coach_id'])
+            if class_doc.get('group_ids'):
+                class_doc['group_ids'] = [str(gid) for gid in class_doc['group_ids']]
+            if class_doc.get('student_ids'):
+                class_doc['student_ids'] = [str(sid) for sid in class_doc['student_ids']]
+            if class_doc.get('location'):
+                if class_doc['location'].get('center_id'):
+                    class_doc['location']['center_id'] = str(class_doc['location']['center_id'])
+            if class_doc.get('schedule_item_id'):
+                class_doc['schedule_item_id'] = str(class_doc['schedule_item_id'])
+            
+            if class_doc.get('coach_id'):
+                coach = mongo.db.users.find_one({'_id': ObjectId(class_doc['coach_id'])})
+                if coach:
+                    class_doc['coach_name'] = coach.get('name', 'Unknown')
+        
         # Get total count
         total = mongo.db.classes.count_documents(query)
         
+        print(classes)
         return jsonify({
             'classes': classes,
             'pagination': {
@@ -198,7 +216,7 @@ def get_classes():
             }
         }), 200
     
-    except Exception as e:
+    # except Exception as e:
         return jsonify({'error': 'Internal server error'}), 500
 
 @classes_bp.route('/<class_id>', methods=['GET'])
@@ -273,8 +291,8 @@ def get_class(class_id):
 @jwt_or_session_required()
 
 def update_class(class_id):
-    """Update a class"""
-    try:
+    # """Update a class"""
+    # try:
         schema = UpdateClassSchema()
         data = schema.load(request.json)
         
@@ -328,15 +346,14 @@ def update_class(class_id):
             updated_class = Class.from_dict(updated_class_data)
             return jsonify({
                 'message': 'Class updated successfully',
-                'class': updated_class.to_dict()
             }), 200
         else:
             return jsonify({'error': 'No changes made'}), 400
     
-    except ValidationError as e:
-        return jsonify({'error': 'Validation error', 'details': e.messages}), 400
-    except Exception as e:
-        return jsonify({'error': 'Internal server error'}), 500
+    # except ValidationError as e:
+    #     return jsonify({'error': 'Validation error', 'details': e.messages}), 400
+    # except Exception as e:
+    #     return jsonify({'error': 'Internal server error'}), 500
 
 @classes_bp.route('/<class_id>', methods=['DELETE'])
 @jwt_or_session_required()
@@ -418,12 +435,13 @@ def get_class_students(class_id):
         for student_data in students:
             student = User.from_dict(student_data)
             students_data.append({
-                'id': str(student._id),
+                '_id': str(student._id),
                 'name': student.name,
                 'phone_number': student.phone_number,
                 'profile_data': student.profile_data
             })
         
+        print(students_data)
         return jsonify({
             'students': students_data,
             'total': len(students_data)

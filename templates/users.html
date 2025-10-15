@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Users - Adrilly Sports Coaching{% endblock %}
+{% block title %}Users - botle Sports Coaching{% endblock %}
 
 {% block content %}
 <div class="users-page">
@@ -9,23 +9,26 @@
             <div class="page-title-section">
                 <h1 class="page-title-modern">User Management</h1>
                 <p class="page-subtitle-modern">Manage all users in your organization</p>
-</div>
+            </div>
             <div class="page-actions">
-                <a href="{{ url_for('web.export_users') }}" class="btn btn-secondary-modern" id="exportUsersBtn">
+                <a href="{{ url_for('web.export_users') }}" class="btn btn-secondary" id="exportUsersBtn">
                     <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
                     </svg>
                     Export
                 </a>
-                <button class="btn btn-primary-modern" onclick="openCreateUserModal()">
+                <button class="btn btn-primary" onclick="openCreateUserModal()">
                     <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
                     Add User
                 </button>
+            </div>
         </div>
     </div>
-                </div>
 
     <div class="content-card-modern">
         <!-- Enhanced Filter Bar -->
@@ -34,52 +37,58 @@
                 <div class="search-section">
                     <div class="search-input-container">
                         <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
-                        <input type="text" name="search" class="search-input" 
-                               placeholder="Search by name, email, phone..." 
-                               value="{{ request.args.get('search', '') }}"
-                               id="searchInput">
+                        <input type="text" name="search" class="search-input"
+                            placeholder="Search by name, email, phone..." value="{{ request.args.get('search', '') }}"
+                            id="searchInput">
                     </div>
                 </div>
-                
+
                 <div class="filter-controls">
                     <div class="filter-dropdown">
-                        <select name="role" class="filter-select" id="roleFilter">
-                        <option value="">All Roles</option>
-                        <option value="student" {{ 'selected' if request.args.get('role') == 'student' }}>Students</option>
-                        <option value="coach" {{ 'selected' if request.args.get('role') == 'coach' }}>Coaches</option>
-                        <option value="coach_admin" {{ 'selected' if request.args.get('role') == 'coach_admin' }}>Coach Admins</option>
-                        {% if session.role == 'super_admin' %}
-                        <option value="org_admin" {{ 'selected' if request.args.get('role') == 'org_admin' }}>Org Admins</option>
-                        {% endif %}
-                    </select>
-                </div>
-                    
+                        <select name="role" class="filter-select select2" id="roleFilter" data-placeholder="Filter by role">
+                            <option value="">All Roles</option>
+                            <option value="student" {{ 'selected' if request.args.get('role')=='student' }}>Students
+                            </option>
+                            <option value="coach" {{ 'selected' if request.args.get('role')=='coach' }}>Coaches</option>
+                            <option value="coach_admin" {{ 'selected' if request.args.get('role')=='coach_admin' }}>
+                                Coach Admins</option>
+                            {% if session.role == 'super_admin' %}
+                            <option value="org_admin" {{ 'selected' if request.args.get('role')=='org_admin' }}>Org
+                                Admins</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
                     <div class="filter-dropdown">
-                        <select name="status" class="filter-select" id="statusFilter">
-                        <option value="">All Status</option>
-                        <option value="active" {{ 'selected' if request.args.get('status') == 'active' }}>Active</option>
-                        <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' }}>Inactive</option>
-                    </select>
-                </div>
+                        <select name="status" class="filter-select select2" id="statusFilter" data-placeholder="Filter by status">
+                            <option value="">All Status</option>
+                            <option value="active" {{ 'selected' if request.args.get('status')=='active' }}>Active
+                            </option>
+                            <option value="inactive" {{ 'selected' if request.args.get('status')=='inactive' }}>Inactive
+                            </option>
+                        </select>
+                    </div>
 
                     {% if session.role == 'super_admin' %}
                     <div class="filter-dropdown">
-                        <select name="organization" class="filter-select" id="organizationFilter">
+                        <select name="organization" class="filter-select select2-search" id="organizationFilter" data-placeholder="Search organizations">
                             <option value="">All Organizations</option>
                             {% for org in organizations %}
-                            <option value="{{ org._id }}" {{ 'selected' if request.args.get('organization') == org._id }}>{{ org.name }}</option>
+                            <option value="{{ org._id }}" {{ 'selected' if request.args.get('organization')==org._id }}>
+                                {{ org.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     {% endif %}
-                    
+
                     <button type="button" class="btn-clear-filters" id="clearFilters">
                         Clear Filters
                     </button>
-            </div>
-        </form>
+                </div>
+            </form>
 
             <!-- Active Filters Chips -->
             <div class="active-filters" id="activeFilters"></div>
@@ -89,153 +98,173 @@
         {% if users %}
         <div class="table-container-modern">
             <table class="table-modern" id="usersTable">
-                    <thead class="table-header-sticky">
-                        <tr>
-                            <th class="sortable" data-sort="name">
-                                <div class="th-content">
-                                    <span>Name</span>
-                                    <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th class="sortable d-none d-md-table-cell" data-sort="email">
-                                <div class="th-content">
-                                    <span>Email</span>
-                                    <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th class="sortable d-none d-sm-table-cell" data-sort="phone">
-                                <div class="th-content">
-                                    <span>Phone</span>
-                                    <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th class="sortable" data-sort="role">
-                                <div class="th-content">
-                                    <span>Role</span>
-                                    <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th class="d-none d-lg-table-cell">
-                                <div class="th-content">
-                                    <span>Groups</span>
-                                </div>
-                            </th>
-                            <th class="sortable d-none d-md-table-cell" data-sort="status">
-                                <div class="th-content">
-                                    <span>Status</span>
-                                    <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th class="sortable d-none d-lg-table-cell" data-sort="last_login">
-                                <div class="th-content">
-                                    <span>Last Login</span>
-                                    <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th class="actions-column">
-                                <div class="th-content">
-                                    <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
-                                    </svg>
-                                </div>
-                            </th>
+                <thead class="table-header-sticky">
+                    <tr>
+                        <th class="sortable" data-sort="name">
+                            <div class="th-content">
+                                <span>Name</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="sortable d-none d-md-table-cell" data-sort="email">
+                            <div class="th-content">
+                                <span>Email</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="sortable d-none d-sm-table-cell" data-sort="phone">
+                            <div class="th-content">
+                                <span>Phone</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="sortable" data-sort="role">
+                            <div class="th-content">
+                                <span>Role</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="d-none d-lg-table-cell">
+                            <div class="th-content">
+                                <span>Groups</span>
+                            </div>
+                        </th>
+                        <th class="sortable d-none d-md-table-cell" data-sort="status">
+                            <div class="th-content">
+                                <span>Status</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="sortable d-none d-lg-table-cell" data-sort="last_login">
+                            <div class="th-content">
+                                <span>Last Login</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="actions-column">
+                            <div class="th-content">
+                                <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
+                                    </path>
+                                </svg>
+                            </div>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for user in users %}
-                        <tr class="table-row-modern">
-                            <td class="user-cell">
-                                <div class="user-info-modern">
-                                    <div class="user-avatar">
+                    <tr class="table-row-modern">
+                        <td class="user-cell">
+                            <div class="user-info-modern">
+                                <div class="user-avatar">
                                         {{ user.name[0].upper() }}
-                                    </div>
-                                    <div class="user-details">
+                                </div>
+                                <div class="user-details">
+                                    <a href="{{ url_for('web.user_dashboard', user_id=user._id) }}">
                                         <div class="user-name">{{ user.name }}</div>
-                            {% if user.verification_status != 'verified' %}
-                                        <span class="status-badge warning">Unverified</span>
-                            {% endif %}
-                                        <div class="mobile-info d-md-none">
-                                            <div class="mobile-detail">{{ user.email or 'No email' }}</div>
-                                            <div class="mobile-detail">{{ user.phone_number }}</div>
-                                        </div>
+                                    </a>
+                                    <!-- {% if user.verification_status != 'verified' %}
+                                    <span class="status-badge warning">Unverified</span>
+                                    {% endif %} -->
+                                    <div class="mobile-info d-md-none">
+                                        <div class="mobile-detail">{{ user.email or 'No email' }}</div>
+                                        <div class="mobile-detail">{{ user.phone_number }}</div>
                                     </div>
                                 </div>
+                            </div>
                         </td>
-                            <td class="d-none d-md-table-cell">
-                                <span class="email-text">{{ user.email or '-' }}</span>
-                            </td>
-                            <td class="d-none d-sm-table-cell">
-                                <span class="phone-text">{{ user.phone_number }}</span>
-                            </td>
-                            <td>
-                                <span class="role-pill role-{{ user.role }}">
+                        <td class="d-none d-md-table-cell">
+                            <span class="email-text">{{ user.email or '-' }}</span>
+                        </td>
+                        <td class="d-none d-sm-table-cell">
+                            <span class="phone-text">{{ user.phone_number }}</span>
+                        </td>
+                        <td>
+                            <span class="role-pill role-{{ user.role }}">
                                 {{ user.role.replace('_', ' ').title() }}
                             </span>
-                                <div class="mobile-status d-md-none">
-                                    <span class="status-pill status-{{ 'active' if user.is_active else 'inactive' }}">
-                                        {{ 'Active' if user.is_active else 'Inactive' }}
-                                    </span>
-                                </div>
-                        </td>
-                            <td class="d-none d-lg-table-cell">
-                                <span class="groups-text">
-                            {% if user.groups %}
-                                        {{ user.groups|length }} group{{ 's' if user.groups|length != 1 else '' }}
-                            {% else %}
-                                No groups
-                            {% endif %}
-                                </span>
-                        </td>
-                            <td class="d-none d-md-table-cell">
+                            <div class="mobile-status d-md-none">
                                 <span class="status-pill status-{{ 'active' if user.is_active else 'inactive' }}">
+                                    {{ 'Active' if user.is_active else 'Inactive' }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="d-none d-lg-table-cell">
+                            <span class="groups-text">
+                                {% if user.groups %}
+                                {{ user.groups|length }} group{{ 's' if user.groups|length != 1 else '' }}
+                                {% else %}
+                                No groups
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                            <span class="status-pill status-{{ 'active' if user.is_active else 'inactive' }}">
                                 {{ 'Active' if user.is_active else 'Inactive' }}
                             </span>
                         </td>
-                            <td class="d-none d-lg-table-cell">
-                                <span class="date-text">
-                            {% if user.last_login %}
-                                        {{ user.last_login.strftime('%b %d, %Y') }}
-                            {% else %}
+                        <td class="d-none d-lg-table-cell">
+                            <span class="date-text">
+                                {% if user.last_login %}
+                                {{ user.last_login.strftime('%b %d, %Y') }}
+                                {% else %}
                                 Never
-                            {% endif %}
-                                </span>
-                        </td>
-                            <td class="actions-cell">
-                                <div class="actions-dropdown">
-                                    <button class="actions-button" type="button" onclick="toggleActionDropdown(this)">
-                                        <svg class="actions-dots" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
-                                        </svg>
-                                    </button>
-                                    <div class="actions-menu">
-                                        <button class="action-item" onclick="openEditUserModal('{{ user._id }}')">
-                                            <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                            </svg>
-                                            Edit User
-                                        </button>
-                                {% if user.role != 'super_admin' and user._id != session.user_id %}
-                                        <div class="action-divider"></div>
-                                        <button class="action-item danger" onclick="deleteUser('{{ user._id }}', '{{ user.name }}')">
-                                            <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                            </svg>
-                                            Delete User
-                                        </button>
                                 {% endif %}
-                                    </div>
+                            </span>
+                        </td>
+                        <td class="actions-cell">
+                            <div class="dropdown">
+                                <button class="action-item dropdown-toggle" type="button"
+                                    id="dropdownMenuButton{{ user._id }}" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    <svg class="actions-dots" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
+                                        </path>
+                                    </svg>
+                                </button>
+                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ user._id }}">
+                                    <button class="dropdown-item d-flex align-items-center"
+                                        onclick="openEditUserModal('{{ user._id }}')">
+                                        <svg class="bi me-2" width="16" height="16" fill="currentColor">
+                                            <path
+                                                d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" />
+                                        </svg>
+                                        Edit User
+                                    </button>
+                                    {% if user.role != 'super_admin' and user._id != session.user_id %}
+                                    <div class="dropdown-divider"></div>
+                                    <button class="dropdown-item d-flex align-items-center text-danger"
+                                        onclick="deleteUser('{{ user._id }}', '{{ user.name }}')">
+                                        <svg class="bi me-2" width="16" height="16" fill="currentColor">
+                                            <path
+                                                d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                                            <path fill-rule="evenodd"
+                                                d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+                                        </svg>
+                                        Delete User
+                                    </button>
+                                    {% endif %}
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -244,52 +273,109 @@
             </table>
         </div>
 
-        <!-- Modern Pagination -->
-        {% if pagination %}
+        <!-- Enhanced Modern Pagination -->
+        {% if pagination and pagination.total > 0 %}
         <div class="pagination-container">
             <div class="pagination-info">
-                <span class="results-count">
-                    Showing {{ ((pagination.page - 1) * pagination.per_page + 1) }}–{{ pagination.page * pagination.per_page if pagination.page * pagination.per_page <= pagination.total else pagination.total }} of {{ pagination.total }} users
-                </span>
+                <div class="results-summary">
+                    <span class="results-count">
+                        Showing {{ pagination.start_index }}–{{ pagination.end_index }} of {{ pagination.total }} users
+                    </span>
+                    {% if not pagination.showing_all %}
+                    <div class="page-size-selector">
+                        <label for="perPageSelect">Show:</label>
+                        <select id="perPageSelect" class="per-page-select" onchange="changePageSize(this.value)">
+                            {% for option in pagination.per_page_options %}
+                            <option value="{{ option }}" {% if option == pagination.per_page %}selected{% endif %}>
+                                {{ option }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span>per page</span>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
+            
+            {% if pagination.pages > 1 %}
             <nav class="pagination-nav" aria-label="User pagination">
                 <div class="pagination-controls">
-                {% if pagination.has_prev %}
-                        <a class="pagination-btn pagination-prev" href="{{ url_for('web.users', page=pagination.prev_num, **request.args) }}">
-                            <svg class="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                            </svg>
-                            Previous
-                        </a>
-                {% endif %}
-                
-                    <div class="pagination-numbers">
-                {% for page_num in pagination.iter_pages() %}
-                    {% if page_num %}
-                        {% if page_num != pagination.page %}
-                                    <a class="pagination-number" href="{{ url_for('web.users', page=page_num, **request.args) }}">{{ page_num }}</a>
-                        {% else %}
-                                    <span class="pagination-number active">{{ page_num }}</span>
-                        {% endif %}
+                    <!-- Previous Button -->
+                    {% if pagination.has_prev %}
+                    <a class="pagination-btn pagination-prev" 
+                       href="{{ url_for('web.users', page=pagination.prev_num) }}"
+                       title="Previous page">
+                        <svg class="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        <span class="pagination-text">Previous</span>
+                    </a>
                     {% else %}
-                                <span class="pagination-ellipsis">...</span>
+                    <span class="pagination-btn pagination-prev disabled">
+                        <svg class="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        <span class="pagination-text">Previous</span>
+                    </span>
                     {% endif %}
-                {% endfor %}
+
+                    <!-- Page Numbers -->
+                    <div class="pagination-numbers">
+                        {% for page_num in pagination.iter_pages %}
+                        {% if page_num == pagination.page %}
+                        <span class="pagination-number active" aria-current="page">{{ page_num }}</span>
+                        {% else %}
+                        <a class="pagination-number" 
+                           href="{{ url_for('web.users', page=page_num)}}"
+                           title="Go to page {{ page_num }}">{{ page_num }}</a>
+                        {% endif %}
+                        {% endfor %}
                     </div>
-                
-                {% if pagination.has_next %}
-                        <a class="pagination-btn pagination-next" href="{{ url_for('web.users', page=pagination.next_num, **request.args) }}">
-                            Next
-                            <svg class="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                            </svg>
-                        </a>
-                {% endif %}
+
+                    <!-- Next Button -->
+                    {% if pagination.has_next %}
+                    <a class="pagination-btn pagination-next" 
+                       href="{{ url_for('web.users', page=pagination.next_num)}}"
+                       title="Next page">
+                        <span class="pagination-text">Next</span>
+                        <svg class="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </a>
+                    {% else %}
+                    <span class="pagination-btn pagination-next disabled">
+                        <span class="pagination-text">Next</span>
+                        <svg class="pagination-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                    {% endif %}
                 </div>
-        </nav>
+                
+                <!-- Quick Jump -->
+                <div class="pagination-jump">
+                    <label for="pageJump">Go to page:</label>
+                    <input type="number" id="pageJump" min="1" max="{{ pagination.pages }}" 
+                           value="{{ pagination.page }}" class="page-jump-input">
+                    <button type="button" onclick="jumpToPage()" class="btn-jump">Go</button>
+                </div>
+            </nav>
+            {% endif %}
+        </div>
+        {% elif pagination and pagination.total == 0 %}
+        <div class="no-results">
+            <div class="no-results-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+            <h3>No users found</h3>
+            <p>Try adjusting your search criteria or filters.</p>
+            <button type="button" onclick="clearAllFilters()" class="btn btn-outline">Clear all filters</button>
         </div>
         {% endif %}
-        
+
         <!-- Mobile Card View (hidden by CSS, shown on mobile) -->
         <div class="mobile-cards-container d-md-none">
             {% for user in users %}
@@ -312,15 +398,19 @@
                     <div class="user-card-actions">
                         <button class="actions-button" onclick="toggleActionDropdown(this)">
                             <svg class="actions-dots" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
+                                </path>
                             </svg>
                         </button>
                         <div class="actions-menu">
-                            <a class="action-item" href="{{ url_for('web.user_detail', user_id=user._id) }}">View Details</a>
+                            <a class="action-item" href="{{ url_for('web.user_detail', user_id=user._id) }}">View
+                                Details</a>
                             <button class="action-item" onclick="openEditUserModal('{{ user._id }}')">Edit User</button>
                             {% if user.role != 'super_admin' and user._id != session.user_id %}
                             <div class="action-divider"></div>
-                            <button class="action-item danger" onclick="deleteUser('{{ user._id }}', '{{ user.name }}')">Delete User</button>
+                            <button class="action-item danger"
+                                onclick="deleteUser('{{ user._id }}', '{{ user.name }}')">Delete User</button>
                             {% endif %}
                         </div>
                     </div>
@@ -344,476 +434,577 @@
             </div>
             {% endfor %}
         </div>
-        
+
         {% else %}
         <div class="empty-state">
             <div class="empty-state-icon">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z">
+                    </path>
                 </svg>
             </div>
             <h3 class="empty-state-title">No users found</h3>
             <p class="empty-state-description">Get started by adding your first user to the system.</p>
             <button class="btn btn-primary-modern" onclick="openCreateUserModal()">
                 <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                 </svg>
                 Add Your First User
             </button>
         </div>
         {% endif %}
+    </div>
+</div>
+</div>
+
+<!-- Payment Link Modal -->
+<div class="modal fade" id="paymentLinkModal" tabindex="-1" aria-labelledby="paymentLinkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentLinkModalLabel">Payment Link Generated</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-success mb-3">
+                    <i class="bi bi-check-circle me-2"></i>Payment link has been generated successfully!
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Share this payment link with the student:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="paymentLinkInput" readonly>
+                        <button class="btn btn-outline-primary" type="button" onclick="copyPaymentLink()">
+                            <i class="bi bi-clipboard me-1"></i>Copy
+                        </button>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        <i class="bi bi-clock me-1"></i>Link expires in 24 hours
+                    </small>
+                </div>
+                <div class="mt-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-shield-check text-success me-2"></i>
+                        <small class="text-muted">Secure payment processing with Razorpay</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="sharePaymentLink()">
+                    <i class="bi bi-share me-1"></i>Share
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Create User Modal -->
-<div id="createUserModal" class="modal-overlay-modern hidden">
-    <div class="modal-modern">
-        <div class="modal-header-modern">
-            <div class="modal-title-section">
-                <h3 class="modal-title-modern">Add New User</h3>
-                <p class="modal-subtitle-modern">Create a new user account for your organization</p>
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createUserModalLabel">Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button class="modal-close-modern" onclick="closeCreateUserModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+            <form id="createUserForm" method="POST" action="{{ url_for('web.create_user') }}">
+                <div class="modal-body-modern">
+                    <div class="form-group">
+                        <div class="form-group mt-4">
+                            <label for="new_name" class="form-label-modern">
+                                <span class="label-text">Full Name</span>
+                                <span class="label-required">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="new_name" name="name" required minlength="2"
+                                maxlength="100" pattern="^[a-zA-Z\s.'-]+$" placeholder="Enter full name"
+                                title="Name should contain only letters, spaces, periods, apostrophes, and hyphens">
+                            <div id="name-feedback" class="form-feedback-modern"></div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label for="new_email" class="form-label-modern">
+                                <span class="label-text">Email Address</span>
+                                <span class="label-required">*</span>
+                            </label>
+                            <input type="email" class="form-control" id="new_email" name="email" required
+                                pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                                placeholder="user@example.com" title="Enter a valid email address">
+                            <div id="email-feedback" class="form-feedback-modern"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-4">
+                        <div class="form-group mt-4">
+                            <label for="new_phone" class="form-label-modern">
+                                <span class="label-text">Phone Number</span>
+                                <span class="label-required">*</span>
+                            </label>
+                            <input type="tel" class="form-control" id="new_phone" name="phone_number" required
+                                pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$" placeholder="+91-9876543210"
+                                title="Enter a valid phone number (10 digits or international format)">
+                            <div id="phone-feedback" class="form-feedback-modern"></div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label for="new_role" class="form-label">
+                                <span class="label-text">Role</span>
+                                <span class="label-required">*</span>
+                            </label>
+                            <select class="form-control select2" id="new_role" name="role" required data-placeholder="Select user role">
+                                <option value="">Select role</option>
+                                <option value="student">Student</option>
+                                <option value="coach">Coach</option>
+                                {% if session.role in ['super_admin', 'org_admin'] %}
+                                <option value="coach_admin">Coach Admin</option>
+                                {% endif %}
+                                {% if session.role == 'super_admin' %}
+                                <option value="org_admin">Organization Admin</option>
+                                {% endif %}
+                            </select>
+                            <div id="role-feedback" class="form-feedback-modern"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-4">
+                        <div class="form-group mt-4">
+                            <label for="new_password" class="form-label-modern">
+                                <span class="label-text">Password</span>
+                                <span class="label-required">*</span>
+                            </label>
+                            <input type="password" class="form-control" id="new_password" name="password" required
+                                pattern="^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]{10,}$" minlength="10"
+                                placeholder="Enter password"
+                                title="Password must be at least 10 characters long and contain at least one letter and one number">
+                            <div class="form-help-text">
+                                Password must be at least 10 alphanumeric characters
+                            </div>
+                            <div id="password-feedback" class="form-feedback-modern"></div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label for="new_billing_start_date" class="form-label-modern">
+                                <span class="label-text">Billing Start Date</span>
+                            </label>
+                            <input type="date" class="form-control" id="new_billing_start_date"
+                                name="billing_start_date" title="Date when billing should start for this user">
+                            <div class="form-help-text">
+                                Optional: When billing cycle starts for this user
+                            </div>
+                            <div id="new-billing-start-date-feedback" class="form-feedback-modern"></div>
+                        </div>
+                    </div>
+
+                    <div id="studentFields" class="role-fields-section hidden">
+                        <h4 class="section-title-modern ms-4">Student Information</h4>
+                        <div class="form-group mt-4">
+                            <div class="form-group mt-4">
+                                <label for="age" class="form-label-modern">
+                                    <span class="label-text">Age</span>
+                                </label>
+                                <input type="number" class="form-control" id="age" name="age" min="5" max="100"
+                                    placeholder="Enter age" title="Age must be between 5 and 100 years">
+                                <div id="age-feedback" class="form-feedback-modern"></div>
+                            </div>
+
+                            <div class="form-group mt-4">
+                                <label for="emergency_contact" class="form-label-modern">
+                                    <span class="label-text">Emergency Contact</span>
+                                </label>
+                                <input type="tel" class="form-control" id="emergency_contact" name="emergency_contact"
+                                    pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$" placeholder="Emergency contact number"
+                                    title="Enter a valid phone number">
+                                <div id="emergency-contact-feedback" class="form-feedback-modern"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="coachFields" class="role-fields-section hidden">
+                        <h4 class="section-title-modern ml-2">Coach Information</h4>
+                        <div class="form-group mt-4">
+                            <div class="form-group mt-4">
+                                <label for="specialization" class="form-label-modern">
+                                    <span class="label-text">Specialization</span>
+                                </label>
+                                <input type="text" class="form-control" id="specialization" name="specialization"
+                                    placeholder="e.g. Football, Basketball">
+                            </div>
+
+                            <div class="form-group mt-4">
+                                <label for="experience_years" class="form-label-modern">
+                                    <span class="label-text">Years of Experience</span>
+                                </label>
+                                <input type="number" class="form-control" id="experience_years" name="experience_years"
+                                    min="0" max="50" placeholder="Years of experience"
+                                    title="Experience should be between 0 and 50 years">
+                                <div id="experience-feedback" class="form-feedback-modern"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateUserModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary btn">
+                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Create User
+                    </button>
+                </div>
+            </form>
         </div>
-        <form id="createUserForm" method="POST" action="{{ url_for('web.create_user') }}">
-            <div class="modal-body-modern">
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="new_name" class="form-label-modern">
-                            <span class="label-text">Full Name</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <input type="text" class="form-input-modern" id="new_name" name="name" required
-                           minlength="2" maxlength="100"
-                           pattern="^[a-zA-Z\s.'-]+$"
-                               placeholder="Enter full name"
-                           title="Name should contain only letters, spaces, periods, apostrophes, and hyphens">
-                        <div id="name-feedback" class="form-feedback-modern"></div>
-                </div>
-                
-                    <div class="form-field-modern">
-                        <label for="new_email" class="form-label-modern">
-                            <span class="label-text">Email Address</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <input type="email" class="form-input-modern" id="new_email" name="email" required
-                               pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-                               placeholder="user@example.com"
-                               title="Enter a valid email address">
-                        <div id="email-feedback" class="form-feedback-modern"></div>
-                    </div>
-                </div>
-                
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="new_phone" class="form-label-modern">
-                            <span class="label-text">Phone Number</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <input type="tel" class="form-input-modern" id="new_phone" name="phone_number" required
-                           pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$"
-                               placeholder="+91-9876543210"
-                           title="Enter a valid phone number (10 digits or international format)">
-                        <div class="form-help-text">
-                            Enter 10-digit number or international format
-                        </div>
-                        <div id="phone-feedback" class="form-feedback-modern"></div>
-                </div>
-                
-                    <div class="form-field-modern">
-                        <label for="new_role" class="form-label-modern">
-                            <span class="label-text">Role</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <select class="form-select-modern" id="new_role" name="role" required>
-                        <option value="">Select role</option>
-                        <option value="student">Student</option>
-                        <option value="coach">Coach</option>
-                        {% if session.role in ['super_admin', 'org_admin'] %}
-                        <option value="coach_admin">Coach Admin</option>
-                        {% endif %}
-                        {% if session.role == 'super_admin' %}
-                        <option value="org_admin">Organization Admin</option>
-                        {% endif %}
-                    </select>
-                        <div id="role-feedback" class="form-feedback-modern"></div>
-                    </div>
-                </div>
-                
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="new_password" class="form-label-modern">
-                            <span class="label-text">Password</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <input type="password" class="form-input-modern" id="new_password" name="password" required
-                               pattern="^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]{10,}$"
-                               minlength="10"
-                               placeholder="Enter password"
-                               title="Password must be at least 10 characters long and contain at least one letter and one number">
-                        <div class="form-help-text">
-                            Password must be at least 10 alphanumeric characters
-                        </div>
-                        <div id="password-feedback" class="form-feedback-modern"></div>
-                    </div>
-                    
-                    <div class="form-field-modern">
-                        <label for="new_billing_start_date" class="form-label-modern">
-                            <span class="label-text">Billing Start Date</span>
-                        </label>
-                        <input type="date" class="form-input-modern" id="new_billing_start_date" name="billing_start_date"
-                               title="Date when billing should start for this user">
-                        <div class="form-help-text">
-                            Optional: When billing cycle starts for this user
-                        </div>
-                        <div id="new-billing-start-date-feedback" class="form-feedback-modern"></div>
-                    </div>
-                </div>
-                
-                <div id="studentFields" class="role-fields-section hidden">
-                    <h4 class="section-title-modern">Student Information</h4>
-                    <div class="form-grid-modern">
-                        <div class="form-field-modern">
-                            <label for="age" class="form-label-modern">
-                                <span class="label-text">Age</span>
-                            </label>
-                            <input type="number" class="form-input-modern" id="age" name="age" min="5" max="100"
-                                   placeholder="Enter age"
-                               title="Age must be between 5 and 100 years">
-                            <div id="age-feedback" class="form-feedback-modern"></div>
-                    </div>
-                    
-                        <div class="form-field-modern">
-                            <label for="emergency_contact" class="form-label-modern">
-                                <span class="label-text">Emergency Contact</span>
-                            </label>
-                            <input type="tel" class="form-input-modern" id="emergency_contact" name="emergency_contact"
-                               pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$"
-                                   placeholder="Emergency contact number"
-                               title="Enter a valid phone number">
-                            <div id="emergency-contact-feedback" class="form-feedback-modern"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="coachFields" class="role-fields-section hidden">
-                    <h4 class="section-title-modern">Coach Information</h4>
-                    <div class="form-grid-modern">
-                        <div class="form-field-modern">
-                            <label for="specialization" class="form-label-modern">
-                                <span class="label-text">Specialization</span>
-                            </label>
-                            <input type="text" class="form-input-modern" id="specialization" name="specialization" 
-                               placeholder="e.g. Football, Basketball">
-                    </div>
-                    
-                        <div class="form-field-modern">
-                            <label for="experience_years" class="form-label-modern">
-                                <span class="label-text">Years of Experience</span>
-                            </label>
-                            <input type="number" class="form-input-modern" id="experience_years" name="experience_years" min="0" max="50"
-                                   placeholder="Years of experience"
-                               title="Experience should be between 0 and 50 years">
-                            <div id="experience-feedback" class="form-feedback-modern"></div>
-                    </div>
-                </div>
-            </div>
-            </div>
-            <div class="modal-footer-modern">
-                <button type="button" class="btn-secondary-modern" onclick="closeCreateUserModal()">
-                    Cancel
-                </button>
-                <button type="submit" class="btn-primary-modern">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Create User
-                </button>
-            </div>
-        </form>
     </div>
 </div>
 
 <!-- Edit User Modal -->
-<div id="editUserModal" class="modal-overlay-modern hidden">
-    <div class="modal-modern">
-        <div class="modal-header-modern">
-            <div class="modal-title-section">
-                <h3 class="modal-title-modern">Edit User</h3>
-                <p class="modal-subtitle-modern">Update user information and settings</p>
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button class="modal-close-modern" onclick="closeEditUserModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+            <form id="editUserForm" method="POST">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label for="edit_name" class="form-label">
+                                <span>Full Name</span>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="edit_name" name="name" required minlength="2"
+                                maxlength="100" pattern="^[a-zA-Z\s.'-]+$" placeholder="Enter full name"
+                                title="Name should contain only letters, spaces, periods, apostrophes, and hyphens">
+                            <div id="edit-name-feedback" class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <label for="edit_email" class="form-label">
+                                <span>Email Address</span>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="email" class="form-control" id="edit_email" name="email" required
+                                pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                                placeholder="user@example.com" title="Enter a valid email address">
+                            <div id="edit-email-feedback" class="invalid-feedback"></div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_phone" class="form-label">
+                                <span>Phone Number</span>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="tel" class="form-control" id="edit_phone" name="phone_number" required
+                                pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$" placeholder="+91-9876543210"
+                                title="Enter a valid phone number (10 digits or international format)">
+                            <div class="form-text">
+                                Enter 10-digit number or international format
+                            </div>
+                            <div id="edit-phone-feedback" class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_role" class="form-label">
+                                <span>Role</span>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select select2" id="edit_role" name="role" required data-placeholder="Select user role">
+                                <option value="">Select role</option>
+                                <option value="student">Student</option>
+                                <option value="coach">Coach</option>
+                                {% if session.role in ['super_admin', 'org_admin'] %}
+                                <option value="coach_admin">Coach Admin</option>
+                                {% endif %}
+                                {% if session.role == 'super_admin' %}
+                                <option value="org_admin">Organization Admin</option>
+                                {% endif %}
+                            </select>
+                            <div id="edit-role-feedback" class="invalid-feedback"></div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_status" class="form-label">
+                                <span>Status</span>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select select2" id="edit_status" name="is_active" data-placeholder="Select status">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                            <div id="edit-status-feedback" class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_billing_start_date" class="form-label">
+                                <span>Billing Start Date</span>
+                            </label>
+                            <input type="date" class="form-control" id="edit_billing_start_date"
+                                name="billing_start_date" title="Date when billing should start for this user">
+                            <div class="form-text">
+                                Optional: When billing cycle starts for this user
+                            </div>
+                            <div id="edit-billing-start-date-feedback" class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_subscription" class="form-label">
+                                <span>Subscription Plan</span>
+                            </label>
+                            <select class="form-select" id="edit_subscription" name="subscription_id" data-placeholder="Select subscription plan">
+                                <option value="">No subscription</option>
+                                {% for subscription in subscriptions %}
+                                <option value="{{ subscription._id }}">
+                                    {{ subscription.name }} - ₹{{ subscription.price }}/{{ subscription.cycle_type }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Optional: Assign a subscription plan to this user
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="generatePaymentLink()">
+                                    <i class="bi bi-link-45deg me-1"></i>Generate Payment Link
+                                </button>
+                            </div>
+                            <div id="edit-subscription-feedback" class="invalid-feedback"></div>
+                        </div>
+                    </div>
+
+                    <div id="editStudentFields" class="role-fields-section hidden">
+                        <h4 class="section-title-modern">Student Information</h4>
+                        <div class="form-group mt-4">
+                            <div class="form-group mt-4">
+                                <label for="edit_age" class="form-label-modern">
+                                    <span class="label-text">Age</span>
+                                </label>
+                                <input type="number" class="form-control" id="edit_age" name="age" min="5" max="100"
+                                    placeholder="Enter age" title="Age must be between 5 and 100 years">
+                                <div id="edit-age-feedback" class="form-feedback-modern"></div>
+                            </div>
+
+                            <div class="form-group mt-4 ">
+                                <label for="edit_emergency_contact" class="form-label-modern">
+                                    <span class="label-text">Emergency Contact</span>
+                                </label>
+                                <input type="tel" class="form-control" id="edit_emergency_contact"
+                                    name="emergency_contact" pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$"
+                                    placeholder="Emergency contact number" title="Enter a valid phone number">
+                                <div id="edit-emergency-contact-feedback" class="form-feedback-modern"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="editCoachFields" class="role-fields-section hidden">
+                        <h4 class="section-title-modern">Coach Information</h4>
+                        <div class="form-group mt-4">
+                            <div class="form-group mt-4">
+                                <label for="edit_specialization" class="form-label-modern">
+                                    <span class="label-text">Specialization</span>
+                                </label>
+                                <input type="text" class="form-control" id="edit_specialization" name="specialization"
+                                    placeholder="e.g. Football, Basketball">
+                            </div>
+
+                            <div class="form-group mt-4 ">
+                                <label for="edit_experience_years" class="form-label-modern">
+                                    <span class="label-text">Years of Experience</span>
+                                </label>
+                                <input type="number" class="form-control" id="edit_experience_years"
+                                    name="experience_years" min="0" max="50" placeholder="Years of experience"
+                                    title="Experience should be between 0 and 50 years">
+                                <div id="edit-experience-feedback" class="form-feedback-modern"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check me-2"></i>
+                        Update User
+                    </button>
+                </div>
+            </form>
         </div>
-        <form id="editUserForm" method="POST">
-            <div class="modal-body-modern">
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="edit_name" class="form-label-modern">
-                            <span class="label-text">Full Name</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <input type="text" class="form-input-modern" id="edit_name" name="name" required
-                               minlength="2" maxlength="100"
-                               pattern="^[a-zA-Z\s.'-]+$"
-                               placeholder="Enter full name"
-                               title="Name should contain only letters, spaces, periods, apostrophes, and hyphens">
-                        <div id="edit-name-feedback" class="form-feedback-modern"></div>
-                    </div>
-                    
-                    <div class="form-field-modern">
-                        <label for="edit_email" class="form-label-modern">
-                            <span class="label-text">Email Address</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <input type="email" class="form-input-modern" id="edit_email" name="email" required
-                               pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-                               placeholder="user@example.com"
-                               title="Enter a valid email address">
-                        <div id="edit-email-feedback" class="form-feedback-modern"></div>
-                    </div>
-                </div>
-                
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="edit_phone" class="form-label-modern">
-                            <span class="label-text">Phone Number</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <input type="tel" class="form-input-modern" id="edit_phone" name="phone_number" required
-                               pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$"
-                               placeholder="+91-9876543210"
-                               title="Enter a valid phone number (10 digits or international format)">
-                        <div class="form-help-text">
-                            Enter 10-digit number or international format
-                        </div>
-                        <div id="edit-phone-feedback" class="form-feedback-modern"></div>
-                    </div>
-                    
-                    <div class="form-field-modern">
-                        <label for="edit_role" class="form-label-modern">
-                            <span class="label-text">Role</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <select class="form-select-modern" id="edit_role" name="role" required>
-                            <option value="">Select role</option>
-                            <option value="student">Student</option>
-                            <option value="coach">Coach</option>
-                            {% if session.role in ['super_admin', 'org_admin'] %}
-                            <option value="coach_admin">Coach Admin</option>
-                            {% endif %}
-                            {% if session.role == 'super_admin' %}
-                            <option value="org_admin">Organization Admin</option>
-                            {% endif %}
-                        </select>
-                        <div id="edit-role-feedback" class="form-feedback-modern"></div>
-                    </div>
-                </div>
-                
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="edit_status" class="form-label-modern">
-                            <span class="label-text">Status</span>
-                            <span class="label-required">*</span>
-                        </label>
-                        <select class="form-select-modern" id="edit_status" name="is_active">
-                            <option value="true">Active</option>
-                            <option value="false">Inactive</option>
-                        </select>
-                        <div id="edit-status-feedback" class="form-feedback-modern"></div>
-                    </div>
-                    
-                    <div class="form-field-modern">
-                        <label for="edit_billing_start_date" class="form-label-modern">
-                            <span class="label-text">Billing Start Date</span>
-                        </label>
-                        <input type="date" class="form-input-modern" id="edit_billing_start_date" name="billing_start_date"
-                               title="Date when billing should start for this user">
-                        <div class="form-help-text">
-                            Optional: When billing cycle starts for this user
-                        </div>
-                        <div id="edit-billing-start-date-feedback" class="form-feedback-modern"></div>
-                    </div>
-                </div>
-                
-                <div id="editStudentFields" class="role-fields-section hidden">
-                    <h4 class="section-title-modern">Student Information</h4>
-                    <div class="form-grid-modern">
-                        <div class="form-field-modern">
-                            <label for="edit_age" class="form-label-modern">
-                                <span class="label-text">Age</span>
-                            </label>
-                            <input type="number" class="form-input-modern" id="edit_age" name="age" min="5" max="100"
-                                   placeholder="Enter age"
-                                   title="Age must be between 5 and 100 years">
-                            <div id="edit-age-feedback" class="form-feedback-modern"></div>
-                        </div>
-                        
-                        <div class="form-field-modern">
-                            <label for="edit_emergency_contact" class="form-label-modern">
-                                <span class="label-text">Emergency Contact</span>
-                            </label>
-                            <input type="tel" class="form-input-modern" id="edit_emergency_contact" name="emergency_contact"
-                                   pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$"
-                                   placeholder="Emergency contact number"
-                                   title="Enter a valid phone number">
-                            <div id="edit-emergency-contact-feedback" class="form-feedback-modern"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="editCoachFields" class="role-fields-section hidden">
-                    <h4 class="section-title-modern">Coach Information</h4>
-                    <div class="form-grid-modern">
-                        <div class="form-field-modern">
-                            <label for="edit_specialization" class="form-label-modern">
-                                <span class="label-text">Specialization</span>
-                            </label>
-                            <input type="text" class="form-input-modern" id="edit_specialization" name="specialization" 
-                                   placeholder="e.g. Football, Basketball">
-                        </div>
-                        
-                        <div class="form-field-modern">
-                            <label for="edit_experience_years" class="form-label-modern">
-                                <span class="label-text">Years of Experience</span>
-                            </label>
-                            <input type="number" class="form-input-modern" id="edit_experience_years" name="experience_years" min="0" max="50"
-                                   placeholder="Years of experience"
-                                   title="Experience should be between 0 and 50 years">
-                            <div id="edit-experience-feedback" class="form-feedback-modern"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer-modern">
-                <button type="button" class="btn-secondary-modern" onclick="closeEditUserModal()">
-                    Cancel
-                </button>
-                <button type="submit" class="btn-primary-modern">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    Update User
-                </button>
-            </div>
-        </form>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Enhanced User Management JavaScript
-document.addEventListener('DOMContentLoaded', function() {
-    initializeFilters();
-    initializeTableSorting();
-    updateActiveFilters();
-    setupExportFunctionality();
-});
+    // Enhanced User Management JavaScript
+    document.addEventListener('DOMContentLoaded', function () {
+        initializeFilters();
+        initializeTableSorting();
+        updateActiveFilters();
+        setupExportFunctionality();
+    });
 
-function openCreateUserModal() {
-    document.getElementById('createUserModal').classList.remove('hidden');
-}
+    function openCreateUserModal() {
+        // Open the modal
+        const modalElement = document.getElementById('createUserModal');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
 
-function closeCreateUserModal() {
-    document.getElementById('createUserModal').classList.add('hidden');
-    document.getElementById('createUserForm').reset();
-}
+    function closeCreateUserModal() {
+        const modalElement = document.getElementById('createUserModal');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.hide();
+    }
 
-// Filter Management
-function initializeFilters() {
-    const searchInput = document.getElementById('searchInput');
-    const roleFilter = document.getElementById('roleFilter');
-    const statusFilter = document.getElementById('statusFilter');
-    const organizationFilter = document.getElementById('organizationFilter');
-    const clearButton = document.getElementById('clearFilters');
-    
-    // Auto-submit on change
-    [roleFilter, statusFilter, organizationFilter].filter(Boolean).forEach(filter => {
-        filter.addEventListener('change', function() {
-            document.getElementById('filterForm').submit();
+    // Filter Management
+    function initializeFilters() {
+        const searchInput = document.getElementById('searchInput');
+        const roleFilter = document.getElementById('roleFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const organizationFilter = document.getElementById('organizationFilter');
+        const clearButton = document.getElementById('clearFilters');
+
+        // Auto-submit on change
+        [roleFilter, statusFilter, organizationFilter].filter(Boolean).forEach(filter => {
+            filter.addEventListener('change', function () {
+                document.getElementById('filterForm').submit();
+            });
         });
-    });
-    
-    // Search with debounce
-    let searchTimeout;
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            document.getElementById('filterForm').submit();
-        }, 500);
-    });
-    
-    // Clear filters
-    clearButton.addEventListener('click', function() {
+
+        // Search with debounce
+        let searchTimeout;
+        searchInput.addEventListener('input', function () {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                document.getElementById('filterForm').submit();
+            }, 500);
+        });
+
+        // Clear filters
+        clearButton.addEventListener('click', function () {
+            window.location.href = window.location.pathname;
+        });
+    }
+
+    // Enhanced Pagination Functions
+    function changePageSize(newSize) {
+        const url = new URL(window.location);
+        url.searchParams.set('per_page', newSize);
+        url.searchParams.set('page', '1'); // Reset to first page
+        window.location.href = url.toString();
+    }
+
+    function jumpToPage() {
+        const pageInput = document.getElementById('pageJump');
+        const page = parseInt(pageInput.value);
+        const maxPage = parseInt(pageInput.getAttribute('max'));
+        
+        if (page >= 1 && page <= maxPage) {
+            const url = new URL(window.location);
+            url.searchParams.set('page', page);
+            window.location.href = url.toString();
+        } else {
+            alert(`Please enter a page number between 1 and ${maxPage}`);
+            pageInput.value = pageInput.getAttribute('value'); // Reset to current page
+        }
+    }
+
+    function clearAllFilters() {
         window.location.href = window.location.pathname;
-    });
-}
+    }
 
-function updateActiveFilters() {
-    const activeFilters = document.getElementById('activeFilters');
-    const urlParams = new URLSearchParams(window.location.search);
-    const filters = [];
+    // Keyboard shortcuts for pagination
+    const paginationData = {
+        totalPages: {% if pagination %}{{ pagination.pages }}{% else %}0{% endif %},
+        currentPage: {% if pagination %}{{ pagination.page }}{% else %}1{% endif %}
+    };
     
-    // Check for active filters
-    if (urlParams.get('search')) {
-        filters.push({
-            type: 'search',
-            label: `Search: "${urlParams.get('search')}"`,
-            value: urlParams.get('search')
-        });
-    }
-    
-    if (urlParams.get('role')) {
-        const roleLabels = {
-            'student': 'Students',
-            'coach': 'Coaches',
-            'coac   ': 'Coach Admins',
-            'org_admin': 'Org Admins'
-        };
-        filters.push({
-            type: 'role',
-            label: `Role: ${roleLabels[urlParams.get('role')] || urlParams.get('role')}`,
-            value: urlParams.get('role')
-        });
-    }
-    
-    if (urlParams.get('status')) {
-        filters.push({
-            type: 'status',
-            label: `Status: ${urlParams.get('status').charAt(0).toUpperCase() + urlParams.get('status').slice(1)}`,
-            value: urlParams.get('status')
-        });
-    }
-    
-    if (urlParams.get('organization')) {
-        // Get organization name from the dropdown
-        const orgSelect = document.getElementById('organizationFilter');
-        let orgName = urlParams.get('organization');
-        if (orgSelect) {
-            const selectedOption = orgSelect.querySelector(`option[value="${urlParams.get('organization')}"]`);
-            if (selectedOption) {
-                orgName = selectedOption.textContent;
+    document.addEventListener('keydown', function(e) {
+        // Only if no input is focused
+        if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+            if (e.key === 'ArrowLeft' && paginationData.currentPage > 1) {
+                // Previous page
+                const url = new URL(window.location);
+                url.searchParams.set('page', paginationData.currentPage - 1);
+                window.location.href = url.toString();
+            } else if (e.key === 'ArrowRight' && paginationData.currentPage < paginationData.totalPages) {
+                // Next page
+                const url = new URL(window.location);
+                url.searchParams.set('page', paginationData.currentPage + 1);
+                window.location.href = url.toString();
             }
         }
-        filters.push({
-            type: 'organization',
-            label: `Organization: ${orgName}`,
-            value: urlParams.get('organization')
-        });
-    }
-    
-    // Render filter chips
-    if (filters.length > 0) {
-        activeFilters.innerHTML = filters.map(filter => `
+    });
+
+    // Page jump on Enter key
+    document.getElementById('pageJump')?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            jumpToPage();
+        }
+    });
+
+    function updateActiveFilters() {
+        const activeFilters = document.getElementById('activeFilters');
+        const urlParams = new URLSearchParams(window.location.search);
+        const filters = [];
+
+        // Check for active filters
+        if (urlParams.get('search')) {
+            filters.push({
+                type: 'search',
+                label: `Search: "${urlParams.get('search')}"`,
+                value: urlParams.get('search')
+            });
+        }
+
+        if (urlParams.get('role')) {
+            const roleLabels = {
+                'student': 'Students',
+                'coach': 'Coaches',
+                'coac   ': 'Coach Admins',
+                'org_admin': 'Org Admins'
+            };
+            filters.push({
+                type: 'role',
+                label: `Role: ${roleLabels[urlParams.get('role')] || urlParams.get('role')}`,
+                value: urlParams.get('role')
+            });
+        }
+
+        if (urlParams.get('status')) {
+            filters.push({
+                type: 'status',
+                label: `Status: ${urlParams.get('status').charAt(0).toUpperCase() + urlParams.get('status').slice(1)}`,
+                value: urlParams.get('status')
+            });
+        }
+
+        if (urlParams.get('organization')) {
+            // Get organization name from the dropdown
+            const orgSelect = document.getElementById('organizationFilter');
+            let orgName = urlParams.get('organization');
+            if (orgSelect) {
+                const selectedOption = orgSelect.querySelector(`option[value="${urlParams.get('organization')}"]`);
+                if (selectedOption) {
+                    orgName = selectedOption.textContent;
+                }
+            }
+            filters.push({
+                type: 'organization',
+                label: `Organization: ${orgName}`,
+                value: urlParams.get('organization')
+            });
+        }
+
+        // Render filter chips
+        if (filters.length > 0) {
+            activeFilters.innerHTML = filters.map(filter => `
             <div class="filter-chip">
                 <span class="filter-chip-label">${filter.label}</span>
                 <button class="filter-chip-remove" onclick="removeFilter('${filter.type}', '${filter.value}')">
@@ -823,117 +1014,118 @@ function updateActiveFilters() {
                 </button>
             </div>
         `).join('');
-        activeFilters.style.display = 'flex';
-    } else {
-        activeFilters.style.display = 'none';
-    }
-}
-
-function removeFilter(type, value) {
-    const url = new URL(window.location);
-    url.searchParams.delete(type);
-    window.location.href = url.toString();
-}
-
-// Table Sorting
-function initializeTableSorting() {
-    const sortableHeaders = document.querySelectorAll('.sortable');
-    
-    sortableHeaders.forEach(header => {
-        header.addEventListener('click', function() {
-            const sortBy = this.dataset.sort;
-            const url = new URL(window.location);
-            const currentSort = url.searchParams.get('sort');
-            const currentOrder = url.searchParams.get('order');
-            
-            if (currentSort === sortBy) {
-                // Toggle order
-                url.searchParams.set('order', currentOrder === 'asc' ? 'desc' : 'asc');
-            } else {
-                // New sort
-                url.searchParams.set('sort', sortBy);
-                url.searchParams.set('order', 'asc');
-            }
-            
-            window.location.href = url.toString();
-        });
-    });
-    
-    // Update sort indicators
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentSort = urlParams.get('sort');
-    const currentOrder = urlParams.get('order');
-    
-    if (currentSort) {
-        const header = document.querySelector(`[data-sort="${currentSort}"]`);
-        if (header) {
-            header.classList.add('sorted', currentOrder === 'desc' ? 'sorted-desc' : 'sorted-asc');
+            activeFilters.style.display = 'flex';
+        } else {
+            activeFilters.style.display = 'none';
         }
     }
-}
 
-// Actions Dropdown
-function toggleActionDropdown(button) {
-    const dropdown = button.parentElement;
-    const menu = dropdown.querySelector('.actions-menu');
-    const isOpen = menu.classList.contains('show');
-    
-    // Close all other dropdowns
-    document.querySelectorAll('.actions-menu.show').forEach(openMenu => {
-        if (openMenu !== menu) {
-            openMenu.classList.remove('show');
-        }
-    });
-    
-    // Toggle current dropdown
-    menu.classList.toggle('show', !isOpen);
-    
-    // Close dropdown when clicking outside
-    if (!isOpen) {
-        setTimeout(() => {
-            document.addEventListener('click', function closeDropdown(e) {
-                if (!dropdown.contains(e.target)) {
-                    menu.classList.remove('show');
-                    document.removeEventListener('click', closeDropdown);
+    function removeFilter(type, value) {
+        const url = new URL(window.location);
+        url.searchParams.delete(type);
+        window.location.href = url.toString();
+    }
+
+    // Table Sorting
+    function initializeTableSorting() {
+        const sortableHeaders = document.querySelectorAll('.sortable');
+
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', function () {
+                const sortBy = this.dataset.sort;
+                const url = new URL(window.location);
+                const currentSort = url.searchParams.get('sort');
+                const currentOrder = url.searchParams.get('order');
+
+                if (currentSort === sortBy) {
+                    // Toggle order
+                    url.searchParams.set('order', currentOrder === 'asc' ? 'desc' : 'asc');
+                } else {
+                    // New sort
+                    url.searchParams.set('sort', sortBy);
+                    url.searchParams.set('order', 'asc');
                 }
+
+                window.location.href = url.toString();
             });
-        }, 0);
-    }
-}
-
-// Export Functionality
-function setupExportFunctionality() {
-    const exportBtn = document.getElementById('exportUsersBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Get current filters
-            const urlParams = new URLSearchParams(window.location.search);
-            const exportUrl = new URL(this.href, window.location.origin);
-            
-            // Copy current filters to export URL
-            for (const [key, value] of urlParams.entries()) {
-                if (['search', 'role', 'status'].includes(key)) {
-                    exportUrl.searchParams.set(key, value);
-                }
-            }
-            
-            // Navigate to export with filters
-            window.location.href = exportUrl.toString();
         });
-    }
-}
 
-function openEditUserModal(userId) {
-    // Show loading state
-    const modal = document.getElementById('editUserModal');
-    modal.classList.remove('hidden');
-    
-    // Add loading indicator
-    const modalBody = modal.querySelector('.modal-body-modern');
-    const originalContent = modalBody.innerHTML;
-    modalBody.innerHTML = `
+        // Update sort indicators
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentSort = urlParams.get('sort');
+        const currentOrder = urlParams.get('order');
+
+        if (currentSort) {
+            const header = document.querySelector(`[data-sort="${currentSort}"]`);
+            if (header) {
+                header.classList.add('sorted', currentOrder === 'desc' ? 'sorted-desc' : 'sorted-asc');
+            }
+        }
+    }
+
+    // Actions Dropdown
+    function toggleActionDropdown(button) {
+        const dropdown = button.parentElement;
+        const menu = dropdown.querySelector('.actions-menu');
+        const isOpen = menu.classList.contains('show');
+
+        // Close all other dropdowns
+        document.querySelectorAll('.actions-menu.show').forEach(openMenu => {
+            if (openMenu !== menu) {
+                openMenu.classList.remove('show');
+            }
+        });
+
+        // Toggle current dropdown
+        menu.classList.toggle('show', !isOpen);
+
+        // Close dropdown when clicking outside
+        if (!isOpen) {
+            setTimeout(() => {
+                document.addEventListener('click', function closeDropdown(e) {
+                    if (!dropdown.contains(e.target)) {
+                        menu.classList.remove('show');
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                });
+            }, 0);
+        }
+    }
+
+    // Export Functionality
+    function setupExportFunctionality() {
+        const exportBtn = document.getElementById('exportUsersBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+
+                // Get current filters
+                const urlParams = new URLSearchParams(window.location.search);
+                const exportUrl = new URL(this.href, window.location.origin);
+
+                // Copy current filters to export URL
+                for (const [key, value] of urlParams.entries()) {
+                    if (['search', 'role', 'status'].includes(key)) {
+                        exportUrl.searchParams.set(key, value);
+                    }
+                }
+
+                // Navigate to export with filters
+                window.location.href = exportUrl.toString();
+            });
+        }
+    }
+
+    function openEditUserModal(userId) {
+        // Show Bootstrap modal
+        const modalElement = document.getElementById('editUserModal');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+
+        // Add loading indicator
+        const modalBody = modalElement.querySelector('.modal-body');
+        const originalContent = modalBody.innerHTML;
+        modalBody.innerHTML = `
         <div style="display: flex; justify-content: center; align-items: center; padding: 2rem;">
             <div style="text-align: center;">
                 <div class="loading-spinner" style="margin: 0 auto 1rem; width: 40px; height: 40px; border: 3px solid var(--border-primary); border-top: 3px solid var(--accent-primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
@@ -941,48 +1133,104 @@ function openEditUserModal(userId) {
             </div>
         </div>
     `;
-    
-    // Fetch user data and populate the modal
-    fetch(`/api/users/${userId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to fetch user data');
-            }
-            return response.json();
-        })
-        .then(user => {
-            // Restore original content
-            modalBody.innerHTML = originalContent;
-            
-            // Populate basic form fields
-            document.getElementById('edit_name').value = user.name || '';
-            document.getElementById('edit_email').value = user.email || '';
-            document.getElementById('edit_phone').value = user.phone_number || '';
-            document.getElementById('edit_role').value = user.role || '';
-            document.getElementById('edit_status').value = user.is_active ? 'true' : 'false';
-            
-            // Handle billing start date
-            if (user.billing_start_date) {
-                const date = new Date(user.billing_start_date);
-                document.getElementById('edit_billing_start_date').value = date.toISOString().split('T')[0];
-            }
-            
-            // Populate role-specific fields
-            const profileData = user.profile_data || {};
-            document.getElementById('edit_age').value = profileData.age || '';
-            document.getElementById('edit_emergency_contact').value = profileData.emergency_contact || '';
-            document.getElementById('edit_specialization').value = profileData.specialization || '';
-            document.getElementById('edit_experience_years').value = profileData.experience_years || '';
-            
-            // Show/hide role-specific fields based on role
-            updateEditRoleFields(user.role);
-            
-            // Set form action
-            document.getElementById('editUserForm').action = `/users/${userId}/edit`;
-        })
-        .catch(error => {
-            console.error('Error fetching user:', error);
-            modalBody.innerHTML = `
+
+        // Fetch user data and populate the modal
+        fetch(`/api/users/${userId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user data');
+                }
+                return response.json();
+            })
+            .then(user => {
+                // Restore original content
+                modalBody.innerHTML = originalContent;
+
+                // Populate basic form fields
+                document.getElementById('edit_name').value = user.name || '';
+                document.getElementById('edit_email').value = user.email || '';
+                document.getElementById('edit_phone').value = user.phone_number || '';
+                document.getElementById('edit_role').value = user.role || '';
+                document.getElementById('edit_status').value = user.is_active ? 'true' : 'false';
+
+                // Set subscription if exists
+                const subscriptionSelect = document.getElementById('edit_subscription');
+                if (user.subscription_ids && user.subscription_ids.length > 0) {
+                    subscriptionSelect.value = user.subscription_ids[0];
+                } else {
+                    subscriptionSelect.value = '';
+                }
+
+                // Clean up existing event handlers and Select2
+                // $(subscriptionSelect).off('change').select2('destroy');
+                
+                // Reinitialize Select2 for subscription dropdown
+                $(subscriptionSelect).select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    placeholder: 'Select subscription plan'
+                }).on('change', async function() {
+                    const subscriptionId = this.value;
+                    if (!subscriptionId) return;
+
+                    try {
+                        const response = await fetch(`/api/users/${userId}/subscription`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                subscription_id: subscriptionId
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to update subscription');
+                        }
+
+                        // Show success message
+                        const data = await response.json();
+                        if (data.success) {
+                            const alert = document.createElement('div');
+                            alert.className = 'alert alert-success mt-2';
+                            alert.innerHTML = '<i class="bi bi-check-circle me-2"></i>Subscription updated successfully';
+                            this.parentElement.appendChild(alert);
+                            setTimeout(() => alert.remove(), 3000);
+                        }
+
+                    } catch (error) {
+                        console.error('Error:', error);
+                        // Show error message
+                        const alert = document.createElement('div');
+                        alert.className = 'alert alert-danger mt-2';
+                        alert.innerHTML = '<i class="bi bi-exclamation-circle me-2"></i>Failed to update subscription';
+                        this.parentElement.appendChild(alert);
+                        setTimeout(() => alert.remove(), 3000);
+                    }
+                });
+
+                // Handle billing start date
+                if (user.billing_start_date) {
+                    const date = new Date(user.billing_start_date);
+                    document.getElementById('edit_billing_start_date').value = date.toISOString().split('T')[0];
+                }
+
+                // Populate role-specific fields
+                const profileData = user.profile_data || {};
+                document.getElementById('edit_age').value = profileData.age || '';
+                document.getElementById('edit_emergency_contact').value = profileData.emergency_contact || '';
+                document.getElementById('edit_specialization').value = profileData.specialization || '';
+                document.getElementById('edit_experience_years').value = profileData.experience_years || '';
+
+                // Show/hide role-specific fields based on role
+                updateEditRoleFields(user.role);
+
+                // Set form action
+                document.getElementById('editUserForm').action = `/users/${userId}/edit`;
+            })
+            .catch(error => {
+                console.error('Error fetching user:', error);
+                modalBody.innerHTML = `
                 <div style="text-align: center; padding: 2rem;">
                     <div style="color: var(--error); margin-bottom: 1rem;">
                         <svg style="width: 48px; height: 48px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -994,467 +1242,703 @@ function openEditUserModal(userId) {
                     <button class="btn-secondary-modern" onclick="closeEditUserModal()">Close</button>
                 </div>
             `;
-        });
-}
-
-function updateEditRoleFields(role) {
-    const studentFields = document.getElementById('editStudentFields');
-    const coachFields = document.getElementById('editCoachFields');
-    
-    // Hide all role fields first
-    studentFields.classList.add('hidden');
-    coachFields.classList.add('hidden');
-    
-    // Show appropriate fields based on role
-    if (role === 'student') {
-        studentFields.classList.remove('hidden');
-    } else if (role === 'coach' || role === 'center_admin') {
-        coachFields.classList.remove('hidden');
+            });
     }
-}
 
-function closeEditUserModal() {
-    document.getElementById('editUserModal').classList.add('hidden');
-    document.getElementById('editUserForm').reset();
-}
+    function updateEditRoleFields(role) {
+        const studentFields = document.getElementById('editStudentFields');
+        const coachFields = document.getElementById('editCoachFields');
 
-// Handle edit user form submission
-document.getElementById('editUserForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const form = e.target;
-    const formData = new FormData(form);
-    
-    try {
-        // Show loading state
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `
+        // Hide all role fields first
+        studentFields.classList.add('hidden');
+        coachFields.classList.add('hidden');
+
+        // Show appropriate fields based on role
+        if (role === 'student') {
+            studentFields.classList.remove('hidden');
+        } else if (role === 'coach' || role === 'center_admin') {
+            coachFields.classList.remove('hidden');
+        }
+    }
+
+    function closeEditUserModal() {
+        const modalElement = document.getElementById('editUserModal');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+        document.getElementById('editUserForm').reset();
+    }
+
+    // Handle edit user form submission
+    document.getElementById('editUserForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const formData = new FormData(form);
+
+        try {
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
             <div class="loading-spinner" style="width: 16px; height: 16px; border: 2px solid transparent; border-top: 2px solid currentColor; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px;"></div>
             Updating...
         `;
-        
-        const response = await fetch(form.action, {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (response.ok) {
-            // Redirect to users page after successful update
-            window.location.href = '/users';
-        } else {
-            const text = await response.text();
-            // Check if it's a redirect (status 302)
-            if (response.status === 302 || text.includes('Redirecting')) {
+
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                // Redirect to users page after successful update
                 window.location.href = '/users';
             } else {
-                throw new Error('Failed to update user');
+                const text = await response.text();
+                // Check if it's a redirect (status 302)
+                if (response.status === 302 || text.includes('Redirecting')) {
+                    window.location.href = '/users';
+                } else {
+                    throw new Error('Failed to update user');
+                }
             }
+
+        } catch (error) {
+            console.error('Error updating user:', error);
+            alert('Failed to update user. Please try again.');
+
+            // Restore button state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
         }
-        
-    } catch (error) {
-        console.error('Error updating user:', error);
-        alert('Failed to update user. Please try again.');
-        
-        // Restore button state
-        const submitBtn = form.querySelector('button[type="submit"]');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+    });
+
+    function deleteUser(userId, userName) {
+        if (confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
+            fetch(`/users/${userId}/delete`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting user: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting user');
+                });
+        }
     }
-});
 
-function deleteUser(userId, userName) {
-    if (confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
-        fetch(`/users/${userId}/delete`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error deleting user: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error deleting user');
-        });
-    }
-}
+    // Show/hide role-specific fields
+    function handleRoleChange(roleValue) {
+        const studentFields = document.getElementById('studentFields');
+        const coachFields = document.getElementById('coachFields');
 
-// Show/hide role-specific fields
-document.getElementById('new_role').addEventListener('change', function() {
-    const role = this.value;
-    const studentFields = document.getElementById('studentFields');
-    const coachFields = document.getElementById('coachFields');
-    
-    studentFields.classList.add('hidden');
-    coachFields.classList.add('hidden');
-    
-    if (role === 'student') {
-        studentFields.classList.remove('hidden');
-                        
-    } else if (role === 'coach' || role === 'coach_admin') {
-        coachFields.classList.remove('hidden');
-    }
-});
+        studentFields.classList.add('hidden');
+        coachFields.classList.add('hidden');
 
-// Close modal when clicking outside
-document.getElementById('createUserModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeCreateUserModal();
-    }
-});
-
-// Email validation
-function validateEmail(email) {
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return emailPattern.test(email);
-}
-
-// Password validation
-function validatePassword(password) {
-    const errors = [];
-    
-    if (password.length < 10) {
-        errors.push('Password must be at least 10 characters long');
+        if (roleValue === 'student') {
+            studentFields.classList.remove('hidden');
+        } else if (roleValue === 'coach' || roleValue === 'coach_admin') {
+            coachFields.classList.remove('hidden');
+        }
     }
     
-    if (!/[a-zA-Z]/.test(password)) {
-        errors.push('Password must contain at least one letter');
-    }
-    
-    if (!/[0-9]/.test(password)) {
-        errors.push('Password must contain at least one number');
-    }
-    
-    return errors;
-}
-
-// Phone number validation
-function validatePhoneNumber(phone) {
-    const phonePattern = /^(\+?[1-9]\d{1,14}|[0-9]{10})$/;
-    return phonePattern.test(phone.replace(/[\s\-\(\)]/g, ''));
-}
-
-// Name validation
-function validateName(name) {
-    const namePattern = /^[a-zA-Z\s.'-]+$/;
-    return name.length >= 2 && name.length <= 100 && namePattern.test(name);
-}
-
-// Real-time validation
-document.getElementById('new_password').addEventListener('input', function() {
-    const password = this.value;
-    const feedback = document.getElementById('password-feedback');
-    const errors = validatePassword(password);
-    
-    if (errors.length > 0) {
-        this.classList.add('is-invalid');
-        this.classList.remove('is-valid');
-        feedback.textContent = errors[0];
-        feedback.style.display = 'block';
-    } else {
-        this.classList.add('is-valid');
-        this.classList.remove('is-invalid');
-        feedback.style.display = 'none';
-    }
-});
-
-document.getElementById('new_phone').addEventListener('input', function() {
-    const phone = this.value;
-    const feedback = document.getElementById('phone-feedback');
-    
-    if (phone && !validatePhoneNumber(phone)) {
-        this.classList.add('is-invalid');
-        this.classList.remove('is-valid');
-        feedback.textContent = 'Please enter a valid phone number';
-        feedback.style.display = 'block';
-    } else if (phone) {
-        this.classList.add('is-valid');
-        this.classList.remove('is-invalid');
-        feedback.style.display = 'none';
-    } else {
-        this.classList.remove('is-valid', 'is-invalid');
-        feedback.style.display = 'none';
-    }
-});
-
-document.getElementById('new_name').addEventListener('input', function() {
-    const name = this.value;
-    const feedback = document.getElementById('name-feedback');
-    
-    if (name && !validateName(name)) {
-        this.classList.add('is-invalid');
-        this.classList.remove('is-valid');
-        feedback.textContent = 'Name should contain only letters, spaces, periods, apostrophes, and hyphens';
-        feedback.style.display = 'block';
-    } else if (name.length >= 2) {
-        this.classList.add('is-valid');
-        this.classList.remove('is-invalid');
-        feedback.style.display = 'none';
-    } else {
-        this.classList.remove('is-valid', 'is-invalid');
-        feedback.style.display = 'none';
-    }
-});
-
-// Emergency contact validation
-document.getElementById('emergency_contact').addEventListener('input', function() {
-    const phone = this.value;
-    const feedback = document.getElementById('emergency-contact-feedback');
-    
-    if (phone && !validatePhoneNumber(phone)) {
-        this.classList.add('is-invalid');
-        this.classList.remove('is-valid');
-        feedback.textContent = 'Please enter a valid phone number';
-        feedback.style.display = 'block';
-    } else if (phone) {
-        this.classList.add('is-valid');
-        this.classList.remove('is-invalid');
-        feedback.style.display = 'none';
-    } else {
-        this.classList.remove('is-valid', 'is-invalid');
-        feedback.style.display = 'none';
-    }
-});
-
-// Age validation
-document.getElementById('age').addEventListener('input', function() {
-    const age = parseInt(this.value);
-    const feedback = document.getElementById('age-feedback');
-    
-    if (this.value && (isNaN(age) || age < 5 || age > 100)) {
-        this.classList.add('is-invalid');
-        this.classList.remove('is-valid');
-        feedback.textContent = 'Age must be between 5 and 100 years';
-        feedback.style.display = 'block';
-    } else if (this.value) {
-        this.classList.add('is-valid');
-        this.classList.remove('is-invalid');
-        feedback.style.display = 'none';
-    } else {
-        this.classList.remove('is-valid', 'is-invalid');
-        feedback.style.display = 'none';
-    }
-});
-
-// Experience validation
-document.getElementById('experience_years').addEventListener('input', function() {
-    const experience = parseInt(this.value);
-    const feedback = document.getElementById('experience-feedback');
-    
-    if (this.value && (isNaN(experience) || experience < 0 || experience > 50)) {
-        this.classList.add('is-invalid');
-        this.classList.remove('is-valid');
-        feedback.textContent = 'Experience should be between 0 and 50 years';
-        feedback.style.display = 'block';
-    } else if (this.value) {
-        this.classList.add('is-valid');
-        this.classList.remove('is-invalid');
-        feedback.style.display = 'none';
-    } else {
-        this.classList.remove('is-valid', 'is-invalid');
-        feedback.style.display = 'none';
-    }
-});
-
-// Email validation for create form
-document.getElementById('new_email').addEventListener('input', function() {
-    const email = this.value;
-    const feedback = document.getElementById('email-feedback');
-    
-    if (email && !validateEmail(email)) {
-        this.classList.add('is-invalid');
-        this.classList.remove('is-valid');
-        feedback.textContent = 'Please enter a valid email address';
-        feedback.style.display = 'block';
-    } else if (email) {
-        this.classList.add('is-valid');
-        this.classList.remove('is-invalid');
-        feedback.style.display = 'none';
-    } else {
-        this.classList.remove('is-valid', 'is-invalid');
-        feedback.style.display = 'none';
-    }
-});
-
-// Email validation for edit form
-document.getElementById('edit_email').addEventListener('input', function() {
-    const email = this.value;
-    const feedback = document.getElementById('edit-email-feedback');
-    
-    if (email && !validateEmail(email)) {
-        this.classList.add('is-invalid');
-        this.classList.remove('is-valid');
-        feedback.textContent = 'Please enter a valid email address';
-        feedback.style.display = 'block';
-    } else if (email) {
-        this.classList.add('is-valid');
-        this.classList.remove('is-invalid');
-        feedback.style.display = 'none';
-    } else {
-        this.classList.remove('is-valid', 'is-invalid');
-        feedback.style.display = 'none';
-    }
-});
-
-// Role change handler for edit form
-document.getElementById('edit_role').addEventListener('change', function() {
-    updateEditRoleFields(this.value);
-});
-
-// Role change handler for create form
-document.getElementById('new_role').addEventListener('change', function() {
-    const role = this.value;
-    const studentFields = document.getElementById('studentFields');
-    const coachFields = document.getElementById('coachFields');
-    
-    studentFields.classList.add('hidden');
-    coachFields.classList.add('hidden');
-    
-    if (role === 'student') {
-        studentFields.classList.remove('hidden');
-    } else if (role === 'coach' || role === 'coach_admin') {
-        coachFields.classList.remove('hidden');
-    }
-});
-
-// Close edit modal when clicking outside
-document.getElementById('editUserModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeEditUserModal();
-    }
-});
-
-// Form submission validation
-document.getElementById('createUserForm').addEventListener('submit', function(e) {
-    let isValid = true;
-    const formData = new FormData(this);
-    
-    // Validate required fields
-    const name = formData.get('name');
-    const email = formData.get('email');
-    const phone = formData.get('phone_number');
-    const password = formData.get('password');
-    const role = formData.get('role');
-    
-    // Clear previous validation states
-    document.querySelectorAll('.form-control').forEach(input => {
-        input.classList.remove('is-invalid');
+    document.getElementById('new_role').addEventListener('change', function () {
+        handleRoleChange(this.value);
     });
     
-    // Validate name
-    if (!name || !validateName(name)) {
-        document.getElementById('new_name').classList.add('is-invalid');
-        document.getElementById('name-feedback').textContent = 'Please enter a valid name';
-        document.getElementById('name-feedback').style.display = 'block';
-        isValid = false;
-    }
-    
-    // Validate email
-    if (!email || !validateEmail(email)) {
-        document.getElementById('new_email').classList.add('is-invalid');
-        document.getElementById('email-feedback').textContent = 'Please enter a valid email address';
-        document.getElementById('email-feedback').style.display = 'block';
-        isValid = false;
-    }
-    
-    // Validate phone
-    if (!phone || !validatePhoneNumber(phone)) {
-        document.getElementById('new_phone').classList.add('is-invalid');
-        document.getElementById('phone-feedback').textContent = 'Please enter a valid phone number';
-        document.getElementById('phone-feedback').style.display = 'block';
-        isValid = false;
-    }
-    
-    // Validate password
-    const passwordErrors = validatePassword(password);
-    if (passwordErrors.length > 0) {
-        document.getElementById('new_password').classList.add('is-invalid');
-        document.getElementById('password-feedback').textContent = passwordErrors[0];
-        document.getElementById('password-feedback').style.display = 'block';
-        isValid = false;
-    }
-    
-    // Validate role
-    if (!role) {
-        document.getElementById('new_role').classList.add('is-invalid');
-        isValid = false;
-    }
-    
-    // Validate role-specific fields
-    if (role === 'student') {
-        const age = formData.get('age');
-        const emergencyContact = formData.get('emergency_contact');
-        
-        if (age && (parseInt(age) < 5 || parseInt(age) > 100)) {
-            document.getElementById('age').classList.add('is-invalid');
-            isValid = false;
-        }
-        
-        if (emergencyContact && !validatePhoneNumber(emergencyContact)) {
-            document.getElementById('emergency_contact').classList.add('is-invalid');
-            isValid = false;
-        }
-    } else if (role === 'coach' || role === 'coach_admin') {
-        const experience = formData.get('experience_years');
-        
-        if (experience && (parseInt(experience) < 0 || parseInt(experience) > 50)) {
-            document.getElementById('experience_years').classList.add('is-invalid');
-            isValid = false;
-        }
-    }
-    
-    if (!isValid) {
-        e.preventDefault();
-        
-        // Scroll to first invalid field
-        const firstInvalid = document.querySelector('.is-invalid');
-        if (firstInvalid) {
-            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            firstInvalid.focus();
-        }
-        
-        // Show error message
-        alert('Please fix the validation errors before submitting the form.');
-    }
-});
+    // Initialize Select2 dropdowns
+    $(document).ready(function() {
+        // Initialize role select
+        $('#new_role').select2({
+            theme: 'bootstrap-5',
+            width: '100%'
+        }).on('select2:select', function() {
+            handleRoleChange(this.value);
+        });
 
-// Dropdown functionality
-document.addEventListener('click', function(e) {
-    // Close all dropdowns when clicking outside
-    if (!e.target.matches('.dropdown-toggle')) {
-        var dropdowns = document.getElementsByClassName('dropdown-menu');
-        for (var i = 0; i < dropdowns.length; i++) {
-            dropdowns[i].classList.remove('show');
-        }
-    }
-});
+        // Initialize edit role select
+        $('#edit_role').select2({
+            theme: 'bootstrap-5',
+            width: '100%'
+        });
 
-// Toggle dropdown on button click
-document.addEventListener('click', function(e) {
-    if (e.target.matches('.dropdown-toggle')) {
-        e.preventDefault();
-        var dropdown = e.target.nextElementSibling;
-        var isOpen = dropdown.classList.contains('show');
-        
-        // Close all other dropdowns
-        var allDropdowns = document.getElementsByClassName('dropdown-menu');
-        for (var i = 0; i < allDropdowns.length; i++) {
-            allDropdowns[i].classList.remove('show');
+        // Initialize edit status select
+        $('#edit_status').select2({
+            theme: 'bootstrap-5',
+            width: '100%'
+        });
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('createUserModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeCreateUserModal();
         }
+    });
+
+    // Email validation
+    function validateEmail(email) {
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return emailPattern.test(email);
+    }
+
+    // Password validation
+    function validatePassword(password) {
+        const errors = [];
+
+        if (password.length < 10) {
+            errors.push('Password must be at least 10 characters long');
+        }
+
+        if (!/[a-zA-Z]/.test(password)) {
+            errors.push('Password must contain at least one letter');
+        }
+
+        if (!/[0-9]/.test(password)) {
+            errors.push('Password must contain at least one number');
+        }
+
+        return errors;
+    }
+
+    // Phone number validation
+    function validatePhoneNumber(phone) {
+        const phonePattern = /^(\+?[1-9]\d{1,14}|[0-9]{10})$/;
+        return phonePattern.test(phone.replace(/[\s\-\(\)]/g, ''));
+    }
+
+    // Name validation
+    function validateName(name) {
+        const namePattern = /^[a-zA-Z\s.'-]+$/;
+        return name.length >= 2 && name.length <= 100 && namePattern.test(name);
+    }
+
+    // Real-time validation
+    document.getElementById('new_password').addEventListener('input', function () {
+        const password = this.value;
+        const feedback = document.getElementById('password-feedback');
+        const errors = validatePassword(password);
+
+        if (errors.length > 0) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+            feedback.textContent = errors[0];
+            feedback.style.display = 'block';
+        } else {
+            this.classList.add('is-valid');
+            this.classList.remove('is-invalid');
+            feedback.style.display = 'none';
+        }
+    });
+
+    document.getElementById('new_phone').addEventListener('input', function () {
+        const phone = this.value;
+        const feedback = document.getElementById('phone-feedback');
+
+        if (phone && !validatePhoneNumber(phone)) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+            feedback.textContent = 'Please enter a valid phone number';
+            feedback.style.display = 'block';
+        } else if (phone) {
+            this.classList.add('is-valid');
+            this.classList.remove('is-invalid');
+            feedback.style.display = 'none';
+        } else {
+            this.classList.remove('is-valid', 'is-invalid');
+            feedback.style.display = 'none';
+        }
+    });
+
+    document.getElementById('new_name').addEventListener('input', function () {
+        const name = this.value;
+        const feedback = document.getElementById('name-feedback');
+
+        if (name && !validateName(name)) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+            feedback.textContent = 'Name should contain only letters, spaces, periods, apostrophes, and hyphens';
+            feedback.style.display = 'block';
+        } else if (name.length >= 2) {
+            this.classList.add('is-valid');
+            this.classList.remove('is-invalid');
+            feedback.style.display = 'none';
+        } else {
+            this.classList.remove('is-valid', 'is-invalid');
+            feedback.style.display = 'none';
+        }
+    });
+
+    // Emergency contact validation
+    document.getElementById('emergency_contact').addEventListener('input', function () {
+        const phone = this.value;
+        const feedback = document.getElementById('emergency-contact-feedback');
+
+        if (phone && !validatePhoneNumber(phone)) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+            feedback.textContent = 'Please enter a valid phone number';
+            feedback.style.display = 'block';
+        } else if (phone) {
+            this.classList.add('is-valid');
+            this.classList.remove('is-invalid');
+            feedback.style.display = 'none';
+        } else {
+            this.classList.remove('is-valid', 'is-invalid');
+            feedback.style.display = 'none';
+        }
+    });
+
+    // Age validation
+    document.getElementById('age').addEventListener('input', function () {
+        const age = parseInt(this.value);
+        const feedback = document.getElementById('age-feedback');
+
+        if (this.value && (isNaN(age) || age < 5 || age > 100)) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+            feedback.textContent = 'Age must be between 5 and 100 years';
+            feedback.style.display = 'block';
+        } else if (this.value) {
+            this.classList.add('is-valid');
+            this.classList.remove('is-invalid');
+            feedback.style.display = 'none';
+        } else {
+            this.classList.remove('is-valid', 'is-invalid');
+            feedback.style.display = 'none';
+        }
+    });
+
+    // Experience validation
+    document.getElementById('experience_years').addEventListener('input', function () {
+        const experience = parseInt(this.value);
+        const feedback = document.getElementById('experience-feedback');
+
+        if (this.value && (isNaN(experience) || experience < 0 || experience > 50)) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+            feedback.textContent = 'Experience should be between 0 and 50 years';
+            feedback.style.display = 'block';
+        } else if (this.value) {
+            this.classList.add('is-valid');
+            this.classList.remove('is-invalid');
+            feedback.style.display = 'none';
+        } else {
+            this.classList.remove('is-valid', 'is-invalid');
+            feedback.style.display = 'none';
+        }
+    });
+
+    // Email validation for create form
+    document.getElementById('new_email').addEventListener('input', function () {
+        const email = this.value;
+        const feedback = document.getElementById('email-feedback');
+
+        if (email && !validateEmail(email)) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+            feedback.textContent = 'Please enter a valid email address';
+            feedback.style.display = 'block';
+        } else if (email) {
+            this.classList.add('is-valid');
+            this.classList.remove('is-invalid');
+            feedback.style.display = 'none';
+        } else {
+            this.classList.remove('is-valid', 'is-invalid');
+            feedback.style.display = 'none';
+        }
+    });
+
+    // Email validation for edit form
+    document.getElementById('edit_email').addEventListener('input', function () {
+        const email = this.value;
+        const feedback = document.getElementById('edit-email-feedback');
+
+        if (email && !validateEmail(email)) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+            feedback.textContent = 'Please enter a valid email address';
+            feedback.style.display = 'block';
+        } else if (email) {
+            this.classList.add('is-valid');
+            this.classList.remove('is-invalid');
+            feedback.style.display = 'none';
+        } else {
+            this.classList.remove('is-valid', 'is-invalid');
+            feedback.style.display = 'none';
+        }
+    });
+
+    // Role change handler for edit form
+    document.getElementById('edit_role').addEventListener('change', function () {
+        updateEditRoleFields(this.value);
+    });
+    
+    // Also listen for Select2 events on edit role
+    $(document).ready(function() {
+        $('#edit_role').on('select2:select', function() {
+            updateEditRoleFields(this.value);
+        });
+    });
+
+    // Duplicate role change handler removed - using the one above with Select2 support
+
+    // Close edit modal when clicking outside
+    document.getElementById('editUserModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            closeEditUserModal();
+        }
+    });
+
+    // Payment link generation
+    async function generatePaymentLink() {
+        const subscriptionSelect = document.getElementById('edit_subscription');
+        const subscriptionId = subscriptionSelect.value;
         
-        // Toggle current dropdown
-        if (!isOpen) {
-            dropdown.classList.add('show');
+        if (!subscriptionId) {
+            alert('Please select a subscription plan first');
+            return;
+        }
+
+        const userId = document.getElementById('editUserForm').action.split('/').slice(-2)[0];
+        const loadingBtn = event.target;
+        const originalBtnHtml = loadingBtn.innerHTML;
+        
+        try {
+            // Show loading state
+            loadingBtn.disabled = true;
+            loadingBtn.innerHTML = `
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Generating...
+            `;
+
+            const response = await fetch('/api/generate-payment-link', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    subscription_id: subscriptionId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate payment link');
+            }
+
+            const data = await response.json();
+            
+            // Show payment link modal
+            const paymentLinkModal = new bootstrap.Modal(document.getElementById('paymentLinkModal'));
+            document.getElementById('paymentLinkInput').value = data.payment_link;
+            paymentLinkModal.show();
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to generate payment link. Please try again.');
+        } finally {
+            // Restore button state
+            loadingBtn.disabled = false;
+            loadingBtn.innerHTML = originalBtnHtml;
         }
     }
-});
+
+    function copyPaymentLink() {
+        const linkInput = document.getElementById('paymentLinkInput');
+        linkInput.select();
+        document.execCommand('copy');
+        
+        // Show copy success feedback
+        const copyButton = event.target.closest('button');
+        const originalText = copyButton.innerHTML;
+        copyButton.innerHTML = '<i class="bi bi-check me-1"></i>Copied!';
+        setTimeout(() => {
+            copyButton.innerHTML = originalText;
+        }, 2000);
+    }
+
+    function sharePaymentLink() {
+        const link = document.getElementById('paymentLinkInput').value;
+        if (navigator.share) {
+            navigator.share({
+                title: 'Payment Link',
+                text: 'Here is your payment link:',
+                url: link
+            }).catch(err => {
+                console.error('Error sharing:', err);
+                copyPaymentLink();
+            });
+        } else {
+            copyPaymentLink();
+        }
+    }
+
+    function copyPaymentLink() {
+        const linkInput = document.getElementById('paymentLinkInput');
+        linkInput.select();
+        document.execCommand('copy');
+        
+        // Show copy success feedback
+        const copyButton = event.target.closest('button');
+        const originalText = copyButton.innerHTML;
+        copyButton.innerHTML = '<i class="bi bi-check me-1"></i>Copied!';
+        setTimeout(() => {
+            copyButton.innerHTML = originalText;
+        }, 2000);
+    }
+
+    function sharePaymentLink() {
+        const link = document.getElementById('paymentLinkInput').value;
+        if (navigator.share) {
+            navigator.share({
+                title: 'Payment Link',
+                text: 'Here is your payment link for the subscription:',
+                url: link
+            });
+        } else {
+            copyPaymentLink();
+            alert('Link copied to clipboard!');
+        }
+    }
+
+    // Form submission validation
+    document.getElementById('createUserForm').addEventListener('submit', function (e) {
+        let isValid = true;
+        const formData = new FormData(this);
+
+        // Validate required fields
+        const name = formData.get('name');
+        const email = formData.get('email');
+        const phone = formData.get('phone_number');
+        const password = formData.get('password');
+        const role = formData.get('role');
+
+        // Clear previous validation states
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.classList.remove('is-invalid');
+        });
+
+        // Validate name
+        if (!name || !validateName(name)) {
+            document.getElementById('new_name').classList.add('is-invalid');
+            document.getElementById('name-feedback').textContent = 'Please enter a valid name';
+            document.getElementById('name-feedback').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate email
+        if (!email || !validateEmail(email)) {
+            document.getElementById('new_email').classList.add('is-invalid');
+            document.getElementById('email-feedback').textContent = 'Please enter a valid email address';
+            document.getElementById('email-feedback').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate phone
+        if (!phone || !validatePhoneNumber(phone)) {
+            document.getElementById('new_phone').classList.add('is-invalid');
+            document.getElementById('phone-feedback').textContent = 'Please enter a valid phone number';
+            document.getElementById('phone-feedback').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate password
+        const passwordErrors = validatePassword(password);
+        if (passwordErrors.length > 0) {
+            document.getElementById('new_password').classList.add('is-invalid');
+            document.getElementById('password-feedback').textContent = passwordErrors[0];
+            document.getElementById('password-feedback').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate role
+        if (!role) {
+            document.getElementById('new_role').classList.add('is-invalid');
+            isValid = false;
+        }
+
+        // Validate role-specific fields
+        if (role === 'student') {
+            const age = formData.get('age');
+            const emergencyContact = formData.get('emergency_contact');
+
+            if (age && (parseInt(age) < 5 || parseInt(age) > 100)) {
+                document.getElementById('age').classList.add('is-invalid');
+                isValid = false;
+            }
+
+            if (emergencyContact && !validatePhoneNumber(emergencyContact)) {
+                document.getElementById('emergency_contact').classList.add('is-invalid');
+                isValid = false;
+            }
+        } else if (role === 'coach' || role === 'coach_admin') {
+            const experience = formData.get('experience_years');
+
+            if (experience && (parseInt(experience) < 0 || parseInt(experience) > 50)) {
+                document.getElementById('experience_years').classList.add('is-invalid');
+                isValid = false;
+            }
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+
+            // Scroll to first invalid field
+            const firstInvalid = document.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalid.focus();
+            }
+
+            // Show error message
+            alert('Please fix the validation errors before submitting the form.');
+        }
+    });
+
+    // Bootstrap handles dropdown functionality automatically
+    // Removed conflicting custom dropdown handlers
 </script>
-{% endblock %} 
+
+<style>
+/* Enhanced Pagination Styles */
+.results-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.page-size-selector {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.per-page-select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.pagination-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pagination-text {
+    display: inline-block;
+}
+
+.pagination-jump {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-left: var(--spacing-lg);
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.page-jump-input {
+    width: 60px;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+.btn-jump {
+    padding: 0.25rem 0.75rem;
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: var(--transition-normal);
+}
+
+.btn-jump:hover {
+    background: var(--accent-hover);
+}
+
+.no-results {
+    text-align: center;
+    padding: var(--spacing-xl) var(--spacing-lg);
+    color: var(--text-muted);
+}
+
+.no-results-icon {
+    margin: 0 auto var(--spacing-lg);
+    width: 64px;
+    height: 64px;
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+.no-results h3 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-primary);
+}
+
+.no-results p {
+    margin-bottom: var(--spacing-lg);
+    font-size: 0.875rem;
+}
+
+/* Mobile responsive adjustments for pagination */
+@media (max-width: 768px) {
+    .results-summary {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+
+    .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--spacing-xs);
+    }
+
+    .pagination-text {
+        display: none;
+    }
+
+    .pagination-jump {
+        margin-left: 0;
+        margin-top: var(--spacing-sm);
+        justify-content: center;
+        width: 100%;
+    }
+
+    .pagination-numbers {
+        order: -1;
+        width: 100%;
+        justify-content: center;
+        margin-bottom: var(--spacing-sm);
+    }
+}
+</style>
+{% endblock %}

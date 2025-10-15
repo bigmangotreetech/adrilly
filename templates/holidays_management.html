@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Holidays Management - Adrilly Sports Coaching{% endblock %}
+{% block title %}Holidays Management - botle Sports Coaching{% endblock %}
 
 {% block content %}
-<div class="holidays-page">
+<div class="holidays-page users-page">
     <div class="page-header-modern">
         <div class="page-header-content">
             <div class="page-title-section">
@@ -11,357 +11,66 @@
                 <p class="page-subtitle-modern">Manage organization holidays and class cancellations</p>
             </div>
             <div class="page-actions">
-                <button class="btn btn-accent-modern" onclick="showImportHolidaysModal()">
+                <button class="btn btn-accent-modern" data-bs-toggle="modal" data-bs-target="#masterHolidaysModal" onclick="loadMasterHolidays()">
                     <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
                     </svg>
-                    Import Indian Holidays
+                    Import Holidays
                 </button>
-                <button class="btn btn-secondary-modern" onclick="exportHolidays()">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    Export
-                </button>
-                <button class="btn btn-primary-modern" onclick="openCreateHolidayModal()">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Add Holiday
-                </button>
+                
             </div>
         </div>
     </div>
 
     <div class="holidays-main-content">
-        <!-- Left Side - Main Holidays Management -->
-        <div class="holidays-left-panel">
+        <!-- Main Holidays Calendar -->
+        <div class="holidays-calendar-panel">
             <div class="content-card-modern">
                 <!-- Enhanced Filter Bar -->
-                <div class="filter-bar-modern">
-            <form method="GET" class="filter-form" id="filterForm">
-                <div class="search-section">
-                    <div class="search-input-container">
-                        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                        <input type="text" name="search" class="search-input" 
-                               placeholder="Search holidays by name or description..." 
-                               value="{{ request.args.get('search', '') }}"
-                               id="searchInput">
-                    </div>
-                </div>
-                
-                <div class="filter-controls">
-                    <div class="filter-dropdown">
-                        <select name="type" class="filter-select" id="typeFilter">
-                            <option value="">All Types</option>
-                            <option value="national" {{ 'selected' if request.args.get('type') == 'national' }}>National Holiday</option>
-                            <option value="organization" {{ 'selected' if request.args.get('type') == 'organization' }}>Organization Holiday</option>
-                            <option value="center" {{ 'selected' if request.args.get('type') == 'center' }}>Center Specific</option>
-                            <option value="maintenance" {{ 'selected' if request.args.get('type') == 'maintenance' }}>Maintenance</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-dropdown">
-                        <select name="status" class="filter-select" id="statusFilter">
-                            <option value="">All Status</option>
-                            <option value="upcoming" {{ 'selected' if request.args.get('status') == 'upcoming' }}>Upcoming</option>
-                            <option value="active" {{ 'selected' if request.args.get('status') == 'active' }}>Active</option>
-                            <option value="completed" {{ 'selected' if request.args.get('status') == 'completed' }}>Completed</option>
-                            <option value="cancelled" {{ 'selected' if request.args.get('status') == 'cancelled' }}>Cancelled</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-dropdown">
-                        <select name="year" class="filter-select" id="yearFilter">
-                            <option value="">All Years</option>
-                            {% for year in range(2024, 2026) %}
-                            <option value="{{ year }}" {{ 'selected' if request.args.get('year') == year|string }}>{{ year }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <button type="button" class="btn-clear-filters" id="clearFilters">
-                        Clear Filters
-                    </button>
-                </div>
-            </form>
-            
-            <!-- Active Filters Chips -->
-            <div class="active-filters" id="activeFilters"></div>
-        </div>
 
-        <!-- Holiday Calendar View Toggle -->
-        <div class="view-toggle-section">
-            <div class="view-toggle-buttons">
-                <button class="view-toggle-btn active" data-view="table" id="tableViewBtn">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2z"></path>
-                    </svg>
-                    Table View
-                </button>
-                <button class="view-toggle-btn" data-view="calendar" id="calendarViewBtn">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
-                    Calendar View
-                </button>
-            </div>
-        </div>
 
-        <!-- Table View -->
-        <div id="tableView" class="view-content active">
-            {% if holidays %}
-            <div class="table-container-modern">
-                <table class="table-modern" id="holidaysTable">
-                    <thead class="table-header-sticky">
-                        <tr>
-                            <th class="sortable text-left" data-sort="name" style="width: 25%;">
-                                <div class="th-content">
-                                    <span>Holiday Name</span>
-                                    <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th class="sortable text-left" data-sort="date" style="width: 20%;">
-                                <div class="th-content">
-                                    <span>Date Range</span>
-                                    <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th class="text-center" style="width: 15%;">
-                                <div class="th-content">
-                                    <span>Type</span>
-                                </div>
-                            </th>
-                            <th class="text-center" style="width: 15%;">
-                                <div class="th-content">
-                                    <span>Status</span>
-                                </div>
-                            </th>
-                            <th class="d-none d-md-table-cell text-center" style="width: 15%;">
-                                <div class="th-content">
-                                    <span>Affected Classes</span>
-                                </div>
-                            </th>
-                            <th class="text-center" style="width: 10%;">
-                                <div class="th-content">
-                                    <span>Actions</span>
-                                </div>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for holiday in holidays %}
-                        <tr class="table-row-modern" data-holiday-id="{{ holiday._id }}">
-                            <td class="text-left">
-                                <div class="user-info-cell">
-                                    <div class="holiday-icon">
-                                        {% if holiday.type == 'national' %}
-                                        <svg class="status-icon text-red-500" fill="currentColor" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
-                                            <path d="M3 5h18v2H3V5zm0 6h18v2H3v-2zm0 6h18v2H3v-2z"></path>
-                                        </svg>
-                                        {% elif holiday.type == 'organization' %}
-                                        <svg class="status-icon text-blue-500" fill="currentColor" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
-                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-                                        </svg>
-                                        {% elif holiday.type == 'center' %}
-                                        <svg class="status-icon text-green-500" fill="currentColor" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
-                                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"></path>
-                                        </svg>
-                                        {% else %}
-                                        <svg class="status-icon text-orange-500" fill="currentColor" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
-                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"></path>
-                                        </svg>
-                                        {% endif %}
-                                    </div>
-                                    <div class="user-details">
-                                        <div class="user-name">{{ holiday.name }}</div>
-                                        <div class="user-meta">{{ holiday.description[:50] }}{% if holiday.description|length > 50 %}...{% endif %}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="text-left">
-                                <div class="date-range">
-                                    <div class="start-date">{{ holiday.start_date.strftime('%d %b %Y') if holiday.start_date else 'N/A' }}</div>
-                                    {% if holiday.end_date and holiday.end_date != holiday.start_date %}
-                                    <div class="end-date text-muted">to {{ holiday.end_date.strftime('%d %b %Y') }}</div>
-                                    {% endif %}
-                                </div>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge badge-{{ 'primary' if holiday.type == 'national' else 'secondary' if holiday.type == 'organization' else 'success' if holiday.type == 'center' else 'warning' }}">
-                                    {{ holiday.type|title }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                {% if holiday.start_date and holiday.start_date > today %}
-                                    <span class="status-badge status-upcoming">Upcoming</span>
-                                {% elif holiday.end_date and holiday.end_date >= today and holiday.start_date and holiday.start_date <= today %}
-                                    <span class="status-badge status-active">Active</span>
-                                {% elif holiday.end_date and holiday.end_date < today %}
-                                    <span class="status-badge status-completed">Completed</span>
-                                {% elif holiday.start_date and holiday.start_date < today %}
-                                    <span class="status-badge status-completed">Completed</span>
-                                {% else %}
-                                    <span class="status-badge status-upcoming">Upcoming</span>
-                                {% endif %}
-                            </td>
-                            <td class="d-none d-md-table-cell text-center">
-                                <div class="affected-classes">
-                                    <span class="classes-count">{{ holiday.affected_classes_count|default(0) }}</span>
-                                    <span class="classes-label">classes</span>
-                                </div>
-                            </td>
-                            <td class="text-center">
-                                <div class="action-buttons">
-                                    <button class="btn-action btn-edit" onclick="editHoliday('{{ holiday._id }}')" title="Edit Holiday">
-                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                    </button>
-                                    <button class="btn-action btn-delete" onclick="deleteHoliday('{{ holiday._id }}', '{{ holiday.name }}')" title="Delete Holiday">
-                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="empty-state-modern">
-                <div class="empty-state-icon">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
-                </div>
-                <h3 class="empty-state-title">No holidays found</h3>
-                <p class="empty-state-description">Get started by adding your first holiday or adjusting your search filters.</p>
-                <button class="btn btn-primary-modern" onclick="openCreateHolidayModal()">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Add Your First Holiday
-                </button>
-            </div>
-            {% endif %}
-        </div>
 
-        <!-- Calendar View -->
-        <div id="calendarView" class="view-content" style="display: none;">
-            <div class="calendar-container">
-                <div class="calendar-header">
-                    <div class="calendar-navigation">
-                        <button class="btn btn-secondary-modern" id="prevMonth">
+       
+
+        <!-- Year Calendar -->
+        <div class="year-calendar-container">
+                <div class="year-calendar-header">
+                    <div class="year-navigation">
+                        <button class="btn btn-secondary" id="prevYear">
                             <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
                         </button>
-                        <h3 class="calendar-title" id="calendarTitle">January 2024</h3>
-                        <button class="btn btn-secondary-modern" id="nextMonth">
+                        <h2 class="year-title" id="yearTitle">2024</h2>
+                        <button class="btn btn-secondary" id="nextYear">
                             <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
                         </button>
                     </div>
-                    <button class="btn btn-primary-modern" id="todayBtn">Today</button>
-                </div>
-                <div class="calendar-grid" id="calendarGrid">
-                    <!-- Calendar will be generated by JavaScript -->
-                </div>
-            </div>
-        </div>
-            </div>
+                    <button class="btn btn-primary-modern" id="currentYearBtn">Current Year</button>
         </div>
         
-        <!-- Right Side - Indian Holidays Import Panel -->
-        <div class="holidays-right-panel">
-            <div class="content-card-modern">
-                <div class="panel-header">
-                    <h3 class="panel-title">
-                        <svg class="panel-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path>
-                        </svg>
-                        Indian Holidays {{ current_year }}
-                    </h3>
-                    <button class="btn btn-sm btn-primary-modern" onclick="fetchIndianHolidays({{ current_year }})">
-                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                        Refresh
-                    </button>
+                <div class="year-calendar-grid" id="yearCalendarGrid">
+                    <!-- 12 month calendars will be generated by JavaScript -->
                 </div>
                 
-                <div class="panel-controls">
-                    <div class="year-selector">
-                        <label for="indianHolidaysYear" class="form-label-sm">Year:</label>
-                        <select id="indianHolidaysYear" class="form-select-sm">
-                            <option value="{{ current_year }}" selected>{{ current_year }}</option>
-                            <option value="{{ current_year + 1 }}">{{ current_year + 1 }}</option>
-                        </select>
+                
                     </div>
-                    <div class="bulk-actions">
-                        <button class="btn btn-sm btn-success" id="enableAllBtn" onclick="toggleAllHolidays(true)">
-                            Enable All
-                        </button>
-                        <button class="btn btn-sm btn-secondary" id="disableAllBtn" onclick="toggleAllHolidays(false)">
-                            Disable All
-                        </button>
+                    </div>
                     </div>
                 </div>
                 
-                <div class="indian-holidays-list" id="indianHolidaysList">
-                    <div class="loading-state" id="holidaysLoading" style="display: none;">
-                        <div class="spinner"></div>
-                        <p>Loading Indian holidays...</p>
-                    </div>
-                    
-                    <div class="holidays-container" id="holidaysContainer">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-                    
-                    <div class="empty-holidays" id="emptyHolidays" style="display: none;">
-                        <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                        <p>No holidays available for selected year</p>
-                        <button class="btn btn-sm btn-primary-modern" onclick="fetchIndianHolidays()">
-                            Fetch Holidays
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="panel-footer">
-                    <button class="btn btn-primary-modern btn-full-width" id="importSelectedBtn" onclick="importSelectedHolidays()">
-                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-                        </svg>
-                        Import Selected Holidays
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
 <!-- Create/Edit Holiday Modal -->
-<div class="modal-overlay" id="holidayModalOverlay" style="display: none;" onclick="closeHolidayModal()">
-    <div class="modal-modern" onclick="event.stopPropagation()">
+<div class="modal fade" id="holidayModal" tabindex="-1" aria-labelledby="holidayModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
         <div class="modal-header">
             <h2 class="modal-title" id="holidayModalTitle">Add New Holiday</h2>
-            <button class="modal-close" onclick="closeHolidayModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         
         <form id="holidayForm" method="POST" action="{{ url_for('web.create_holiday') }}">
@@ -379,7 +88,7 @@
                     
                     <div class="form-group">
                         <label for="holidayType" class="form-label required">Holiday Type</label>
-                        <select id="holidayType" name="type" class="form-select" required>
+                        <select id="holidayType" name="type" class="form-select select2" required data-placeholder="Select holiday type">
                             <option value="">Select type</option>
                             <option value="national">National Holiday</option>
                             <option value="organization">Organization Holiday</option>
@@ -390,7 +99,7 @@
                     
                     <div class="form-group" id="centerGroup" style="display: none;">
                         <label for="holidayCenter" class="form-label">Center</label>
-                        <select id="holidayCenter" name="center_id" class="form-select">
+                        <select id="holidayCenter" name="center_id" class="form-select select2-search" data-placeholder="Search for a center">
                             <option value="">Select center</option>
                             {% for center in centers %}
                             <option value="{{ center._id }}">{{ center.name }}</option>
@@ -442,59 +151,332 @@
             </div>
             
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary-modern" onclick="closeHolidayModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary-modern">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">
                     <span id="submitButtonText">Add Holiday</span>
                 </button>
             </div>
         </form>
+        </div>
     </div>
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div class="modal-overlay" id="deleteModalOverlay" style="display: none;" onclick="closeDeleteModal()">
-    <div class="modal-modern modal-sm" onclick="event.stopPropagation()">
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
         <div class="modal-header">
-            <h2 class="modal-title">Delete Holiday</h2>
-            <button class="modal-close" onclick="closeDeleteModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+                <h2 class="modal-title" id="deleteModalTitle">Delete Holiday</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         
         <div class="modal-body">
-            <div class="delete-confirmation">
+            <div class="delete-confirmation d-flex">
                 <div class="delete-icon">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 40px; height: 40px;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                     </svg>
                 </div>
-                <h3>Are you sure?</h3>
-                <p>This will permanently delete the holiday "<span id="deleteHolidayName"></span>". This action cannot be undone.</p>
+                <div class="delete-content ms-4 mb-auto">
+                    <h3>Are you sure?</h3>
+                    <p>This will permanently delete the holiday "<span id="deleteHolidayName"></span>". This action cannot be undone.</p>
+                </div>
             </div>
         </div>
         
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary-modern" onclick="closeDeleteModal()">Cancel</button>
-            <button type="button" class="btn btn-danger-modern" onclick="confirmDelete()">Delete Holiday</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete Holiday</button>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Holiday Details Modal -->
+<div class="modal fade" id="holidayDetailsModal" tabindex="-1" aria-labelledby="holidayDetailsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="holidayDetailsTitle">Holiday Details</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="holiday-details-content">
+                    <div class="detail-section">
+                        <h4 id="holidayDetailsName"></h4>
+                        <p class="holiday-date-range" id="holidayDetailsDate"></p>
+                        <p class="holiday-description" id="holidayDetailsDescription"></p>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-row">
+                            <span class="detail-label">Type:</span>
+                            <span class="detail-value" id="holidayDetailsType"></span>
+                        </div>
+                        <div class="detail-row" id="holidayDetailsCenter" style="display: none;">
+                            <span class="detail-label">Center:</span>
+                            <span class="detail-value" id="holidayDetailsCenterName"></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Affected Classes:</span>
+                            <span class="detail-value" id="holidayDetailsClasses"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" onclick="deleteCurrentHoliday()">Remove Holiday</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Holiday Modal (for calendar dates) -->
+<div class="modal fade" id="addHolidayDateModal" tabindex="-1" aria-labelledby="addHolidayDateTitle" aria-hidden="true">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="addHolidayDateTitle">Add Holiday</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="addHolidayDateForm">
+                    <div class="form-group">
+                        <label for="quickHolidayName" class="form-label required">Holiday Name</label>
+                        <input type="text" id="quickHolidayName" name="name" class="form-input" placeholder="Enter holiday name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="quickHolidayDescription" class="form-label">Description</label>
+                        <textarea id="quickHolidayDescription" name="description" class="form-textarea" rows="2" placeholder="Enter holiday description (optional)"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="quickHolidayType" class="form-label required">Holiday Type</label>
+                        <select id="quickHolidayType" name="type" class="form-select" required>
+                            <option value="">Select type</option>
+                            <option value="national">National Holiday</option>
+                            <option value="organization">Organization Holiday</option>
+                            <option value="center">Center Specific</option>
+                            <option value="maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="quickCenterGroup" style="display: none;">
+                        <label for="quickHolidayCenter" class="form-label">Center</label>
+                        <select id="quickHolidayCenter" name="center_id" class="form-select">
+                            <option value="">Select center</option>
+                            {% for center in centers %}
+                            <option value="{{ center._id }}">{{ center.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Selected Date</label>
+                        <div class="selected-date-display" id="selectedDateDisplay"></div>
+                        <input type="hidden" id="quickHolidayDate" name="start_date">
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="quickRecurringHoliday" name="is_recurring" class="form-checkbox">
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-text">Recurring Holiday (annually)</span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveQuickHoliday()">Add Holiday</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Master Holidays Import Modal -->
+<div class="modal fade" id="masterHolidaysModal" tabindex="-1" aria-labelledby="masterHolidaysTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="masterHolidaysTitle">Import Master Holidays</h2>
+                <button type="button" class="btn-close text-secondary" data-bs-dismiss="modal" aria-label="Close">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="import-controls mb-4">
+                    <div class="row justify-content-between">
+                        <div class="col-md-3">
+                            <label for="masterHolidayYear" class="form-label">Select Year:</label>
+                            <select id="masterHolidayYear" class="form-select select2" data-placeholder="Select year">
+                                <option value="{{ current_year }}" selected>{{ current_year }}</option>
+                                <option value="{{ current_year + 1 }}">{{ current_year + 1 }}</option>
+                            </select>
+                        </div>
+                        
+                        
+                        <div class="col-md-3 text-end">
+                            <button type="button" class="btn btn-success" onclick="importSelectedMasterHolidays()" id="importMasterBtn" disabled>
+                                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                                </svg>
+                                Import (<span id="masterSelectedCount">0</span>)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                        <strong>Import Master Holidays</strong><br>
+                        Select holidays from the master list to add them to your organization's calendar. 
+                        Only holidays not already imported will be shown.
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="col-md-3">
+                        
+                        <label class="checkbox-modern w-100 ps-1" for="selectAllMasterHolidays">
+                            <input class="form-check-input" type="checkbox" id="selectAllMasterHolidays" onchange="toggleAllMasterHolidays(this)">
+                            <span class="checkmark"></span>
+                                Select All
+                        </label>
+                    </div>
+                </div>
+                <div id="masterHolidaysList" class="master-holidays-list">
+                    <div class="text-center text-muted py-5" id="masterHolidaysEmpty">
+                        <div class="spinner-border text-primary" role="status" style="display: none;" id="masterLoadingSpinner">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div id="masterStatusContent">
+                            <svg class="mb-3" width="64" height="64" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                            </svg>
+                            <h5>Load Master Holidays</h5>
+                            <p class="mb-0">Click "Load Available" to see holidays you can import to your organization</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Legacy Import Holidays Modal (kept for compatibility) -->
+<div class="modal fade" id="importHolidaysModal" tabindex="-1" aria-labelledby="importHolidaysTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="importHolidaysTitle">Load Indian Holidays</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="import-controls mb-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label for="importYear" class="form-label">Select Year:</label>
+                            <select id="importYear" class="form-select">
+                                <option value="{{ current_year }}" selected>{{ current_year }}</option>
+                                <option value="{{ current_year + 1 }}">{{ current_year + 1 }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-primary" onclick="fetchHolidaysForImport()">
+                                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Load Holidays
+                            </button>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-success" onclick="selectAllHolidays(true)">Select All</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllHolidays(false)">Clear All</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="importHolidaysLoading" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading holidays...</p>
+                </div>
+                
+                <div id="importHolidaysList" class="holidays-import-list" style="display: none;">
+                    <!-- Holidays will be populated here -->
+                </div>
+                
+                <div id="importHolidaysEmpty" class="text-center py-4" style="display: none;">
+                    <svg class="empty-icon mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 48px; height: 48px; color: #6b7280;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <p class="text-muted">No holidays available for the selected year.</p>
+                    <button type="button" class="btn btn-outline-primary" onclick="fetchHolidaysForImport()">Try Again</button>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="importSelectedHolidaysBtn" onclick="importSelectedHolidays()" disabled>
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                    </svg>
+                    Load Selected Holidays
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Container -->
+<div id="notificationContainer" class="notification-container"></div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="loading-text">Processing...</p>
+    </div>
+</div>
+
+<!-- Holidays data for JavaScript -->
+<script type="application/json" id="holidays-data">{{ holidays|tojson|safe if holidays else '[]' }}</script>
 
 <script>
 // Holiday Management JavaScript
 let currentHolidayId = null;
 let currentDeleteId = null;
 let currentDate = new Date();
-
+let currentYear = new Date().getFullYear();
+let currentSelectedHoliday = null;
+let selectedCalendarDate = null;
+let holidaysData = JSON.parse(document.getElementById('holidays-data').textContent || '[]');
 // Modal Functions
 function openCreateHolidayModal() {
     document.getElementById('holidayModalTitle').textContent = 'Add New Holiday';
     document.getElementById('submitButtonText').textContent = 'Add Holiday';
     document.getElementById('holidayForm').action = "{{ url_for('web.create_holiday') }}";
     document.getElementById('holidayForm').reset();
-    document.getElementById('holidayModalOverlay').style.display = 'flex';
+    
+    const modal = new bootstrap.Modal(document.getElementById('holidayModal'));
+    modal.show();
     currentHolidayId = null;
 }
 
@@ -532,22 +514,26 @@ function editHoliday(holidayId) {
             showNotification('Error loading holiday data', 'error');
         });
     
-    document.getElementById('holidayModalOverlay').style.display = 'flex';
+    const modal = new bootstrap.Modal(document.getElementById('holidayModal'));
+    modal.show();
 }
 
 function closeHolidayModal() {
-    document.getElementById('holidayModalOverlay').style.display = 'none';
+    const modal = bootstrap.Modal.getInstance(document.getElementById('holidayModal'));
+    if (modal) modal.hide();
     currentHolidayId = null;
 }
 
 function deleteHoliday(holidayId, holidayName) {
     currentDeleteId = holidayId;
     document.getElementById('deleteHolidayName').textContent = holidayName;
-    document.getElementById('deleteModalOverlay').style.display = 'flex';
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
 }
 
 function closeDeleteModal() {
-    document.getElementById('deleteModalOverlay').style.display = 'none';
+    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+    if (modal) modal.hide();
     currentDeleteId = null;
 }
 
@@ -576,6 +562,471 @@ function confirmDelete() {
     closeDeleteModal();
 }
 
+// Holiday Details Modal Functions
+function closeHolidayDetailsModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('holidayDetailsModal'));
+    if (modal) modal.hide();
+    currentSelectedHoliday = null;
+}
+
+function editCurrentHoliday() {
+    if (currentSelectedHoliday) {
+        closeHolidayDetailsModal();
+        editHoliday(currentSelectedHoliday._id);
+    }
+}
+
+function deleteCurrentHoliday() {
+    // api call to delete holiday
+    fetch(`/api/holidays/${currentSelectedHoliday._id}/remove`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Holiday deleted successfully', 'success');
+            location.reload();
+        } else {
+            showNotification(data.error || 'Error deleting holiday', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error deleting holiday', 'error');
+    });
+}
+
+function closeDeleteModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+    if (modal) modal.hide();
+    if (currentSelectedHoliday) {
+        closeHolidayDetailsModal();
+        deleteHoliday(currentSelectedHoliday._id, currentSelectedHoliday.name);
+    }
+}
+
+// Add Holiday Date Modal Functions
+function closeAddHolidayDateModal() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addHolidayDateModal'));
+    if (modal) modal.hide();
+    selectedCalendarDate = null;
+}
+
+function saveQuickHoliday() {
+    const form = document.getElementById('addHolidayDateForm');
+    const formData = new FormData(form);
+    
+    // Add the selected date
+    formData.set('start_date', document.getElementById('quickHolidayDate').value);
+    formData.set('end_date', document.getElementById('quickHolidayDate').value);
+    
+    showLoadingOverlay('Creating holiday...');
+    
+    fetch("{{ url_for('web.create_holiday') }}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Holiday added successfully', 'success');
+            closeAddHolidayDateModal();
+            location.reload(); // Refresh to show new holiday
+        } else {
+            showNotification(data.error || 'Error adding holiday', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error adding holiday', 'error');
+    })
+    .finally(() => {
+        hideLoadingOverlay();
+    });
+}
+
+// Helper Functions
+function formatDateRange(startDate, endDate) {
+    if (!startDate) return 'No date';
+    
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : null;
+    
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    
+    if (!end || start.getTime() === end.getTime()) {
+        return startDate.substring(0, 16);
+    } else {
+        return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
+    }
+}
+
+function getHolidayTypeLabel(type) {
+    const types = {
+        'national': 'National Holiday',
+        'organization': 'Organization Holiday',
+        'center': 'Center Specific',
+        'maintenance': 'Maintenance'
+    };
+    return types[type] || type;
+}
+
+// Import Holidays Functions
+let importHolidaysData = [];
+
+function fetchHolidaysForImport() {
+    const year = document.getElementById('importYear').value;
+    
+    document.getElementById('importHolidaysLoading').style.display = 'block';
+    document.getElementById('importHolidaysList').style.display = 'none';
+    document.getElementById('importHolidaysEmpty').style.display = 'none';
+    
+    fetch(`/api/holidays/indian/${year}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('importHolidaysLoading').style.display = 'none';
+        
+        if (data.error) {
+            document.getElementById('importHolidaysEmpty').style.display = 'block';
+            showNotification(data.error, 'error');
+        } else {
+            importHolidaysData = data.holidays || [];
+            renderImportHolidaysList(importHolidaysData);
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching holidays:', error);
+        document.getElementById('importHolidaysLoading').style.display = 'none';
+        document.getElementById('importHolidaysEmpty').style.display = 'block';
+        showNotification('Error fetching Indian holidays', 'error');
+    });
+}
+
+function renderImportHolidaysList(holidays) {
+    const container = document.getElementById('importHolidaysList');
+    
+    if (!holidays || holidays.length === 0) {
+        document.getElementById('importHolidaysEmpty').style.display = 'block';
+        return;
+    }
+    
+    container.style.display = 'block';
+    
+    const holidaysHTML = holidays.map(holiday => {
+        const date = new Date(holiday.date_observed);
+        const isImported = holiday.is_imported || false;
+        
+        return `
+            <div class="form-check holiday-import-item ${isImported ? 'imported' : ''}" data-holiday-id="${holiday._id || holiday.name}">
+                <input class="form-check-input" type="checkbox" id="import_${holiday._id || holiday.name}" 
+                       ${isImported ? 'disabled checked' : ''} 
+                       onchange="updateImportButton()">
+                <label class="form-check-label w-100" for="import_${holiday._id || holiday.name}">
+                    <div class="holiday-import-info">
+                        <div class="holiday-import-header">
+                            <strong class="holiday-name">${holiday.name}</strong>
+                            <span class="holiday-date badge bg-secondary">${date.toLocaleDateString('en-IN', { 
+                                day: 'numeric', 
+                                month: 'short',
+                                year: 'numeric'
+                            })}</span>
+                        </div>
+                        ${holiday.description ? `<div class="holiday-description text-muted small">${holiday.description}</div>` : ''}
+                        ${holiday.locations ? `<div class="holiday-locations text-muted small"><i>Locations: ${holiday.locations}</i></div>` : ''}
+                        ${isImported ? '<div class="imported-badge"><span class="badge bg-success">Already Imported</span></div>' : ''}
+                    </div>
+                </label>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = holidaysHTML;
+    updateImportButton();
+}
+
+function selectAllHolidays(select) {
+    const checkboxes = document.querySelectorAll('#importHolidaysList .form-check-input:not(:disabled)');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = select;
+    });
+    updateImportButton();
+}
+
+function updateImportButton() {
+    const selectedCount = document.querySelectorAll('#importHolidaysList .form-check-input:checked:not(:disabled)').length;
+    const importBtn = document.getElementById('importSelectedHolidaysBtn');
+    
+    if (selectedCount > 0) {
+        importBtn.textContent = `Load ${selectedCount} Selected Holiday${selectedCount > 1 ? 's' : ''}`;
+        importBtn.disabled = false;
+    } else {
+        importBtn.innerHTML = `
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+            </svg>
+            Load Selected Holidays
+        `;
+        importBtn.disabled = true;
+    }
+}
+
+function importSelectedHolidays() {
+    const selectedCheckboxes = document.querySelectorAll('#importHolidaysList .form-check-input:checked:not(:disabled)');
+    const selectedHolidays = Array.from(selectedCheckboxes).map(checkbox => {
+        const holidayId = checkbox.closest('.holiday-import-item').dataset.holidayId;
+        return importHolidaysData.find(h => (h._id || h.name) === holidayId);
+    }).filter(Boolean);
+    
+    if (selectedHolidays.length === 0) {
+        showNotification('No holidays selected for import', 'warning');
+        return;
+    }
+    
+    const importBtn = document.getElementById('importSelectedHolidaysBtn');
+    const originalText = importBtn.innerHTML;
+    importBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
+    importBtn.disabled = true;
+    
+    showLoadingOverlay('Importing holidays...');
+    
+    fetch('/api/holidays/import-indian', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+            holidays: selectedHolidays,
+            year: document.getElementById('importYear').value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showNotification(data.error, 'error');
+        } else {
+            showNotification(`Successfully imported ${data.imported_count} holidays`, 'success');
+            
+            // Close modal and refresh page
+            const modal = bootstrap.Modal.getInstance(document.getElementById('importHolidaysModal'));
+            if (modal) modal.hide();
+            
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        }
+    })
+    .catch(error => {
+        console.error('Error importing holidays:', error);
+        showNotification('Error importing holidays', 'error');
+    })
+    .finally(() => {
+        importBtn.innerHTML = originalText;
+        importBtn.disabled = false;
+        hideLoadingOverlay();
+    });
+}
+
+// Master Holidays Functions
+function loadMasterHolidays() {
+    const year = document.getElementById('masterHolidayYear').value;
+    const spinner = document.getElementById('masterLoadingSpinner');
+    const statusContent = document.getElementById('masterStatusContent');
+    const holidaysList = document.getElementById('masterHolidaysList');
+    
+    // Show loading state
+    spinner.style.display = 'block';
+    statusContent.style.display = 'none';
+    
+    // Make API call to get master holidays
+    fetch(`/api/holidays/master?year=${year}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showNotification(data.error, 'error');
+            statusContent.innerHTML = `
+                <svg class="mb-3" width="64" height="64" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <h5>Error Loading Holidays</h5>
+                <p class="mb-0">${data.error}</p>
+            `;
+        } else {
+            displayMasterHolidays(data.holidays);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading master holidays:', error);
+        showNotification('Error loading master holidays', 'error');
+        statusContent.innerHTML = `
+            <svg class="mb-3" width="64" height="64" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <h5>Connection Error</h5>
+            <p class="mb-0">Failed to load holidays. Please try again.</p>
+        `;
+    })
+    .finally(() => {
+        spinner.style.display = 'none';
+        statusContent.style.display = 'block';
+    });
+}
+
+function displayMasterHolidays(holidays) {
+    const holidaysList = document.getElementById('masterHolidaysList');
+    const emptyState = document.getElementById('masterHolidaysEmpty');
+    
+    if (!holidays || holidays.length === 0) {
+        emptyState.style.display = 'block';
+        document.getElementById('masterStatusContent').innerHTML = `
+            <svg class="mb-3" width="64" height="64" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+            </svg>
+            <h5>No Holidays Available</h5>
+            <p class="mb-0">All available holidays have already been imported to your organization</p>
+        `;
+        return;
+    }
+    
+    emptyState.style.display = 'none';
+    
+    let html = '<div class="row">';
+    holidays.forEach((holiday, index) => {
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+
+        const formattedDate = holiday.date_observed.substring(0, 16);
+        
+        html += `
+            <div class="col-12 mb-3">
+                <div class="card master-holiday-card">
+                    <div class="card-body">
+                        <div class="">
+                            <label class="checkbox-modern w-100" for="masterHoliday${index}">
+                                <input class="master-holiday-checkbox" type="checkbox" 
+                                   value="${holiday._id}" id="masterHoliday${index}" 
+                                   onchange="updateMasterImportButton()"
+                                   class="master-holiday-checkbox">
+                                   <span class="checkmark"></span>
+                                <div class="holiday-name">${holiday.name}</div>
+                                
+                            </label>
+                            <div class="holiday-date text-muted">${formattedDate}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    holidaysList.innerHTML = html;
+    updateMasterImportButton();
+}
+
+function toggleAllMasterHolidays(selectAllCheckbox) {
+    const checkboxes = document.querySelectorAll('.master-holiday-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    updateMasterImportButton();
+}
+
+function updateMasterImportButton() {
+    const selectedCount = document.querySelectorAll('.master-holiday-checkbox:checked').length;
+    const importBtn = document.getElementById('importMasterBtn');
+    const countSpan = document.getElementById('masterSelectedCount');
+    
+    countSpan.textContent = selectedCount;
+    importBtn.disabled = selectedCount === 0;
+    
+    // Update select all checkbox
+    const selectAllCheckbox = document.getElementById('selectAllMasterHolidays');
+    const allCheckboxes = document.querySelectorAll('.master-holiday-checkbox');
+    const checkedCheckboxes = document.querySelectorAll('.master-holiday-checkbox:checked');
+    
+    if (checkedCheckboxes.length === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+    } else if (checkedCheckboxes.length === allCheckboxes.length) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+    } else {
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+function importSelectedMasterHolidays() {
+    const selectedCheckboxes = document.querySelectorAll('.master-holiday-checkbox:checked');
+    const holidayIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+    
+    if (holidayIds.length === 0) {
+        showNotification('Please select holidays to import', 'warning');
+        return;
+    }
+    
+    const importBtn = document.getElementById('importMasterBtn');
+    const originalText = importBtn.innerHTML;
+    importBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Importing...';
+    importBtn.disabled = true;
+    
+    // Make API call to import selected holidays
+    fetch('/api/holidays/import-selected', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            holiday_ids: holidayIds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showNotification(data.error, 'error');
+            if (data.errors && data.errors.length > 0) {
+                console.error('Import errors:', data.errors);
+            }
+        } else {
+            showNotification(data.message, 'success');
+            
+            // Close modal and refresh page
+            const modal = bootstrap.Modal.getInstance(document.getElementById('masterHolidaysModal'));
+            if (modal) modal.hide();
+            
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        }
+    })
+    .catch(error => {
+        console.error('Error importing holidays:', error);
+        showNotification('Error importing holidays', 'error');
+    })
+    .finally(() => {
+        importBtn.innerHTML = originalText;
+        importBtn.disabled = false;
+    });
+}
+
 // Toggle center field based on holiday type
 function toggleCenterField() {
     const holidayType = document.getElementById('holidayType').value;
@@ -591,41 +1042,178 @@ function toggleCenterField() {
     }
 }
 
-// View Toggle Functions
-function toggleView(viewType) {
-    const tableView = document.getElementById('tableView');
-    const calendarView = document.getElementById('calendarView');
-    const tableBtn = document.getElementById('tableViewBtn');
-    const calendarBtn = document.getElementById('calendarViewBtn');
-    
-    if (viewType === 'calendar') {
-        tableView.style.display = 'none';
-        calendarView.style.display = 'block';
-        tableBtn.classList.remove('active');
-        calendarBtn.classList.add('active');
-        generateCalendar();
-    } else {
-        tableView.style.display = 'block';
-        calendarView.style.display = 'none';
-        tableBtn.classList.add('active');
-        calendarBtn.classList.remove('active');
-    }
-}
 
-// Calendar Functions
-function generateCalendar() {
-    // Implementation for calendar generation
-    // This would create a month view with holidays marked
-    const grid = document.getElementById('calendarGrid');
-    const title = document.getElementById('calendarTitle');
+
+// Year Calendar Functions
+function generateYearCalendar() {
+    const grid = document.getElementById('yearCalendarGrid');
+    const title = document.getElementById('yearTitle');
+    
+    title.textContent = currentYear;
+    
+    // Debug: Check holidays data
+    console.log('Holidays data:', holidaysData);
+    console.log('Total holidays:', holidaysData.length);
     
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'];
     
-    title.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+    let calendarHTML = '';
     
-    // Generate calendar grid (simplified version)
-    grid.innerHTML = '<p class="text-center py-4">Calendar view implementation in progress...</p>';
+    for (let month = 0; month < 12; month++) {
+        calendarHTML += generateMonthCalendar(currentYear, month, monthNames[month]);
+    }
+    
+    grid.innerHTML = calendarHTML;
+}
+
+function generateMonthCalendar(year, month, monthName) {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+    
+    let html = `
+        <div class="month-calendar">
+            <div class="month-header">
+                <h4 class="month-title">${monthName}</h4>
+            </div>
+            <div class="month-grid">
+                <div class="weekday-headers">
+                    <div class="weekday">Sun</div>
+                    <div class="weekday">Mon</div>
+                    <div class="weekday">Tue</div>
+                    <div class="weekday">Wed</div>
+                    <div class="weekday">Thu</div>
+                    <div class="weekday">Fri</div>
+                    <div class="weekday">Sat</div>
+                </div>
+                <div class="days-grid">
+    `;
+    
+    for (let week = 0; week < 6; week++) {
+        for (let day = 0; day < 7; day++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + (week * 7) + day);
+            
+            const isCurrentMonthDate = currentDate.getMonth() === month;
+            const isToday = isCurrentMonth && currentDate.getDate() === today.getDate();
+            const dateStr = currentDate.toISOString().split('T')[0];
+            
+            // Check if this date has holidays
+            const dayHolidays = getHolidaysForDate(dateStr);
+            const hasHolidays = dayHolidays.length > 0;
+            const primaryHoliday = dayHolidays[0];
+            
+            // Debug logging
+            if (hasHolidays) {
+                console.log(`Found holiday on ${dateStr}:`, primaryHoliday);
+            }
+            
+            let dayClasses = ['calendar-day'];
+            if (!isCurrentMonthDate) dayClasses.push('other-month');
+            if (isToday) dayClasses.push('today');
+            if (hasHolidays) {
+                dayClasses.push('has-holiday', `holiday-${primaryHoliday.type}`);
+                console.log(`Adding classes for ${dateStr}:`, `has-holiday holiday-${primaryHoliday.type}`);
+            }
+            
+            
+            
+            html += `
+                <div class="${dayClasses.join(' ')}" 
+                     data-date="${dateStr}"
+                     data-year="${currentDate.getFullYear()}"
+                     data-month="${currentDate.getMonth()}"
+                     data-day="${currentDate.getDate()}"
+                     onclick="handleDateClick('${dateStr}', ${hasHolidays})">
+                    <span class="day-number">${currentDate.getDate()}</span>
+                </div>
+            `;
+        }
+    }
+    
+    html += `
+                </div>
+            </div>
+        </div>
+    `;
+    
+    return html;
+}
+
+function getHolidaysForDate(dateStr) {
+    if (!holidaysData || !Array.isArray(holidaysData)) return [];
+    
+    return holidaysData.filter(holiday => {
+        if (!holiday.start_date) return false;
+        
+        const startDate = new Date(holiday.start_date);
+        const endDate = holiday.end_date ? new Date(holiday.end_date) : startDate;
+        const checkDate = new Date(dateStr);
+        
+        return checkDate >= startDate && checkDate <= endDate;
+    });
+}
+
+function handleDateClick(dateStr, hasHolidays) {
+    selectedCalendarDate = dateStr;
+    
+    if (hasHolidays) {
+        showHolidayDetails(dateStr);
+    } else {
+        showAddHolidayModal(dateStr);
+    }
+}
+
+function showHolidayDetails(dateStr) {
+    const holidays = getHolidaysForDate(dateStr);
+    if (holidays.length === 0) return;
+    
+    const holiday = holidays[0]; // Show first holiday
+    currentSelectedHoliday = holiday;
+
+    console.log(holiday);
+    
+    document.getElementById('holidayDetailsName').textContent = holiday.name;
+    document.getElementById('holidayDetailsDate').textContent = formatDateRange(holiday.start_date, holiday.end_date);
+    document.getElementById('holidayDetailsDescription').textContent = holiday.description || 'No description provided';
+    document.getElementById('holidayDetailsType').textContent = getHolidayTypeLabel(holiday.type);
+    document.getElementById('holidayDetailsClasses').textContent = `${holiday.affected_classes_count || 0} classes`;
+    
+    if (holiday.center_name) {
+        document.getElementById('holidayDetailsCenter').style.display = 'block';
+        document.getElementById('holidayDetailsCenterName').textContent = holiday.center_name;
+    } else {
+        document.getElementById('holidayDetailsCenter').style.display = 'none';
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('holidayDetailsModal'));
+    modal.show();
+}
+
+function showAddHolidayModal(dateStr) {
+    const date = dateStr.split('-');
+    const year = date[0];
+    const month = parseInt(date[1]) - 1;
+    const day = parseInt(date[2]);
+    
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    const formattedDate = `${day} ${monthNames[month]} ${year}`;
+    document.getElementById('selectedDateDisplay').textContent = formattedDate;
+    document.getElementById('quickHolidayDate').value = dateStr;
+    document.getElementById('addHolidayDateForm').reset();
+    document.getElementById('quickHolidayDate').value = dateStr; // Reset clears this, so set again
+    
+    const modal = new bootstrap.Modal(document.getElementById('addHolidayDateModal'));
+    modal.show();
 }
 
 // Export Functions
@@ -643,27 +1231,49 @@ function clearFilters() {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
-    // Holiday type change handler
+    // Holiday type change handler - support both regular and Select2 events
     document.getElementById('holidayType').addEventListener('change', toggleCenterField);
-    
-    // View toggle handlers
-    document.getElementById('tableViewBtn').addEventListener('click', () => toggleView('table'));
-    document.getElementById('calendarViewBtn').addEventListener('click', () => toggleView('calendar'));
-    
-    // Calendar navigation
-    document.getElementById('prevMonth').addEventListener('click', function() {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        generateCalendar();
+    $(document).ready(function() {
+        $('#holidayType').on('select2:select', toggleCenterField);
     });
     
-    document.getElementById('nextMonth').addEventListener('click', function() {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        generateCalendar();
+    // Calendar is now the only view, so generate it on load
+    generateYearCalendar();
+    
+    // Year calendar navigation
+    document.getElementById('prevYear').addEventListener('click', function() {
+        currentYear--;
+        generateYearCalendar();
     });
     
-    document.getElementById('todayBtn').addEventListener('click', function() {
-        currentDate = new Date();
-        generateCalendar();
+    document.getElementById('nextYear').addEventListener('click', function() {
+        currentYear++;
+        generateYearCalendar();
+    });
+    
+    document.getElementById('currentYearBtn').addEventListener('click', function() {
+        currentYear = new Date().getFullYear();
+        generateYearCalendar();
+    });
+    
+    // Quick holiday type change handler - support both regular and Select2 events
+    function handleQuickHolidayTypeChange() {
+        const holidayType = document.getElementById('quickHolidayType').value;
+        const centerGroup = document.getElementById('quickCenterGroup');
+        
+        if (holidayType === 'center') {
+            centerGroup.style.display = 'block';
+            document.getElementById('quickHolidayCenter').required = true;
+        } else {
+            centerGroup.style.display = 'none';
+            document.getElementById('quickHolidayCenter').required = false;
+            document.getElementById('quickHolidayCenter').value = '';
+        }
+    }
+    
+    document.getElementById('quickHolidayType').addEventListener('change', handleQuickHolidayTypeChange);
+    $(document).ready(function() {
+        $('#quickHolidayType').on('select2:select', handleQuickHolidayTypeChange);
     });
     
     // Form submission handler
@@ -721,16 +1331,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Search input debouncing
-    let searchTimeout;
-    document.getElementById('searchInput').addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            document.getElementById('filterForm').submit();
-        }, 500);
-    });
+    
     
     // Clear filters button
-    document.getElementById('clearFilters').addEventListener('click', clearFilters);
 });
 
 // Utility Functions
@@ -772,285 +1375,326 @@ function initTableSorting() {
 // Initialize table sorting
 document.addEventListener('DOMContentLoaded', initTableSorting);
 
-// ===================================
-// INDIAN HOLIDAYS IMPORT FUNCTIONALITY
-// ===================================
-
-let indianHolidays = [];
-let selectedHolidays = new Set();
-
-// Fetch Indian holidays from API
-function fetchIndianHolidays(year) {
-    year = year || document.getElementById('indianHolidaysYear').value || new Date().getFullYear();
+// Actions Dropdown (matching users.html functionality)
+function toggleActionDropdown(button) {
+    const dropdown = button.parentElement;
+    const menu = dropdown.querySelector('.actions-menu');
+    const isOpen = menu.classList.contains('show');
     
-    showLoadingState();
-    
-    fetch(`/api/holidays/indian/${year}`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            showEmptyState();
-            showNotification(data.error, 'error');
-        } else {
-            indianHolidays = data.holidays || [];
-            renderIndianHolidays(indianHolidays);
-            updateImportButton();
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching holidays:', error);
-        showEmptyState();
-        showNotification('Error fetching Indian holidays', 'error');
-    });
-}
-
-// Show loading state
-function showLoadingState() {
-    document.getElementById('holidaysLoading').style.display = 'block';
-    document.getElementById('holidaysContainer').style.display = 'none';
-    document.getElementById('emptyHolidays').style.display = 'none';
-}
-
-// Show empty state
-function showEmptyState() {
-    document.getElementById('holidaysLoading').style.display = 'none';
-    document.getElementById('holidaysContainer').style.display = 'none';
-    document.getElementById('emptyHolidays').style.display = 'block';
-}
-
-// Render Indian holidays list
-function renderIndianHolidays(holidays) {
-    const container = document.getElementById('holidaysContainer');
-    
-    if (!holidays || holidays.length === 0) {
-        showEmptyState();
-        return;
-    }
-    
-    document.getElementById('holidaysLoading').style.display = 'none';
-    document.getElementById('emptyHolidays').style.display = 'none';
-    container.style.display = 'block';
-    
-    const holidaysHTML = holidays.map(holiday => {
-        const date = new Date(holiday.date_observed);
-        const isEnabled = holiday.is_enabled !== false;
-        const isImported = holiday.is_imported || false;
-        
-        return `
-            <div class="holiday-item ${isImported ? 'imported' : ''}" data-holiday-id="${holiday._id || holiday.name}">
-                <div class="holiday-toggle">
-                    <label class="toggle-switch">
-                        <input type="checkbox" 
-                               ${isEnabled ? 'checked' : ''} 
-                               onchange="toggleHoliday('${holiday._id || holiday.name}', this.checked)"
-                               ${isImported ? 'disabled' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="holiday-info">
-                    <div class="holiday-name">${holiday.name}</div>
-                    <div class="holiday-date">${date.toLocaleDateString('en-IN', { 
-                        day: 'numeric', 
-                        month: 'short',
-                        year: 'numeric'
-                    })}</div>
-                    <div class="holiday-meta">
-                        ${holiday.locations ? `<span class="location">${holiday.locations}</span>` : ''}
-                        ${holiday.holiday_types ? `<span class="types">${holiday.holiday_types.join(', ')}</span>` : ''}
-                    </div>
-                </div>
-                <div class="holiday-status">
-                    ${isImported ? '<span class="status-badge imported">Imported</span>' : 
-                      isEnabled ? '<span class="status-badge enabled">Enabled</span>' : 
-                      '<span class="status-badge disabled">Disabled</span>'}
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    container.innerHTML = holidaysHTML;
-    updateImportButton();
-}
-
-// Toggle individual holiday
-function toggleHoliday(holidayId, enabled) {
-    const holiday = indianHolidays.find(h => (h._id || h.name) === holidayId);
-    if (holiday) {
-        holiday.is_enabled = enabled;
-        
-        if (enabled) {
-            selectedHolidays.add(holidayId);
-        } else {
-            selectedHolidays.delete(holidayId);
-        }
-        
-        updateImportButton();
-    }
-}
-
-// Toggle all holidays
-function toggleAllHolidays(enabled) {
-    indianHolidays.forEach(holiday => {
-        if (!holiday.is_imported) {
-            holiday.is_enabled = enabled;
-            if (enabled) {
-                selectedHolidays.add(holiday._id || holiday.name);
-            } else {
-                selectedHolidays.delete(holiday._id || holiday.name);
-            }
+    // Close all other dropdowns
+    document.querySelectorAll('.actions-menu.show').forEach(openMenu => {
+        if (openMenu !== menu) {
+            openMenu.classList.remove('show');
         }
     });
     
-    renderIndianHolidays(indianHolidays);
-}
-
-// Update import button state
-function updateImportButton() {
-    const enabledCount = indianHolidays.filter(h => h.is_enabled && !h.is_imported).length;
-    const importBtn = document.getElementById('importSelectedBtn');
+    // Toggle current dropdown
+    menu.classList.toggle('show', !isOpen);
     
-    if (enabledCount > 0) {
-        importBtn.textContent = `Import ${enabledCount} Selected Holiday${enabledCount > 1 ? 's' : ''}`;
-        importBtn.disabled = false;
-    } else {
-        importBtn.textContent = 'Import Selected Holidays';
-        importBtn.disabled = true;
-    }
-}
-
-// Import selected holidays
-function importSelectedHolidays() {
-    const enabledHolidays = indianHolidays.filter(h => h.is_enabled && !h.is_imported);
-    
-    if (enabledHolidays.length === 0) {
-        showNotification('No holidays selected for import', 'warning');
-        return;
-    }
-    
-    const importBtn = document.getElementById('importSelectedBtn');
-    const originalText = importBtn.innerHTML;
-    importBtn.innerHTML = '<span class="spinner"></span> Importing...';
-    importBtn.disabled = true;
-    
-    fetch('/api/holidays/import-indian', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-        body: JSON.stringify({
-            holidays: enabledHolidays,
-            year: document.getElementById('indianHolidaysYear').value
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            showNotification(data.error, 'error');
-        } else {
-            showNotification(`Successfully imported ${data.imported_count} holidays`, 'success');
-            
-            // Mark imported holidays and refresh display
-            enabledHolidays.forEach(holiday => {
-                holiday.is_imported = true;
+    // Close dropdown when clicking outside
+    if (!isOpen) {
+        setTimeout(() => {
+            document.addEventListener('click', function closeDropdown(e) {
+                if (!dropdown.contains(e.target)) {
+                    menu.classList.remove('show');
+                    document.removeEventListener('click', closeDropdown);
+                }
             });
-            renderIndianHolidays(indianHolidays);
-            
-            // Refresh main holidays table
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
-        }
-    })
-    .catch(error => {
-        console.error('Error importing holidays:', error);
-        showNotification('Error importing holidays', 'error');
-    })
-    .finally(() => {
-        importBtn.innerHTML = originalText;
-        importBtn.disabled = false;
-    });
+        }, 0);
+    }
 }
 
-// Show import holidays modal
-function showImportHolidaysModal() {
-    fetchIndianHolidays();
-}
 
-// Session-based authentication headers
-function getAuthHeaders() {
-    return {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-    };
-}
 
-// Show notification
-function showNotification(message, type = 'info') {
-    // Create notification element
+// Enhanced notification system
+function showNotification(message, type = 'info', duration = 5000) {
+    const container = document.getElementById('notificationContainer');
+    if (!container) {
+        console.error('Notification container not found');
+        return;
+    }
+    
     const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
+    notification.className = `alert alert-${getBootstrapAlertType(type)} alert-dismissible fade show notification-item`;
+    notification.setAttribute('role', 'alert');
+    
+    const icon = getNotificationIcon(type);
+    
     notification.innerHTML = `
-        <div class="notification-content">
-            <span class="notification-message">${message}</span>
-            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        <div class="d-flex align-items-center">
+            <div class="notification-icon me-2">${icon}</div>
+            <div class="notification-message flex-grow-1">${message}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     `;
     
-    // Add to page
-    document.body.appendChild(notification);
+    container.appendChild(notification);
     
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.remove();
-        }
-    }, 5000);
+    // Auto remove after specified duration
+    if (duration > 0) {
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 150);
+            }
+        }, duration);
+    }
 }
 
-// Year selector change handler
+function getBootstrapAlertType(type) {
+    const typeMap = {
+        'success': 'success',
+        'error': 'danger',
+        'warning': 'warning',
+        'info': 'info'
+    };
+    return typeMap[type] || 'info';
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'success': '<svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.061L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>',
+        'error': '<svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/></svg>',
+        'warning': '<svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>',
+        'info': '<svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>'
+    };
+    return icons[type] || icons['info'];
+}
+
+// Loading overlay functions
+function showLoadingOverlay(message = 'Processing...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const text = overlay.querySelector('.loading-text');
+    if (text) text.textContent = message;
+    overlay.style.display = 'flex';
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.style.display = 'none';
+}
+
+// Initialize page on load
 document.addEventListener('DOMContentLoaded', function() {
-    const yearSelect = document.getElementById('indianHolidaysYear');
-    if (yearSelect) {
-        yearSelect.addEventListener('change', function() {
-            fetchIndianHolidays(this.value);
-        });
-    }
-    
-    // Load holidays for current year on page load
-    fetchIndianHolidays();
+    // Auto-load holidays for import modal when it opens
+    document.getElementById('importHolidaysModal').addEventListener('shown.bs.modal', function() {
+        if (document.getElementById('importHolidaysList').innerHTML === '') {
+            fetchHolidaysForImport();
+        }
+    });
 });
 
 </script>
 
 <style>
-/* Two-column layout */
+/* Single-column layout */
 .holidays-main-content {
-    display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 1.5rem;
     margin-top: 1rem;
 }
 
-@media (max-width: 1200px) {
-    .holidays-main-content {
-        grid-template-columns: 1fr;
+.holidays-calendar-panel {
+    width: 100%;
+}
+
+/* Master Holiday Cards */
+.master-holiday-card {
+    border: 1px solid var(--border-primary);
+    transition: var(--transition-normal);
+    height: 100%;
+}
+
+.master-holiday-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.master-holiday-card .form-check {
+    margin: 0;
+}
+
+.master-holiday-card .form-check-input {
+    margin-top: 0.25rem;
+}
+
+.master-holiday-card .form-check-label {
+    cursor: pointer;
+    padding-left: 0.5rem;
+}
+
+.master-holiday-card .holiday-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.master-holiday-card .holiday-date {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.master-holiday-card .holiday-desc {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.master-holiday-card .holiday-meta {
+    margin-top: 0.5rem;
+}
+
+.master-holiday-card .badge {
+    font-size: 0.7rem;
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.master-holidays-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.alert-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* Notification System Styles */
+.notification-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1060;
+    max-width: 400px;
+    width: 100%;
+}
+
+.notification-item {
+    margin-bottom: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: none;
+    animation: slideInRight 0.3s ease-out;
+}
+
+.notification-icon svg {
+    flex-shrink: 0;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
     }
-    
-    .holidays-right-panel {
-        order: -1;
+    to {
+        transform: translateX(0);
+        opacity: 1;
     }
 }
 
-/* Right panel styles */
-.holidays-right-panel {
-    position: sticky;
-    top: 1rem;
-    height: fit-content;
-    max-height: calc(100vh - 2rem);
-    overflow: hidden;
+/* Loading Overlay Styles */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1070;
+}
+
+.loading-content {
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    min-width: 200px;
+}
+
+.loading-text {
+    margin-top: 1rem;
+    margin-bottom: 0;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Import Modal Styles */
+.holidays-import-list {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    background: var(--bg-secondary);
+}
+
+.holiday-import-item {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    transition: all 0.2s ease;
+}
+
+.holiday-import-item:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.holiday-import-item.imported {
+    background: rgba(16, 185, 129, 0.05);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.holiday-import-info {
+    margin-left: 0.5rem;
+}
+
+.holiday-import-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.holiday-name {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.holiday-date {
+    font-size: 0.8rem !important;
+}
+
+.holiday-description {
+    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+
+.holiday-locations {
+    font-size: 0.8rem;
+}
+
+.imported-badge {
+    margin-top: 0.25rem;
+}
+
+.form-check-input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 0.25rem rgba(14, 165, 233, 0.25);
+}
+
+.import-controls {
+    background: var(--bg-tertiary);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-primary);
 }
 
 .panel-header {
@@ -1375,6 +2019,652 @@ input:disabled + .toggle-slider {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
 }
+
+/* Holiday-specific role pills */
+.role-national {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.role-organization {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.role-center {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.role-maintenance {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+/* Holiday status pills */
+.status-upcoming {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.status-active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.status-completed {
+    background: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
+}
+
+.status-cancelled {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+/* Action divider */
+.action-divider {
+    height: 1px;
+    background: var(--border-primary);
+    margin: 0.25rem 0;
+}
+
+/* Dark mode support for holidays */
+:root[data-theme="dark"] .panel-header,
+:root[data-theme="dark"] .panel-controls,
+:root[data-theme="dark"] .panel-footer {
+    border-color: var(--border-primary);
+    background: var(--bg-tertiary);
+}
+
+:root[data-theme="dark"] .panel-title {
+    color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .holiday-item {
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+}
+
+:root[data-theme="dark"] .holiday-item:hover {
+    border-color: var(--accent-primary);
+}
+
+:root[data-theme="dark"] .holiday-name {
+    color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .holiday-date {
+    color: var(--text-secondary);
+}
+
+:root[data-theme="dark"] .holiday-meta {
+    color: var(--text-muted);
+}
+
+/* Mobile card styles */
+.user-card-mobile {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    transition: all 0.2s ease;
+}
+
+.user-card-mobile:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.user-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.user-avatar-mobile {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.user-card-info {
+    flex: 1;
+}
+
+.user-card-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+    font-size: 1rem;
+}
+
+.user-card-badges {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+}
+
+.user-card-actions {
+    position: relative;
+}
+
+.user-card-details {
+    border-top: 1px solid var(--border-primary);
+    padding-top: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.detail-value {
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    text-align: right;
+    max-width: 60%;
+    word-break: break-word;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .holidays-main-content {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+    
+    .holidays-right-panel {
+        order: -1;
+        position: static;
+        height: auto;
+        max-height: none;
+    }
+    
+    .page-header-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-md);
+    }
+    
+    .page-actions {
+        flex-wrap: wrap;
+        justify-content: stretch;
+    }
+    
+    .page-actions .btn {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-actions {
+        flex-direction: column;
+    }
+    
+    .user-card-badges {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+    
+    .detail-value {
+        text-align: left;
+        max-width: 100%;
+    }
+}
+
+/* Button variants for import section */
+.btn-success-modern {
+    background: var(--success-primary);
+    color: var(--text-inverse);
+    border: 1px solid var(--success-primary);
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.btn-success-modern:hover {
+    background: var(--success-dark);
+    border-color: var(--success-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.btn-sm.btn-success-modern,
+.btn-sm.btn-secondary-modern,
+.btn-sm.btn-primary-modern {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* Form select small */
+.form-select-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.form-select-sm:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+    outline: none;
+}
+
+/* Form label small */
+.form-label-sm {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+/* Import section dark mode improvements */
+:root[data-theme="dark"] .form-select-sm {
+    background: var(--bg-tertiary);
+    border-color: var(--border-primary);
+    color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .form-label-sm {
+    color: var(--text-secondary);
+}
+
+:root[data-theme="dark"] .btn-success-modern {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+:root[data-theme="dark"] .btn-success-modern:hover {
+    background: #059669;
+    border-color: #059669;
+}
+
+/* Year Calendar Styles */
+.year-calendar-container {
+    padding: 1.5rem;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-primary);
+}
+
+.year-calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-primary);
+}
+
+.year-navigation {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.year-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    min-width: 120px;
+    text-align: center;
+}
+
+.year-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.month-calendar {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.month-calendar:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.month-header {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+    padding: 0.75rem 1rem;
+    text-align: center;
+}
+
+.month-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.month-grid {
+    padding: 1rem;
+}
+
+.weekday-headers {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 0.5rem;
+}
+
+.weekday {
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.calendar-day {
+    position: relative;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    border: none;
+    min-height: 32px;
+    color: var(--text-primary);
+}
+
+.calendar-day:hover {
+    background: var(--bg-hover);
+    transform: scale(1.05);
+}
+
+.calendar-day.other-month {
+    opacity: 0.3;
+    color: var(--text-muted);
+}
+
+.calendar-day.today {
+    background: var(--accent-primary);
+    color: white;
+    font-weight: 700;
+}
+
+.calendar-day.today:hover {
+    background: var(--accent-dark);
+}
+
+.calendar-day.has-holiday {
+    font-weight: 600;
+    color: white !important;
+}
+
+.calendar-day.holiday-national {
+    background: #ef4444 !important;
+    color: white !important;
+}
+
+.calendar-day.holiday-organization {
+    background: #3b82f6 !important;
+    color: white !important;
+}
+
+.calendar-day.holiday-center {
+    background: #10b981 !important;
+    color: white !important;
+}
+
+.calendar-day.holiday-maintenance {
+    background: #f59e0b !important;
+    color: white !important;
+}
+
+.calendar-day.has-holiday:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.day-number {
+    font-size: 0.875rem;
+    line-height: 1;
+}
+
+
+
+/* Calendar Legend */
+.calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-primary);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: var(--radius-sm);
+    border: 2px solid currentColor;
+}
+
+.legend-color.holiday-national {
+    background: #ef4444;
+    border: none;
+}
+
+.legend-color.holiday-organization {
+    background: #3b82f6;
+    border: none;
+}
+
+.legend-color.holiday-center {
+    background: #10b981;
+    border: none;
+}
+
+.legend-color.holiday-maintenance {
+    background: #f59e0b;
+    border: none;
+}
+
+.legend-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Modal Enhancements */
+.holiday-details-content {
+    padding: 0.5rem 0;
+}
+
+.detail-section {
+    margin-bottom: 1.5rem;
+}
+
+.detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.detail-section h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.holiday-date-range {
+    font-size: 0.875rem;
+    color: var(--accent-primary);
+    font-weight: 500;
+    margin: 0 0 0.5rem 0;
+}
+
+.holiday-description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.selected-date-display {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .year-calendar-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 900px) {
+    .year-calendar-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .year-calendar-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .year-navigation {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 600px) {
+    .year-calendar-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .year-calendar-container {
+        padding: 1rem;
+    }
+    
+    .month-grid {
+        padding: 0.5rem;
+    }
+    
+    .calendar-day {
+        min-height: 28px;
+    }
+    
+    .day-number {
+        font-size: 0.75rem;
+    }
+    
+    .calendar-legend {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .legend-item {
+        justify-content: center;
+    }
+}
+
+/* Dark mode enhancements */
+:root[data-theme="dark"] .year-calendar-container {
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+}
+
+:root[data-theme="dark"] .month-calendar {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+}
+
+:root[data-theme="dark"] .calendar-day {
+    background: transparent;
+    color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .calendar-day:hover {
+    background: var(--bg-hover);
+}
+
+:root[data-theme="dark"] .calendar-day.has-holiday {
+    color: white;
+}
+
+:root[data-theme="dark"] .selected-date-display {
+    background: var(--bg-tertiary);
+    border-color: var(--border-primary);
+    color: var(--text-primary);
+}
 </style>
 
 {% endblock %}
+

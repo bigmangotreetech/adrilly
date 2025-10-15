@@ -8,7 +8,7 @@ import os
 import sys
 import requests
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, time as dt_time
 from typing import Dict, List, Optional
 import schedule
 import time
@@ -19,6 +19,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from app.extensions import mongo
 from app.models.holiday import Holiday
 from config import Config
+from pymongo import MongoClient
 
 # Setup logging
 logging.basicConfig(
@@ -38,6 +39,11 @@ class IndianHolidayFetcher:
         self.api_key = os.getenv('CALENDARIFIC_API_ENDPOINT')
         self.base_url = "https://calendarific.com/api/v2/holidays"
         self.country_code = "IN"  # India
+        self.mongo_uri = os.environ.get('MONGODB_URI')
+        print(self.mongo_uri)
+        self.client = MongoClient(self.mongo_uri)
+        self.db = self.client.adrilly
+
         
         if not self.api_key:
             raise ValueError("CALENDARIFIC_API_ENDPOINT environment variable not set")
@@ -82,15 +88,9 @@ class IndianHolidayFetcher:
             logger.error(f"Unexpected error fetching holidays for {year}: {str(e)}")
             return []
     
-    def process_holiday_data(self, holiday_data: Dict) -> Optional[Dict]:
+    def _parse_holiday_data(self, holiday_data: Dict) -> Optional[Holiday]:
         """
-        Process and normalize holiday data from API
-        
-        Args:
-            holiday_data: Raw holiday data from API
-            
-        Returns:
-            Processed holiday dictionary or None if invalid
+        Parse individual holiday data from API response
         """
         try:
             # Extract basic information
@@ -104,8 +104,17 @@ class IndianHolidayFetcher:
             if not iso_date or not name:
                 return None
             
-            # Parse the date
-            holiday_date = datetime.strptime(iso_date, '%Y-%m-%d').date()
+            # Parse the date - handle both date-only and datetime formats
+            try:
+                # Try parsing as date first (YYYY-MM-DD)
+                holiday_date = datetime.strptime(iso_date, '%Y-%m-%d')
+            except ValueError:
+                try:
+                    # Try parsing as datetime with timezone (YYYY-MM-DDTHH:MM:SS+TZ:TZ)
+                    holiday_date = datetime.strptime(iso_date.split('T')[0], '%Y-%m-%d')
+                except ValueError:
+                    # Try parsing as datetime without timezone (YYYY-MM-DDTHH:MM:SS)
+                    holiday_date = datetime.strptime(iso_date.split('T')[0], '%Y-%m-%d')
             
             # Get holiday types and locations
             holiday_types = holiday_data.get('type', [])
@@ -121,27 +130,24 @@ class IndianHolidayFetcher:
                 locations = 'All India'
             
             # Determine if this affects scheduling (major holidays only)
-            affects_scheduling = any(htype in ['national', 'public'] for htype in holiday_types)
+            affects_scheduling = any(
+                holiday_type.lower() in ['national', 'federal', 'public'] 
+                for holiday_type in holiday_types
+            )
             
-            # Create processed holiday data
-            processed_holiday = {
-                'name': name,
-                'description': description or name,
-                'date_observed': holiday_date,
-                'locations': locations,
-                'holiday_types': holiday_types,
-                'affects_scheduling': affects_scheduling,
-                'source': 'calendarific_api',
-                'api_data': holiday_data,  # Store original data for reference
-                'imported_at': datetime.utcnow(),
-                'is_enabled': True,  # Default to enabled
-                'is_imported': True
-            }
-            
-            return processed_holiday
+            return Holiday(
+                name=name,
+                description=description,
+                date_observed=holiday_date,
+                holiday_types=holiday_types if holiday_types else ['Unknown'],
+                locations=locations,
+                affects_scheduling=affects_scheduling,
+                is_recurring=True,
+            )
             
         except Exception as e:
-            logger.error(f"Error processing holiday data: {str(e)}")
+            logger.error(f"Error processing holiday data: {e}")
+            logger.debug(f"Problematic holiday data: {holiday_data}")
             return None
     
     def save_holidays_to_db(self, holidays: List[Dict], year: int) -> int:
@@ -159,40 +165,44 @@ class IndianHolidayFetcher:
         
         try:
             # Remove existing imported holidays for this year
-            mongo.db.holidays.delete_many({
+            # Convert date objects to datetime objects for MongoDB compatibility
+            start_of_year = datetime.combine(date(year, 1, 1), dt_time.min)
+            end_of_year = datetime.combine(date(year, 12, 31), dt_time.max)
+            
+            self.db.holidays.delete_many({
                 'source': 'calendarific_api',
                 'date_observed': {
-                    '$gte': date(year, 1, 1),
-                    '$lte': date(year, 12, 31)
+                    '$gte': start_of_year,
+                    '$lte': end_of_year
                 }
             })
             
             for holiday_data in holidays:
-                processed = self.process_holiday_data(holiday_data)
+                processed = self._parse_holiday_data(holiday_data)
                 if processed:
                     try:
                         # Check if holiday already exists (by name and date)
-                        existing = mongo.db.holidays.find_one({
-                            'name': processed['name'],
-                            'date_observed': processed['date_observed']
+                        existing = self.db.holidays.find_one({
+                            'name': processed.name,
+                            'date_observed': processed.date_observed
                         })
                         
                         if existing:
                             # Update existing holiday
-                            mongo.db.holidays.update_one(
+                            self.db.holidays.update_one(
                                 {'_id': existing['_id']},
-                                {'$set': processed}
+                                {'$set': processed.to_dict()}
                             )
-                            logger.debug(f"Updated holiday: {processed['name']}")
+                            logger.debug(f"Updated holiday: {processed.name}")
                         else:
                             # Insert new holiday
-                            mongo.db.holidays.insert_one(processed)
-                            logger.debug(f"Inserted holiday: {processed['name']}")
+                            self.db.holidays.insert_one(processed.to_dict())
+                            logger.debug(f"Inserted holiday: {processed.name}")
                         
                         saved_count += 1
                         
                     except Exception as e:
-                        logger.error(f"Error saving holiday {processed['name']}: {str(e)}")
+                        logger.error(f"Error saving holiday {processed.name}: {str(e)}")
                         continue
             
             logger.info(f"Successfully saved {saved_count} holidays for year {year}")
@@ -264,7 +274,7 @@ class IndianHolidayFetcher:
             if enabled_only:
                 query['is_enabled'] = True
             
-            holidays = list(mongo.db.holidays.find(query).sort('date_observed', 1))
+            holidays = list(self.db.holidays.find(query).sort('date_observed', 1))
             return holidays
             
         except Exception as e:

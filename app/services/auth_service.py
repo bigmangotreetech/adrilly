@@ -8,6 +8,7 @@ from app.extensions import mongo
 from app.models.user import User
 from app.models.organization import Organization
 from app.services.email_verification_service import EmailVerificationService
+from app.services.enhanced_whatsapp_service import EnhancedWhatsAppService
 
 class AuthService:
     """Enhanced authentication service for multi-tenant phone-based login"""
@@ -21,6 +22,9 @@ class AuthService:
     def send_otp(phone_number, otp):
         """Send OTP via SMS (placeholder - integrate with SMS service)"""
         # TODO: Integrate with SMS service like Twilio
+        enhanced_whatsapp_service = EnhancedWhatsAppService()
+        res = enhanced_whatsapp_service.send_otp_to_logged_in_user(phone_number, otp)
+        print(f"Result: {res}")
         print(f"Sending OTP {otp} to {phone_number}")
         return True
     
@@ -35,11 +39,11 @@ class AuthService:
         
         # Generate OTP
         otp = AuthService.generate_otp()
+        print(f"OTP: {otp} for {normalized_phone}")
         otp_expires_at = datetime.utcnow() + timedelta(minutes=10)
         
         # Check if user exists across all organizations
         user_data = mongo.db.users.find_one({'phone_number': normalized_phone})
-        
         if user_data:
             # Update existing user with OTP
             mongo.db.users.update_one(
@@ -61,10 +65,10 @@ class AuthService:
             )
             new_user.otp_code = otp
             new_user.otp_expires_at = otp_expires_at
-            
+            print(f"New user: {new_user.to_dict(include_sensitive=True)}")
             result = mongo.db.users.insert_one(new_user.to_dict(include_sensitive=True))
             new_user._id = result.inserted_id
-        
+
         # Send OTP
         if AuthService.send_otp(normalized_phone, otp):
             return {'message': 'OTP sent successfully'}, 200
@@ -75,8 +79,9 @@ class AuthService:
     def verify_otp(phone_number, otp, name=None):
         """Verify OTP and return JWT tokens"""
         normalized_phone = User(phone_number, 'temp')._normalize_phone_number(phone_number)
+        print(f"Normalized phone: {normalized_phone}")
         user_data = mongo.db.users.find_one({'phone_number': normalized_phone})
-        
+        print(f"User data: {user_data}")
         if not user_data:
             return {'error': 'User not found'}, 404
         
@@ -124,6 +129,9 @@ class AuthService:
         # Get updated user data
         updated_user_data = mongo.db.users.find_one({'_id': user_data['_id']})
         updated_user = User.from_dict(updated_user_data)
+
+        if 'organization_id' in updated_user_data:
+            updated_user.organization_id = str(updated_user_data['organization_id'])
         
         return {
             'access_token': access_token,
@@ -180,7 +188,7 @@ class AuthService:
     
     @staticmethod
     def register_user(phone_number, name, password=None, role='student', 
-                     organization_id=None, created_by=None, email=None):
+                     organization_id=None, created_by=None, email=None, billing_start_date=None):
         """Register a new user within an organization"""
         if not User.validate_phone_number(phone_number):
             return {'error': 'Invalid phone number format'}, 400
@@ -216,13 +224,18 @@ class AuthService:
             role=role,
             password=password,
             organization_id=organization_id,
-            created_by=created_by
+            created_by=created_by,
+            billing_start_date=billing_start_date
         )
+        print(new_user.organization_id)
         new_user.verification_status = 'verified' if password else 'pending'
         
         # Set email if provided
         if email:
             new_user.email = email
+
+        user_data = new_user.to_dict(include_sensitive=True)
+        user_data['organization_id'] = ObjectId(user_data['organization_id'])
         
         result = mongo.db.users.insert_one(new_user.to_dict(include_sensitive=True))
         new_user._id = result.inserted_id
@@ -253,6 +266,7 @@ class AuthService:
                 address=address,
                 activities=activities
             )
+            
             
             org_result = mongo.db.organizations.insert_one(new_org.to_dict())
             new_org._id = org_result.inserted_id

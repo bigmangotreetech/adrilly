@@ -1,0 +1,117 @@
+/* Custom Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Utility Classes */
+.animate-fade-in {
+    animation: fadeIn 1s ease-out forwards;
+}
+
+.animate-scale-in {
+    animation: scaleIn 0.5s ease-out forwards;
+}
+
+.animate-slide-in {
+    animation: slideIn 0.8s ease-out forwards;
+}
+
+/* Feature Card Styles */
+.feature-card {
+    @apply bg-bg-card rounded-xl p-6 transition-all duration-300;
+}
+
+.feature-card:hover {
+    @apply transform -translate-y-2;
+    box-shadow: 0 0 30px rgba(161, 222, 86, 0.2);
+}
+
+/* Testimonial Card Styles */
+.testimonial-card {
+    @apply bg-bg-card rounded-xl p-6 transition-all duration-300;
+    min-width: 300px;
+}
+
+.testimonial-card:hover {
+    @apply transform -translate-y-1;
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.2);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--bg-hover);
+}
+
+/* Gradient Text */
+.gradient-text {
+    background: linear-gradient(45deg, var(--primary) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Animated Underline */
+.animated-underline {
+    position: relative;
+    display: inline-block;
+}
+
+.animated-underline::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    bottom: -4px;
+    left: 0;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease-out;
+}
+
+.animated-underline:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+}

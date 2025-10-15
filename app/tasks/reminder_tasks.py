@@ -1,13 +1,12 @@
 from datetime import datetime, timedelta
-from celery import Celery
 from app.extensions import mongo
 from app.services.whatsapp_service import WhatsAppService
 from app.models.class_schedule import Class
-from app.models.payment import Payment
+from app.models.payments import Payment
 from bson import ObjectId
 
-# Initialize Celery (will be properly configured in app.py)
-celery = Celery('sports_coaching')
+# Import the shared Celery instance from extensions
+from app.extensions import celery
 
 @celery.task
 def send_class_reminders(hours_before=2):
@@ -99,7 +98,7 @@ def send_payment_reminders():
 def generate_recurring_payments():
     """Generate payments for active payment plans"""
     try:
-        from app.models.payment import PaymentPlan
+        from app.models.payments import PaymentPlan
         
         today = datetime.utcnow().date()
         
@@ -236,51 +235,5 @@ def cleanup_expired_otps():
         print(f"Error in cleanup_expired_otps: {str(e)}")
         return f"Error: {str(e)}"
 
-# Periodic task configurations
-@celery.on_after_configure.connect
-def setup_periodic_tasks(sender, **kwargs):
-    """Setup periodic tasks"""
-    
-    # Send class reminders every 30 minutes
-    sender.add_periodic_task(
-        1800.0,  # 30 minutes
-        send_class_reminders.s(hours_before=2),
-        name='send class reminders'
-    )
-    
-    # Send payment reminders daily at 9 AM
-    sender.add_periodic_task(
-        86400.0,  # 24 hours
-        send_payment_reminders.s(),
-        name='send payment reminders'
-    )
-    
-    # Generate recurring payments daily at 6 AM
-    sender.add_periodic_task(
-        86400.0,  # 24 hours
-        generate_recurring_payments.s(),
-        name='generate recurring payments'
-    )
-    
-    # Update class status every 15 minutes
-    sender.add_periodic_task(
-        900.0,  # 15 minutes
-        update_class_status.s(),
-        name='update class status'
-    )
-    
-    # Clean up expired OTPs every hour
-    sender.add_periodic_task(
-        3600.0,  # 1 hour
-        cleanup_expired_otps.s(),
-        name='cleanup expired otps'
-    )
-    
-    # Create daily classes every day at 6 AM
-    from celery.schedules import crontab
-    from app.tasks.enhanced_reminder_tasks import create_daily_classes
-    sender.add_periodic_task(
-        crontab(hour=6, minute=0),  # Daily at 6:00 AM
-        create_daily_classes.s(days_ahead=7),
-        name='create daily classes'
-    ) 
+# Note: Periodic tasks are now configured in enhanced_reminder_tasks.py
+# to avoid duplicate registrations 

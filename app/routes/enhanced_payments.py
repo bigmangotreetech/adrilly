@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, session
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.extensions import mongo
-from app.models.payment import Payment, PaymentPlan
+from app.models.payments import Payment
 from app.models.user import User
 from app.services.enhanced_payment_service import EnhancedPaymentService
 from app.routes.auth import require_role

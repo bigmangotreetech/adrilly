@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Payments - Adrilly Sports Coaching{% endblock %}
+{% block title %}Payments - botle Sports Coaching{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -9,15 +9,30 @@
 </div>
 
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="card-title">All Payments</h3>
-        <div class="btn-group">
-            {% if session.user_role in ['org_admin', 'coach_admin'] %}
-            <button class="btn btn-primary" onclick="openCreatePaymentModal()">Create Payment</button>
-            {% endif %}
-            <a href="{{ url_for('web.export_payments') }}" class="btn btn-outline">Export</a>
-        </div>
+    <div class="card-header">
+        <!-- Navigation tabs -->
+        <ul class="nav nav-tabs card-header-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" id="payments-tab" data-bs-toggle="tab" href="#payments" role="tab">Payments</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="subscriptions-tab" data-bs-toggle="tab" href="#subscriptions" role="tab">Subscriptions</a>
+            </li>
+        </ul>
     </div>
+    
+    <div class="tab-content">
+        <!-- Payments Tab -->
+        <div class="tab-pane fade show active" id="payments" role="tabpanel">
+            <div class="card-header d-flex justify-content-between align-items-center border-0">
+                <h3 class="card-title">All Payments</h3>
+                <div class="btn-group">
+                    {% if session.user_role in ['org_admin', 'coach_admin'] %}
+                    <button class="btn btn-primary" onclick="openCreatePaymentModal()">Create Payment</button>
+                    {% endif %}
+                    <a href="{{ url_for('web.export_payments') }}" class="btn btn-outline">Export</a>
+                </div>
+            </div>
     <div class="card-body">
         <!-- Filters -->
         <form method="GET" class="mb-3">
@@ -172,12 +187,21 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="student_id" class="form-label">Student</label>
-                    <select class="form-control form-select" id="student_id" name="student_id" required>
+                    <select class="form-control form-select select2-search" id="student_id" name="student_id" required data-placeholder="Search for a student">
                         <option value="">Select student</option>
                         {% for student in students %}
-                        <option value="{{ student._id }}">{{ student.name }} ({{ student.phone_number }})</option>
+                        <option value="{{ student._id }}">
+                            {{ student.name }}
+                            {% if student.email %} - {{ student.email }}{% endif %}
+                            {% if student.phone_number %} - {{ student.phone_number }}{% endif %}
+                        </option>
                         {% endfor %}
                     </select>
+                    {% if students|length == 0 %}
+                    <div class="alert alert-warning mt-2">
+                        <small>No students found in your organization. Please add students first.</small>
+                    </div>
+                    {% endif %}
                 </div>
                 
                 <div class="form-row">
@@ -269,11 +293,81 @@
         </form>
     </div>
 </div>
+<!-- Create Subscription Modal -->
+<div id="createSubscriptionModal" class="modal-overlay hidden">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Create New Subscription Plan</h3>
+            <button class="modal-close" onclick="closeCreateSubscriptionModal()">&times;</button>
+        </div>
+        <form id="createSubscriptionForm" method="POST" action="{{ url_for('web.create_subscription') }}">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="subscription_name" class="form-label">Plan Name</label>
+                    <input type="text" class="form-control" id="subscription_name" name="name" 
+                           placeholder="e.g. Basic Monthly, Premium Plan" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="price_per_month" class="form-label">Price per Month (₹)</label>
+                    <input type="number" class="form-control" id="price_per_month" name="price_per_month" 
+                           min="0" step="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description" class="form-label">Description (Optional)</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"
+                              placeholder="Describe the features and benefits of this subscription plan"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCreateSubscriptionModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Subscription Plan</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 let currentPaymentId = null;
+let currentSubscriptionId = null;
+
+function openCreateSubscriptionModal() {
+    document.getElementById('createSubscriptionModal').classList.remove('hidden');
+}
+
+function closeCreateSubscriptionModal() {
+    document.getElementById('createSubscriptionModal').classList.add('hidden');
+    document.getElementById('createSubscriptionForm').reset();
+}
+
+function editSubscription(subscriptionId) {
+    // TODO: Implement subscription editing
+    console.log('Edit subscription:', subscriptionId);
+}
+
+async function toggleSubscriptionStatus(subscriptionId, currentStatus) {
+    try {
+        const action = currentStatus ? 'deactivate' : 'activate';
+        const response = await fetch(`/api/subscriptions/${subscriptionId}/${action}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to update subscription status');
+        }
+        
+        location.reload();
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to update subscription status');
+    }
+}
 
 function openCreatePaymentModal() {
     document.getElementById('createPaymentModal').classList.remove('hidden');
@@ -313,12 +407,12 @@ document.getElementById('markPaidForm').addEventListener('submit', async functio
     const data = Object.fromEntries(formData.entries());
     
     try {
-        const response = await Adrilly.api.post(`/api/payments/${currentPaymentId}/mark-paid`, data);
-        Adrilly.showAlert('Payment marked as paid successfully!', 'success');
+        const response = await botle.api.post(`/api/payments/${currentPaymentId}/mark-paid`, data);
+        botle.showAlert('Payment marked as paid successfully!', 'success');
         closePaidModal();
         location.reload();
     } catch (error) {
-        Adrilly.showAlert('Error marking payment as paid: ' + error.message, 'error');
+        botle.showAlert('Error marking payment as paid: ' + error.message, 'error');
     }
 });
 

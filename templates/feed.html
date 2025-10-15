@@ -2,24 +2,40 @@
 
 {% block title %}{{ organization.name }} - Feed{% endblock %}
 
+{% block extra_head %}
+<!-- Include class search modal template -->
+{% include 'modals/class_search_modal.html' %}
+{% endblock %}
+
 {% block content %}
-<div class="container">
-    <div class="page-header">
-        <h1 class="page-title">
-            <i class="icon-rss"></i>
-            {{ organization.name }} Feed
-        </h1>
-        <div class="page-actions">
-            {% if can_create_posts %}
-                <a href="{{ url_for('feed.create_post_page') }}" class="btn btn-primary">
-                    <i class="icon-plus"></i>
-                    Create Post
-                </a>
-            {% endif %}
-            <button class="btn btn-secondary" onclick="showSearchModal()">
-                <i class="icon-search"></i>
-                Search
-            </button>
+<div class="feed-page">
+    <div class="page-header-modern">
+        <div class="page-header-content">
+            <div class="page-title-section">
+                <h1 class="page-title-modern">
+                    <svg class="page-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    {{ organization.name }} Feed
+                </h1>
+                <p class="page-subtitle-modern">Stay connected with your organization</p>
+            </div>
+            <div class="page-actions">
+                {% if can_create_posts %}
+                    <a href="{{ url_for('feed.create_post_page') }}" class="btn btn-primary">
+                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Create Post
+                    </a>
+                {% endif %}
+                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#searchModal">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    Search
+                </button>
+            </div>
         </div>
     </div>
 
@@ -34,30 +50,46 @@
         {% endif %}
     {% endwith %}
 
-    <div class="row">
-        <!-- Main Feed -->
-        <div class="col-md-8">
-            <div class="feed-container">
-                <!-- Feed Filters -->
-                <div class="feed-filters mb-4">
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-primary active" onclick="filterFeed('all')">
-                            All Posts
-                        </button>
-                        <button type="button" class="btn btn-outline-primary" onclick="filterFeed('announcement')">
-                            Announcements
-                        </button>
-                        <button type="button" class="btn btn-outline-primary" onclick="filterFeed('tip')">
-                            Tips
-                        </button>
-                        <button type="button" class="btn btn-outline-primary" onclick="filterFeed('event')">
-                            Events
-                        </button>
-                        <button type="button" class="btn btn-outline-primary" onclick="filterFeed('achievement')">
-                            Achievements
-                        </button>
+    <div class="feed-main-content">
+        <div class="row g-4">
+            <!-- Main Feed -->
+            <div class="col-lg-8">
+                <div class="content-card-modern">
+                    <!-- Feed Filters -->
+                    <div class="feed-filters">
+                        <div class="filter-tabs">
+                            <button type="button" class="filter-tab active" data-filter="all">
+                                <svg class="tab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                </svg>
+                                All Posts
+                            </button>
+                            <button type="button" class="filter-tab" data-filter="announcement">
+                                <svg class="tab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
+                                </svg>
+                                Announcements
+                            </button>
+                            <button type="button" class="filter-tab" data-filter="tip">
+                                <svg class="tab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                </svg>
+                                Tips
+                            </button>
+                            <button type="button" class="filter-tab" data-filter="event">
+                                <svg class="tab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                Events
+                            </button>
+                            <button type="button" class="filter-tab" data-filter="achievement">
+                                <svg class="tab-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                                </svg>
+                                Achievements
+                            </button>
+                        </div>
                     </div>
-                </div>
 
                 <!-- Posts Container -->
                 <div id="postsContainer">
@@ -80,121 +112,163 @@
                 </div>
 
                 <!-- Load More Button -->
-                <div class="text-center mt-4">
+                <div class="load-more-container">
                     <button id="loadMoreBtn" class="btn btn-outline-primary" onclick="loadMorePosts()" style="display: none;">
-                        <i class="icon-chevron-down"></i>
+                        <svg class="me-1" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
                         Load More Posts
                     </button>
                     <div id="loadingSpinner" class="spinner" style="display: none;">
-                        <i class="icon-loader"></i> Loading...
+                        <div class="spinner-border text-primary me-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        Loading posts...
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar -->
-        <div class="col-md-4">
-            <!-- Quick Actions -->
-            {% if can_create_posts %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="icon-zap"></i>
-                        Quick Actions
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="quick-actions">
-                        <a href="{{ url_for('feed.create_post_page') }}" class="btn btn-primary btn-block mb-2">
-                            <i class="icon-edit"></i>
-                            Write Announcement
-                        </a>
-                        <button class="btn btn-secondary btn-block mb-2" onclick="createQuickTip()">
-                            <i class="icon-lightbulb"></i>
-                            Share Training Tip
-                        </button>
-                        <button class="btn btn-info btn-block" onclick="createEventPost()">
-                            <i class="icon-calendar"></i>
-                            Announce Event
-                        </button>
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Quick Actions -->
+                {% if can_create_posts %}
+                <div class="content-card-modern mb-4">
+                    <div class="card-header-modern">
+                        <h5 class="card-title-modern">
+                            <svg class="card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            Quick Actions
+                        </h5>
+                    </div>
+                    <div class="card-body-modern">
+                        <div class="quick-actions">
+                            <a href="{{ url_for('feed.create_post_page') }}" class="action-btn-modern primary">
+                                <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                <div class="action-content">
+                                    <div class="action-title">Write Announcement</div>
+                                    <div class="action-subtitle">Share important updates</div>
+                                </div>
+                            </a>
+                            <button class="action-btn-modern secondary" onclick="createQuickTip()">
+                                <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                </svg>
+                                <div class="action-content">
+                                    <div class="action-title">Share Training Tip</div>
+                                    <div class="action-subtitle">Help others improve</div>
+                                </div>
+                            </button>
+                            <button class="action-btn-modern info" onclick="createEventPost()">
+                                <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <div class="action-content">
+                                    <div class="action-title">Announce Event</div>
+                                    <div class="action-subtitle">Schedule activities</div>
+                                </div>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            {% endif %}
+                {% endif %}
 
-            <!-- Categories -->
-            {% if categories %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="icon-tag"></i>
-                        Categories
-                    </h5>
-                </div>
-                <div class="card-body">
+                <!-- Categories -->
+                {% if categories %}
+                <div class="content-card-modern mb-4">
+                    <div class="card-header-modern">
+                        <h5 class="card-title-modern">
+                            <svg class="card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                            Categories
+                        </h5>
+                    </div>
                     <div class="categories-list">
                         {% for category in categories %}
-                            <button class="btn btn-sm btn-outline-secondary mb-1" onclick="filterByCategory('{{ category }}')">
-                                {{ category.title() }}
+                            <button class="category-tag" onclick="filterByCategory('{{ category.id }}')">
+                                {{ category.name }}
                             </button>
                         {% endfor %}
                     </div>
                 </div>
-            </div>
-            {% endif %}
+                {% endif %}
 
-            <!-- Feed Stats -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="icon-bar-chart"></i>
-                        Feed Statistics
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="stat-item">
-                        <div class="stat-number" id="totalPosts">{{ posts|length }}</div>
-                        <div class="stat-label">Posts Today</div>
+                <!-- Feed Stats -->
+                <div class="content-card-modern">
+                    <div class="card-header-modern">
+                        <h5 class="card-title-modern">
+                            <svg class="card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            Feed Statistics
+                        </h5>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-number" id="totalEngagement">-</div>
-                        <div class="stat-label">Total Engagement</div>
+                    <div class="card-body-modern">
+                        <div class="stats-grid">
+                            <div class="stat-item-modern">
+                                <div class="stat-number-modern" id="totalPosts">{{ posts|length }}</div>
+                                <div class="stat-label-modern">Posts Today</div>
+                            </div>
+                            <div class="stat-item-modern">
+                                <div class="stat-number-modern" id="totalEngagement">-</div>
+                                <div class="stat-label-modern">Total Engagement</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+        </div>
+    </div>
 </div>
 
-<!-- Search Modal -->
-<div class="modal fade" id="searchModal" tabindex="-1">
-    <div class="modal-dialog">
+<!-- Search Modal - Bootstrap 5 -->
+<div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Search Posts</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+                <h1 class="modal-title fs-5" id="searchModalLabel">
+                    <svg class="me-2" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    Search Posts
+                </h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="searchForm">
-                    <div class="form-group">
-                        <label>Search for:</label>
-                        <input type="text" id="searchQuery" class="form-control" 
+                    <div class="mb-3">
+                        <label for="searchQuery" class="form-label">Search for:</label>
+                        <input type="text" id="searchQuery" class="form-control form-control-lg" 
                                placeholder="Enter keywords, tags, or content..." 
                                autocomplete="off">
                     </div>
-                    <div class="form-group">
+                    <div class="mb-3">
                         <button type="submit" class="btn btn-primary">
-                            <i class="icon-search"></i>
+                            <svg class="me-1" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
                             Search
+                        </button>
+                        <button type="button" class="btn btn-secondary ms-2" id="clearSearchBtn">
+                            Clear
                         </button>
                     </div>
                 </form>
                 
                 <div id="searchResults" style="display: none;">
                     <hr>
-                    <h6>Search Results:</h6>
+                    <div class="d-flex align-items-center mb-3">
+                        <svg class="me-2" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <h6 class="mb-0">Search Results:</h6>
+                    </div>
                     <div id="searchResultsContainer"></div>
                 </div>
             </div>
@@ -202,28 +276,37 @@
     </div>
 </div>
 
-<!-- Comment Modal -->
-<div class="modal fade" id="commentsModal" tabindex="-1">
+<!-- Comment Modal - Bootstrap 5 -->
+<div class="modal fade" id="commentsModal" tabindex="-1" aria-labelledby="commentsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Comments</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+                <h1 class="modal-title fs-5" id="commentsModalLabel">
+                    <svg class="me-2" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    Comments
+                </h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="commentsContainer"></div>
+                <div id="commentsContainer" class="mb-4"></div>
                 
-                <form id="addCommentForm" class="mt-3">
-                    <div class="form-group">
+                <form id="addCommentForm">
+                    <div class="mb-3">
+                        <label for="commentContent" class="form-label">Add a comment:</label>
                         <textarea id="commentContent" class="form-control" rows="3" 
                                 placeholder="Write a comment..." required></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="icon-message-circle"></i>
-                        Add Comment
-                    </button>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <svg class="me-1" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                            </svg>
+                            Add Comment
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -231,178 +314,314 @@
 </div>
 
 <style>
-.feed-container {
-    max-width: 100%;
+/* Feed Page Styles */
+.feed-page {
+    background: var(--bg-primary);
+    min-height: 100vh;
+    padding: 0;
+    color: var(--text-primary);
 }
 
-.feed-filters {
-    position: sticky;
-    top: 80px;
-    background: white;
-    z-index: 10;
-    padding: 1rem 0;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid #eee;
+.page-header-modern {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-primary);
+    padding: 2rem 0;
+    margin-bottom: 2rem;
 }
 
-.post-card {
-    background: white;
-    border: 1px solid #e3f2fd;
-    border-radius: 12px;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+.page-header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
 }
 
-.post-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+.page-title-section {
+    flex: 1;
 }
 
-.post-header {
-    padding: 1rem 1.5rem 0;
+.page-title-modern {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
-.post-author-avatar {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 1.2rem;
+.page-icon {
+    width: 2rem;
+    height: 2rem;
+    color: var(--accent-primary);
 }
 
-.post-author-info {
-    flex-grow: 1;
-}
-
-.post-author-name {
-    font-weight: 600;
-    color: #333;
+.page-subtitle-modern {
+    font-size: 1rem;
+    color: var(--text-secondary);
     margin: 0;
 }
 
-.post-meta {
-    color: #666;
-    font-size: 0.85rem;
-    margin: 0;
+.page-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-shrink: 0;
 }
 
-.post-content {
-    padding: 1rem 1.5rem;
+.feed-main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
 }
 
-.post-title {
+.content-card-modern {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.card-header-modern {
+    padding: 1.5rem 1.5rem 0;
+    border-bottom: none;
+}
+
+.card-title-modern {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #333;
-    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.post-text {
-    color: #555;
-    line-height: 1.6;
-    margin-bottom: 1rem;
+.card-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--accent-primary);
 }
 
-.post-tags {
-    margin-bottom: 1rem;
+.card-body-modern {
+    padding: 1.5rem;
 }
 
-.tag {
-    background: #e3f2fd;
-    color: #1565c0;
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    margin-right: 0.5rem;
-    display: inline-block;
+/* Feed Filters */
+.feed-filters {
+    position: sticky;
+    top: 0px;
+    z-index: 10;
+    padding: 1.5rem 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
-.post-actions {
-    padding: 0 1.5rem 1rem;
+.filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-tab {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-normal);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-tab:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
+.filter-tab.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.tab-icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.action-btn-modern {
     display: flex;
     align-items: center;
     gap: 1rem;
-    border-top: 1px solid #f5f5f5;
-    margin-top: 1rem;
-    padding-top: 1rem;
-}
-
-.action-btn {
-    background: none;
-    border: none;
-    color: #666;
-    font-size: 0.9rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: var(--transition-normal);
     cursor: pointer;
-    transition: color 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
 }
 
-.action-btn:hover {
-    color: #007bff;
+.action-btn-modern:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    color: var(--text-primary);
 }
 
-.action-btn.liked {
-    color: #dc3545;
+.action-btn-modern.primary:hover {
+    background: var(--accent-primary);
+    color: white;
 }
 
-.quick-actions .btn {
-    text-align: left;
+.action-btn-modern.secondary:hover {
+    background: var(--accent-secondary);
+    color: white;
 }
 
-.categories-list .btn {
-    margin-right: 0.5rem;
-    margin-bottom: 0.5rem;
+.action-btn-modern.info:hover {
+    background: var(--info);
+    color: white;
 }
 
-.stat-item {
-    text-align: center;
-    margin-bottom: 1rem;
+.action-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
 }
 
-.stat-number {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #007bff;
+
+.action-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
 }
 
-.stat-label {
+.action-subtitle {
     font-size: 0.8rem;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    color: var(--text-secondary);
 }
 
+/* Categories */
+.categories-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.category-tag {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-normal);
+}
+
+.category-tag:hover {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+/* Stats */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-item-modern {
+    text-align: center;
+}
+
+.stat-number-modern {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.stat-label-modern {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+}
+
+/* Posts Container */
+#postsContainer {
+    padding: 1.5rem;
+    padding-top: 20px;
+}
+
+/* Empty State */
 .empty-state {
     text-align: center;
-    padding: 3rem 1rem;
-    color: #6c757d;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
 }
 
-.empty-state i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+.empty-state svg {
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1.5rem;
     opacity: 0.5;
 }
 
-.spinner {
-    text-align: center;
-    color: #007bff;
+.empty-state h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
 }
 
+.empty-state p {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* Load More */
+.load-more-container {
+    text-align: center;
+    padding: 2rem 1.5rem;
+    border-top: 1px solid var(--border-primary);
+}
+
+.spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--accent-primary);
+    font-size: 0.9rem;
+}
+
+/* Comment Styles */
 .comment-item {
     padding: 1rem 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-primary);
 }
 
 .comment-item:last-child {
@@ -412,51 +631,195 @@
 .comment-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     margin-bottom: 0.5rem;
 }
 
 .comment-author {
     font-weight: 600;
-    color: #333;
+    color: var(--text-primary);
+    font-size: 0.9rem;
 }
 
 .comment-time {
-    color: #666;
+    color: var(--text-secondary);
     font-size: 0.8rem;
 }
 
 .comment-content {
-    color: #555;
-    line-height: 1.5;
+    color: var(--text-primary);
+    line-height: 1.6;
+    font-size: 0.9rem;
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+    .page-header-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.5rem;
+    }
+    
+    .page-actions {
+        justify-content: flex-start;
+    }
 }
 
 @media (max-width: 768px) {
-    .page-header {
+    .page-header-modern {
+        padding: 1.5rem 0;
+    }
+    
+    .page-title-modern {
+        font-size: 1.5rem;
+    }
+    
+    .filter-tabs {
+        justify-content: center;
+    }
+    
+    .filter-tab {
+        flex: 1;
+        justify-content: center;
+        min-width: 0;
+        padding: 0.5rem;
+    }
+    
+    .filter-tab .tab-icon {
+        display: none;
+    }
+    
+    .action-btn-modern {
+        padding: 0.75rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .feed-main-content,
+    .page-header-content {
+        padding: 0 0.75rem;
+    }
+    
+    .page-actions {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
+        gap: 0.5rem;
     }
     
-    .feed-filters .btn-group {
-        flex-wrap: wrap;
+    .filter-tabs {
+        gap: 0.25rem;
     }
     
-    .post-header {
-        padding: 1rem;
+    .filter-tab {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .feed-page {
+        background: var(--bg-primary, #1a1a1a);
     }
     
-    .post-content {
-        padding: 0 1rem 1rem;
+    .content-card-modern {
+        background: var(--bg-card, #2d2d2d);
     }
     
-    .post-actions {
-        padding: 0 1rem 1rem;
+    .page-header-modern {
+        background: var(--bg-card, #2d2d2d);
+        border-color: var(--border-primary, #404040);
     }
+    
+    .filter-tab {
+        background: var(--bg-secondary, #3a3a3a);
+        border-color: var(--border-primary, #404040);
+        color: var(--text-secondary, #b0b0b0);
+    }
+    
+    .filter-tab:hover {
+        background: var(--bg-hover, #4a4a4a);
+        color: var(--text-primary, #e0e0e0);
+    }
+    
+    .action-btn-modern {
+        background: var(--bg-secondary, #3a3a3a);
+        border-color: var(--border-primary, #404040);
+        color: var(--text-primary, #e0e0e0);
+    }
+    
+    .action-btn-modern:hover {
+        background: var(--bg-hover, #4a4a4a);
+        color: var(--text-primary, #e0e0e0);
+    }
+    
+    .category-tag {
+        background: var(--bg-secondary, #3a3a3a);
+        border-color: var(--border-primary, #404040);
+        color: var(--text-secondary, #b0b0b0);
+    }
+}
+
+/* Explicit Dark Mode Support */
+[data-theme="dark"] .feed-page {
+    background: var(--bg-primary);
+}
+
+[data-theme="dark"] .content-card-modern,
+[data-theme="dark"] .page-header-modern {
+    background: var(--bg-card);
+}
+
+[data-theme="dark"] .filter-tab {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .filter-tab:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .action-btn-modern {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .action-btn-modern:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .category-tag {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .category-tag:hover {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
 }
 </style>
 
 <script>
+// ObjectId class for MongoDB IDs
+class ObjectId {
+    constructor(id) {
+        this.id = id;
+    }
+    
+    toString() {
+        return this.id;
+    }
+}
+
 let currentPage = 1;
 let currentFilter = 'all';
 let currentCategory = null;
@@ -466,22 +829,74 @@ let currentPostId = null;
 
 // Initialize feed
 document.addEventListener('DOMContentLoaded', function() {
-    setupInfiniteScroll();
+    initializeFeed();
     setupEventListeners();
+    setupInfiniteScroll();
 });
+
+function initializeFeed() {
+    // Initialize Bootstrap modals
+    const searchModal = document.getElementById('searchModal');
+    const commentsModal = document.getElementById('commentsModal');
+    
+    if (searchModal && typeof bootstrap !== 'undefined') {
+        window.searchModalInstance = new bootstrap.Modal(searchModal);
+    }
+    
+    if (commentsModal && typeof bootstrap !== 'undefined') {
+        window.commentsModalInstance = new bootstrap.Modal(commentsModal);
+    }
+    
+    // Set up filter tabs
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const filter = this.getAttribute('data-filter');
+            filterFeed(filter, this);
+        });
+    });
+    
+    // Set up category tags
+    document.querySelectorAll('.category-tag').forEach(tag => {
+        tag.addEventListener('click', function() {
+            const category = this.getAttribute('data-category');
+            filterByCategory(category);
+        });
+    });
+    
+    // Load initial posts if container is empty
+    const postsContainer = document.getElementById('postsContainer');
+    if (postsContainer && postsContainer.children.length === 0) {
+        loadPosts(true);
+    }
+}
 
 function setupEventListeners() {
     // Search form
-    document.getElementById('searchForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        performSearch();
-    });
+    const searchForm = document.getElementById('searchForm');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            performSearch();
+        });
+    }
+    
+    // Clear search button
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            document.getElementById('searchQuery').value = '';
+            document.getElementById('searchResults').style.display = 'none';
+        });
+    }
     
     // Add comment form
-    document.getElementById('addCommentForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        addComment();
-    });
+    const addCommentForm = document.getElementById('addCommentForm');
+    if (addCommentForm) {
+        addCommentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addComment();
+        });
+    }
 }
 
 function setupInfiniteScroll() {
@@ -494,16 +909,18 @@ function setupInfiniteScroll() {
     });
 }
 
-function filterFeed(type) {
+function filterFeed(type, element) {
     currentFilter = type;
     currentPage = 1;
     currentCategory = null;
     
     // Update active button
-    document.querySelectorAll('.feed-filters .btn').forEach(btn => {
+    document.querySelectorAll('.filter-tab').forEach(btn => {
         btn.classList.remove('active');
     });
-    event.target.classList.add('active');
+    if (element) {
+        element.classList.add('active');
+    }
     
     // Load filtered posts
     loadPosts(true);
@@ -519,8 +936,7 @@ function loadPosts(replace = false) {
     if (loading) return;
     
     loading = true;
-    document.getElementById('loadingSpinner').style.display = 'block';
-    document.getElementById('loadMoreBtn').style.display = 'none';
+    showLoadingState(true);
     
     const params = new URLSearchParams({
         page: currentPage,
@@ -535,36 +951,130 @@ function loadPosts(replace = false) {
         params.append('category', currentCategory);
     }
     
-    fetch(`/api/organizations/{{ organization._id }}/feed?${params}`, {
+    // Use session-based authentication instead of JWT
+    fetch(`/api/organizations/feed?${params}`, {
+        method: 'GET',
+        credentials: 'same-origin',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.posts) {
             if (replace) {
-                document.getElementById('postsContainer').innerHTML = '';
+                const postsContainer = document.getElementById('postsContainer');
+                postsContainer.innerHTML = '';
+                
+                // Show empty state if no posts
+                if (data.posts.length === 0) {
+                    showEmptyState();
+                    return;
+                }
             }
             
             data.posts.forEach(post => {
                 addPostToFeed(post);
             });
             
-            hasMore = data.pagination.has_next;
-            
-            if (hasMore) {
-                document.getElementById('loadMoreBtn').style.display = 'block';
-            }
+            hasMore = data.pagination && data.pagination.has_next;
+            updateLoadMoreButton();
+        } else {
+            throw new Error(data.error || 'Failed to load posts');
         }
     })
     .catch(error => {
         console.error('Error loading posts:', error);
+        showErrorMessage('Failed to load posts. Please try again.');
+        
+        if (replace) {
+            showEmptyState('Error loading posts');
+        }
     })
     .finally(() => {
         loading = false;
-        document.getElementById('loadingSpinner').style.display = 'none';
+        showLoadingState(false);
     });
+}
+
+function showLoadingState(show) {
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    if (loadingSpinner) {
+        loadingSpinner.style.display = show ? 'block' : 'none';
+    }
+    if (loadMoreBtn) {
+        loadMoreBtn.style.display = show ? 'none' : (hasMore ? 'block' : 'none');
+    }
+}
+
+function updateLoadMoreButton() {
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.style.display = hasMore ? 'block' : 'none';
+    }
+}
+
+function showEmptyState(message = 'No posts found') {
+    const postsContainer = document.getElementById('postsContainer');
+    if (postsContainer) {
+        postsContainer.innerHTML = `
+            <div class="empty-state">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
+                <h3>${message}</h3>
+                <p>Try adjusting your filters or check back later for new content.</p>
+                {% if can_create_posts %}
+                <a href="{{ url_for('feed.create_post_page') }}" class="btn btn-primary">
+                    Create First Post
+                </a>
+                {% endif %}
+            </div>
+        `;
+    }
+}
+
+function showErrorMessage(message, type = 'error') {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.toast-notification');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    // Create a toast notification
+    const toast = document.createElement('div');
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    toast.className = `toast-notification alert ${alertClass} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    
+    const icon = type === 'success' 
+        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
+        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+    
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <svg class="me-2" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${icon}
+            </svg>
+            <div>${message}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 5000);
 }
 
 function loadMorePosts() {
@@ -591,7 +1101,7 @@ function createPostHTML(post) {
                     <p class="post-meta">${post.author.role.replace('_', ' ').title()} • ${timeAgo}</p>
                 </div>
                 <div class="post-type-badge">
-                    <span class="badge badge-${getPostTypeBadgeClass(post.post_type)}">${post.post_type.title()}</span>
+                    <span class="badge ${getPostTypeBadgeClass(post.post_type)}">${post.post_type.title()}</span>
                 </div>
             </div>
             <div class="post-content">
@@ -646,44 +1156,66 @@ function formatTimeAgo(date) {
 function toggleLike(postId, button) {
     fetch(`/api/posts/${postId}/like`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.data) {
             button.classList.toggle('liked', data.data.user_has_liked);
             button.querySelector('span').textContent = data.data.likes_count;
+        } else {
+            throw new Error(data.error || 'Failed to toggle like');
         }
     })
     .catch(error => {
         console.error('Error toggling like:', error);
+        showErrorMessage('Failed to update like. Please try again.');
     });
 }
 
 function showComments(postId) {
     currentPostId = postId;
     loadComments(postId);
-    $('#commentsModal').modal('show');
+    if (window.commentsModalInstance) {
+        window.commentsModalInstance.show();
+    }
 }
 
 function loadComments(postId) {
     fetch(`/api/posts/${postId}/comments`, {
+        method: 'GET',
+        credentials: 'same-origin',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.comments) {
             const commentsHtml = data.comments.map(comment => createCommentHTML(comment)).join('');
             document.getElementById('commentsContainer').innerHTML = commentsHtml;
+        } else {
+            document.getElementById('commentsContainer').innerHTML = '<p class="text-muted text-center py-3">No comments yet.</p>';
         }
     })
     .catch(error => {
         console.error('Error loading comments:', error);
+        document.getElementById('commentsContainer').innerHTML = '<p class="text-danger text-center py-3">Failed to load comments.</p>';
     });
 }
 
@@ -705,15 +1237,28 @@ function addComment() {
     const content = document.getElementById('commentContent').value.trim();
     if (!content || !currentPostId) return;
     
+    const submitBtn = document.querySelector('#addCommentForm button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Adding...';
+    
     fetch(`/api/posts/${currentPostId}/comments`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({ content: content })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.comment) {
             // Add comment to the list
@@ -731,37 +1276,70 @@ function addComment() {
                     commentBtn.textContent = parseInt(commentBtn.textContent) + 1;
                 }
             }
+            
+            showErrorMessage('Comment added successfully!', 'success');
+        } else {
+            throw new Error(data.error || 'Failed to add comment');
         }
     })
     .catch(error => {
         console.error('Error adding comment:', error);
-        alert('Error adding comment. Please try again.');
+        showErrorMessage('Error adding comment. Please try again.');
+    })
+    .finally(() => {
+        // Reset button state
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
     });
-}
-
-function showSearchModal() {
-    $('#searchModal').modal('show');
 }
 
 function performSearch() {
     const query = document.getElementById('searchQuery').value.trim();
     if (!query) return;
     
-    fetch(`/api/organizations/{{ organization._id }}/search?q=${encodeURIComponent(query)}`, {
+    const submitBtn = document.querySelector('#searchForm button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Searching...';
+    
+    fetch(`/api/organizations/${new ObjectId('{{ organization._id }}')}/search?q=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        credentials: 'same-origin',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.posts) {
-            const resultsHtml = data.posts.map(post => createPostHTML(post)).join('');
-            document.getElementById('searchResultsContainer').innerHTML = resultsHtml;
+            if (data.posts.length === 0) {
+                document.getElementById('searchResultsContainer').innerHTML = '<p class="text-muted text-center py-3">No posts found matching your search.</p>';
+            } else {
+                const resultsHtml = data.posts.map(post => createPostHTML(post)).join('');
+                document.getElementById('searchResultsContainer').innerHTML = resultsHtml;
+            }
             document.getElementById('searchResults').style.display = 'block';
+        } else {
+            throw new Error(data.error || 'Search failed');
         }
     })
     .catch(error => {
         console.error('Error searching:', error);
+        document.getElementById('searchResultsContainer').innerHTML = '<p class="text-danger text-center py-3">Search failed. Please try again.</p>';
+        document.getElementById('searchResults').style.display = 'block';
+    })
+    .finally(() => {
+        // Reset button state
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
     });
 }
 
@@ -790,5 +1368,80 @@ function createQuickTip() {
 function createEventPost() {
     window.location.href = '{{ url_for("feed.create_post_page") }}?type=event';
 }
+
+// Class association and booking functions
+function showClassSearchModal(postId) {
+    currentPostId = postId;
+    if (window.classSearchModalInstance) {
+        window.classSearchModalInstance.show();
+    }
+}
+
+function associateClass(classId) {
+    if (!currentPostId) return;
+
+    fetch(`/api/posts/${currentPostId}/associate-class`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ class_id: classId })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.associated_class) {
+            showErrorMessage('Class associated successfully!', 'success');
+            window.classSearchModalInstance.hide();
+            // Refresh the post to show the associated class
+            loadPosts(true);
+        } else {
+            throw new Error(data.error || 'Failed to associate class');
+        }
+    })
+    .catch(error => {
+        console.error('Error associating class:', error);
+        showErrorMessage('Failed to associate class. Please try again.');
+    });
+}
+
+function bookClass(classId) {
+    fetch(`/api/classes/${classId}/book`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showErrorMessage('Class booked successfully!', 'success');
+            // Redirect to class details or schedule page
+        } else {
+            throw new Error(data.error || 'Failed to book class');
+        }
+    })
+    .catch(error => {
+        console.error('Error booking class:', error);
+        showErrorMessage('Failed to book class. Please try again.');
+    });
+}
 </script>
 {% endblock %}
+
+
+
+

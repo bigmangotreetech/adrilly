@@ -1,327 +1,426 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Adrilly Sports Coaching{% endblock %}
+{% block title %}Dashboard - botle Sports Coaching{% endblock %}
 
-{% block content %}
-<div class="page-header">
-    <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle">Welcome back, {{ session.first_name or 'User' }}</p>
-</div>
 
-<!-- Super Admin Dashboard -->
-{% if session.role == 'super_admin' %}
-<div class="row">
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.total_organizations or 0 }}</div>
-            <div class="stats-label">Organizations</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.total_users or 0 }}</div>
-            <div class="stats-label">Total Users</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.total_classes or 0 }}</div>
-            <div class="stats-label">Active Classes</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.total_revenue or 0 }}</div>
-            <div class="stats-label">Total Revenue</div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-8">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Recent Organizations</h3>
-            </div>
-            <div class="card-body">
-                {% if recent_organizations %}
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Organization</th>
-                                <th>Admin</th>
-                                <th>Users</th>
-                                <th>Created</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for org in recent_organizations %}
-                            <tr>
-                                <td>{{ org.name }}</td>
-                                <td>{{ org.admin_name }}</td>
-                                <td>{{ org.user_count }}</td>
-                                <td>{{ org.created_at.strftime('%Y-%m-%d') }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted">No organizations yet.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    <div class="col-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Quick Actions</h3>
-            </div>
-            <div class="card-body">
-                <a href="{{ url_for('web.organizations') }}" class="btn btn-primary btn-block mb-2">Manage Organizations</a>
-                <a href="{{ url_for('web.users') }}" class="btn btn-outline btn-block mb-2">Manage Users</a>
-                <a href="#" onclick="Adrilly.showAlert('Reports coming soon!', 'info')" class="btn btn-outline btn-block">View Reports</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Organization Admin Dashboard -->
-{% elif session.role == 'org_admin' %}
-<div class="row">
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.total_students or 0 }}</div>
-            <div class="stats-label">Students</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.total_coaches or 0 }}</div>
-            <div class="stats-label">Coaches</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.total_classes or 0 }}</div>
-            <div class="stats-label">Classes This Month</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">${{ stats.monthly_revenue or 0 }}</div>
-            <div class="stats-label">Monthly Revenue</div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-6">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Upcoming Classes</h3>
-            </div>
-            <div class="card-body">
-                {% if upcoming_classes %}
-                {% for class in upcoming_classes %}
-                <div class="d-flex justify-content-between align-items-center mb-2">
+{% block head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#a1de56',
+                    'accent-primary': '#a1de56'
+                }
+            }
+        }
+    }
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+{% block content %} 
+<!-- Main Content -->
+<main class="min-h-screen bg-black text-white p-8">
+    <div class="mx-auto">
+        <!-- KPI Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Today's Classes -->
+            <div class="bg-[#121212] rounded-xl p-6 hover:bg-[#121212] transition-all duration-300">
+                <div class="flex items-start justify-between">
                     <div>
-                        <strong>{{ class.title }}</strong><br>
-                        <small class="text-muted">{{ class.scheduled_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        <p class="text-[#94a3b8] text-sm mb-1">Today's Classes</p>
+                        <h3 class="text-3xl font-bold" id="todayClassesCount">{{ stats.today_classes if stats and stats.today_classes is defined else 0 }}</h3>
                     </div>
-                    <span class="badge badge-primary">{{ class.sport }}</span>
+                     <div class="w-10 h-10 rounded-lg bg-accent-primary flex items-center justify-center">
+                          <i class="fas fa-calendar text-black"></i>
+                    </div>
                 </div>
-                {% endfor %}
-                {% else %}
-                <p class="text-muted">No upcoming classes.</p>
-                {% endif %}
             </div>
-        </div>
-    </div>
-    <div class="col-6">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Recent Payments</h3>
-            </div>
-            <div class="card-body">
-                {% if recent_payments %}
-                {% for payment in recent_payments %}
-                <div class="d-flex justify-content-between align-items-center mb-2">
+            
+            <!-- Attendance Rate -->
+            <div class="bg-[#121212] rounded-xl p-6 hover:bg-[#1e1e1e] transition-all duration-300">
+                <div class="flex items-start justify-between">
                     <div>
-                        <strong>${{ payment.amount }}</strong><br>
-                        <small class="text-muted">{{ payment.student_name }}</small>
+                        <p class="text-[#94a3b8] text-sm mb-1">Attendance Rate</p>
+                        <h3 class="text-3xl font-bold" id="attendanceRate">{{ stats.attendance_rate if stats and stats.attendance_rate is defined else '0' }}%</h3>
                     </div>
-                    <span class="badge badge-{{ 'success' if payment.status == 'paid' else 'warning' }}">
-                        {{ payment.status }}
-                    </span>
+                    <div class="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                        <i class="fas fa-chart-line text-green-500"></i>
+                    </div>
                 </div>
-                {% endfor %}
-                {% else %}
-                <p class="text-muted">No recent payments.</p>
-                {% endif %}
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- Coach Dashboard -->
-{% elif session.role in ['coach', 'coach_admin'] %}
-<div class="row">
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.my_students or 0 }}</div>
-            <div class="stats-label">My Students</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.classes_this_week or 0 }}</div>
-            <div class="stats-label">Classes This Week</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.attendance_rate or 0 }}%</div>
-            <div class="stats-label">Attendance Rate</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.total_groups or 0 }}</div>
-            <div class="stats-label">My Groups</div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-8">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Today's Classes</h3>
-            </div>
-            <div class="card-body">
-                {% if todays_classes %}
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Class</th>
-                                <th>Time</th>
-                                <th>Students</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for class in todays_classes %}
-                            <tr>
-                                <td>{{ class.title }}</td>
-                                <td>{{ class.scheduled_at.strftime('%H:%M') }}</td>
-                                <td>{{ class.student_count }}</td>
-                                <td>
-                                    <a href="{{ url_for('web.class_detail', class_id=class._id) }}" 
-                                       class="btn btn-sm btn-primary">View</a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted">No classes scheduled for today.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    <div class="col-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Quick Actions</h3>
-            </div>
-            <div class="card-body">
-                <a href="{{ url_for('web.schedule_class') }}" class="btn btn-primary btn-block mb-2">Schedule Class</a>
-                <a href="{{ url_for('web.attendance') }}" class="btn btn-outline btn-block mb-2">Mark Attendance</a>
-                <a href="{{ url_for('web.progress') }}" class="btn btn-outline btn-block">Track Progress</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Student Dashboard -->
-{% elif session.role == 'student' %}
-<div class="row">
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.my_classes or 0 }}</div>
-            <div class="stats-label">My Classes</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.attendance_rate or 0 }}%</div>
-            <div class="stats-label">Attendance Rate</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.pending_payments or 0 }}</div>
-            <div class="stats-label">Pending Payments</div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="stats-card">
-            <div class="stats-number">{{ stats.progress_score or 0 }}</div>
-            <div class="stats-label">Progress Score</div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-6">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Upcoming Classes</h3>
-            </div>
-            <div class="card-body">
-                {% if upcoming_classes %}
-                {% for class in upcoming_classes %}
-                <div class="d-flex justify-content-between align-items-center mb-2">
+            <!-- No-Shows -->
+            <div class="bg-[#121212] rounded-xl p-6 hover:bg-[#1e1e1e] transition-all duration-300">
+                <div class="flex items-start justify-between">
                     <div>
-                        <strong>{{ class.title }}</strong><br>
-                        <small class="text-muted">{{ class.scheduled_at.strftime('%Y-%m-%d %H:%M') }}</small><br>
-                        <small class="text-muted">Coach: {{ class.coach_name }}</small>
+                        <p class="text-[#94a3b8] text-sm mb-1">No-Shows</p>
+                        <h3 class="text-3xl font-bold" id="noShowsCount">{{ stats.no_shows if stats and stats.no_shows is defined else 0 }}</h3>
                     </div>
-                    <span class="badge badge-primary">{{ class.sport }}</span>
+                    <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                        <i class="fas fa-user-xmark text-red-500"></i>
+                    </div>
                 </div>
-                {% endfor %}
-                {% else %}
-                <p class="text-muted">No upcoming classes.</p>
-                {% endif %}
+            </div>
+
+            <!-- Revenue -->
+            <div class="bg-[#121212] rounded-xl p-6 hover:bg-[#1e1e1e] transition-all duration-300">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-[#94a3b8] text-sm mb-1">Revenue This Month</p>
+                        <h3 class="text-3xl font-bold" id="monthlyRevenue">₹{{ stats.monthly_revenue if stats and stats.monthly_revenue is defined else '0' }}</h3>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-status-success/20 flex items-center justify-center">
+                        <i class="fas fa-indian-rupee-sign text-status-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+            <!-- Main Grid -->
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Left Column (Calendar + Attendance) -->
+                <div class="lg:col-span-2 space-y-3">
+                    <div class="grid grid-cols-1 gap-6">
+                        <!-- Calendar/Schedule -->
+                        <div class="bg-[#121212] rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <h2 class="text-xl font-bold flex items-center">
+                                    <i class="fas fa-calendar-week text-accent-primary mr-3"></i>
+                                    Weekly Schedule
+                                </h2>
+                            </div>
+                            <div class="calendar-container overflow-x-auto" id="weeklyCalendar">
+                                 <table class="w-full">
+                                     <tbody>
+                                         {% for day in weekly_schedule.days %}
+                                         <tr class="{% if day.is_today %}bg-accent-primary{% endif %}">
+                                             <th class="p-4 text-left border-b border-[#1e1e1e] {% if day.is_today %}text-black{% endif %} w-32">
+                                                 <div class="font-bold">{{ day.name }}</div>
+                                                 <div class="text-sm {% if day.is_today %}text-black/70{% else %}text-[#94a3b8]{% endif %}">{{ day.date }}</div>
+                                             </th>
+                                             <td class="p-4 border-b border-[#1e1e1e]">
+                                                 <div class="flex flex-wrap gap-2">
+                                                     {% if day.classes %}
+                                                         {% for class in day.classes %}
+                                                         <div class="items-center text-center p-2 bg-[#1e1e1e] rounded-md px-3 py-1 text-sm">
+                                                             <div class="font-medium">{{ class.title }}</div>
+                                                             <div class="text-[#94a3b8]">{{ class.time }}</div>
+                                                         </div>
+                                                         {% endfor %}
+                                                     {% else %}
+                                                         <div class="text-sm {% if day.is_today %}text-black/70 text-[#94a3b8]{% endif %}">No classes</div>
+                                                     {% endif %}
+                                                 </div>
+                                             </td>
+                                         </tr>
+                                         {% endfor %}
+                                     </tbody>
+                                 </table>
+                                
+                                {% if not weekly_schedule.days %}
+                                <div class="text-center text-[#94a3b8] py-8">
+                                    <i class="fas fa-calendar-xmark text-4xl mb-4"></i>
+                                    <p>No classes scheduled for this week</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                        </div>
+
+                         
+
+                    </div>
+                    
+                    <!-- Insights/Charts -->
+                    <div class="bg-[#121212] rounded-xl p-6 d-none">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold flex items-center">
+                                <i class="fas fa-chart-bar text-accent-primary mr-3"></i>
+                                Insights
+                            </h2>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-[#1e1e1e] rounded-lg p-4">
+                                <!-- Chart will be rendered by JavaScript -->
+                                <div id="attendanceChart"></div>
+                            </div>
+                            <div class="bg-[#1e1e1e] rounded-lg p-4">
+                                <!-- Chart will be rendered by JavaScript -->
+                                <div id="revenueChart"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-rows-2 gap-6">
+                             
+
+                    <!-- Next Upcoming Class -->
+                    <div class="bg-[#121212] rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold flex items-center">
+                                <i class="fas fa-hourglass-start text-accent-primary mr-3"></i>
+                                Next Class
+                            </h2>
+                        </div>
+                        {% if next_class %}
+                        <div class="bg-[#1e1e1e] rounded-lg p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-bold">{{ next_class.title }}</h3>
+                                <span class="text-accent-primary font-medium">{{ next_class.time }}</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div class="bg-[#121212] rounded-lg p-3">
+                                    <span class="text-sm text-[#94a3b8]">Students</span>
+                                    <div class="flex items-baseline mt-1">
+                                        <span class="text-2xl font-bold">{{ next_class.total_students }}</span>
+                                        <span class="text-sm text-[#94a3b8] ml-1">enrolled</span>
+                                    </div>
+                                </div>
+                                <div class="bg-[#121212] rounded-lg p-3">
+                                    <span class="text-sm text-[#94a3b8]">RSVP Status</span>
+                                    <div class="flex items-baseline mt-1">
+                                        <span class="text-2xl font-bold text-accent-primary">{{ next_class.rsvp_count }}</span>
+                                        <span class="text-sm text-[#94a3b8] ml-1">confirmed</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="flex items-center">
+                                    <i class="fas fa-user-tie text-[#94a3b8] w-5"></i>
+                                    <span class="ml-2">{{ next_class.coach_name }}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-location-dot text-[#94a3b8] w-5"></i>
+                                    <span class="ml-2">{{ next_class.center }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-[#94a3b8] py-8">
+                            <i class="fas fa-calendar-xmark text-4xl mb-4"></i>
+                            <p>No upcoming classes scheduled</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Attendance List -->
+                    <div class="bg-[#121212] rounded-xl p-6">
+                       <div class="flex items-center justify-between mb-6">
+                           <h2 class="text-xl font-bold flex items-center">
+                               <i class="fas fa-clipboard-list text-accent-primary mr-3"></i>
+                               Today's Attendance
+                           </h2>
+                       </div>
+                       <div class="space-y-4" id="attendanceList">
+                           {% if todays_classes %}
+                               {% for class in todays_classes %}
+                               <div class="bg-[#1e1e1e] rounded-lg p-4 flex items-center justify-between">
+                                   <div class="flex-1">
+                                       <h4 class="font-bold">{{ class.name if class.name is defined else 'Untitled Class' }}</h4>
+                                       <p class="text-sm text-[#94a3b8]">{{ class.time if class.time is defined else 'Time not set' }}</p>
+                                   </div>
+                                   <div class="flex items-center space-x-4">
+                                       <div class="text-right">
+                                           <span class="text-sm text-[#94a3b8]">Checked-in</span>
+                                           <p class="font-bold">{{ class.checked_in if class.checked_in is defined else 0 }}/{{ class.total if class.total is defined else 0 }}</p>
+                                       </div>
+                                       <a href="/class/{{ class.id if class.id is defined else '#' }}/attendance" 
+                                       class="p-2 bg-[#4b5563] rounded-lg hover:bg-[#6b7280] transition-colors">
+                                           <i class="fas fa-qrcode"></i>
+                                       </a>
+                                   </div>
+                               </div>
+                               {% endfor %}
+                           {% else %}
+                               <div class="text-center text-[#94a3b8] py-8">
+                                   <i class="fas fa-clipboard-xmark text-4xl mb-4"></i>
+                                   <p>No classes scheduled for today</p>
+                               </div>
+                           {% endif %}
+                       </div>
+                   </div>
+                </div>
+
+                <!-- Right Column (Announcements + Quick Actions) -->
+                <div class="space-y-6">
+                    <!-- Quick Actions -->
+                    <div class="bg-[#121212] rounded-xl p-6">
+                        <h2 class="text-xl font-bold mb-6">Quick Actions</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <a href="/class/new" 
+                                class="flex flex-col items-center p-4 bg-[#1e1e1e] rounded-lg hover:bg-[#1e1e1e] hover:scale-105 transition-all">
+                                <i class="fas fa-plus-circle text-accent-primary text-2xl mb-2"></i>
+                                <span class="text-sm">Add Class</span>
+                            </a>
+                            <a href="/announcement/new"
+                                class="flex flex-col items-center p-4 bg-[#1e1e1e] rounded-lg hover:bg-[#1e1e1e] hover:scale-105 transition-all">
+                                <i class="fas fa-bullhorn text-accent-primary text-2xl mb-2"></i>
+                                <span class="text-sm">Announcement</span>
+                            </a>
+                            <a href="/coaches"
+                                class="flex flex-col items-center p-4 bg-[#1e1e1e] rounded-lg hover:bg-[#1e1e1e] hover:scale-105 transition-all">
+                                <i class="fas fa-users text-accent-primary text-2xl mb-2"></i>
+                                <span class="text-sm">Coaches</span>
+                            </a>
+                            <a href="/payments"
+                                class="flex flex-col items-center p-4 bg-[#1e1e1e] rounded-lg hover:bg-[#1e1e1e] hover:scale-105 transition-all">
+                                <i class="fas fa-wallet text-accent-primary text-2xl mb-2"></i>
+                                <span class="text-sm">Payments</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Announcements & Leaves -->
+                    <div class="bg-[#121212] rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold flex items-center">
+                                <i class="fas fa-bullhorn text-accent-primary mr-3"></i>
+                                Updates
+                            </h2>
+                        </div>
+                        <div class="space-y-4 max-h-[500px] overflow-y-auto" id="updatesContainer">
+                            {% if updates %}
+                                {% for update in updates %}
+                                <div class="bg-[#1e1e1e] rounded-lg p-4">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-8 h-8 rounded-full bg-[#4b5563] flex items-center justify-center flex-shrink-0">
+                                            <i class="fas {{ 'fa-bullhorn text-accent-primary' if update.type is defined and update.type == 'announcement' else 'fa-calendar-xmark text-accent-primary' }}"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="mb-1">{{ update.message if update.message is defined else 'No message content' }}</p>
+                                            <p class="text-sm text-[#94a3b8]">{{ update.time if update.time is defined else 'Time not available' }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center text-[#94a3b8] py-8">
+                                    <i class="fas fa-bell-slash text-4xl mb-4"></i>
+                                    <p>No updates available</p>
+                                </div>
+                            {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-6">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Recent Progress</h3>
-            </div>
-            <div class="card-body">
-                {% if recent_progress %}
-                {% for progress in recent_progress %}
-                <div class="mb-2">
-                    <strong>{{ progress.skill_name }}</strong>
-                    <div class="d-flex justify-content-between">
-                        <span>Score: {{ progress.score }}/10</span>
-                        <small class="text-muted">{{ progress.date.strftime('%Y-%m-%d') }}</small>
-                    </div>
-                </div>
-                {% endfor %}
-                {% else %}
-                <p class="text-muted">No progress records yet.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-{% endblock %} 
+</main>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize charts when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set Chart.js defaults for dark theme
+        if (window.Chart) {
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.borderColor = '#374151';
+        }
+        
+
+        // Attendance Trend Chart
+        const attendanceCtx = document.getElementById('attendanceChart');
+        if (attendanceCtx && window.Chart) {
+            const attendanceLabels = {{ attendance_labels | tojson if attendance_labels is defined else '[]' | safe }};
+            const attendanceData = {{ attendance_data | tojson if attendance_data is defined else '[]' | safe }};
+            
+            if (attendanceLabels.length > 0 && attendanceData.length > 0) {
+                new Chart(attendanceCtx, {
+                    type: 'line',
+                    data: {
+                        labels: attendanceLabels,
+                        datasets: [{
+                            label: 'Attendance Rate',
+                            data: attendanceData,
+                            borderColor: '#a1de56',
+                            backgroundColor: 'rgba(161, 222, 86, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: {
+                                    color: '#374151'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                attendanceCtx.parentElement.innerHTML = '<div class="text-center text-gray-400 py-8"><i class="fas fa-chart-line text-4xl mb-4"></i><p>No attendance data available</p></div>';
+            }
+        }
+
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart');
+        if (revenueCtx && window.Chart) {
+            const revenueLabels = {{ revenue_labels | tojson if revenue_labels is defined else '[]' | safe }};
+            const revenueData = {{ revenue_data | tojson if revenue_data is defined else '[]' | safe }};
+            
+            if (revenueLabels.length > 0 && revenueData.length > 0) {
+                new Chart(revenueCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: revenueLabels,
+                        datasets: [{
+                            label: 'Revenue',
+                            data: revenueData,
+                            backgroundColor: '#4caf50',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#374151'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                revenueCtx.parentElement.innerHTML = '<div class="text-center text-gray-400 py-8"><i class="fas fa-chart-bar text-4xl mb-4"></i><p>No revenue data available</p></div>';
+            }
+        }
+    });
+</script>
+{% endblock %}

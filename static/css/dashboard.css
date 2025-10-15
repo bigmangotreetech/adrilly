@@ -1,0 +1,176 @@
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInBottom {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Utility Classes */
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+    animation: scaleIn 0.5s ease-out forwards;
+}
+
+.animate-slide-in-right {
+    animation: slideInRight 0.5s ease-out forwards;
+}
+
+.animate-slide-in-bottom {
+    animation: slideInBottom 0.5s ease-out forwards;
+}
+
+/* Calendar Styles */
+.calendar-container {
+    @apply rounded-lg overflow-hidden;
+}
+
+.calendar-event {
+    @apply rounded-lg p-2 mb-2 cursor-pointer transition-all duration-300;
+}
+
+.calendar-event:hover {
+    transform: translateX(4px);
+}
+
+/* Event Types */
+.event-type-class {
+    @apply bg-primary/20 border-l-4 border-primary;
+}
+
+.event-type-workshop {
+    @apply bg-secondary/20 border-l-4 border-secondary;
+}
+
+.event-type-special {
+    @apply bg-accent-primary/20 border-l-4 border-accent-primary;
+}
+
+/* Attendance List Styles */
+.attendance-item {
+    @apply bg-bg-tertiary rounded-lg p-4 flex items-center justify-between;
+    animation: slideInRight 0.5s ease-out forwards;
+    opacity: 0;
+}
+
+.attendance-item:nth-child(1) { animation-delay: 0.1s; }
+.attendance-item:nth-child(2) { animation-delay: 0.2s; }
+.attendance-item:nth-child(3) { animation-delay: 0.3s; }
+.attendance-item:nth-child(4) { animation-delay: 0.4s; }
+
+/* Updates Panel Styles */
+.update-item {
+    @apply bg-bg-tertiary rounded-lg p-4;
+    animation: slideInBottom 0.5s ease-out forwards;
+    opacity: 0;
+}
+
+.update-item:nth-child(1) { animation-delay: 0.1s; }
+.update-item:nth-child(2) { animation-delay: 0.2s; }
+.update-item:nth-child(3) { animation-delay: 0.3s; }
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--bg-hover);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--bg-active);
+}
+
+/* Chart Styles */
+.chart-container {
+    @apply bg-bg-tertiary rounded-lg p-4;
+    height: 200px;
+}
+
+/* Tooltips */
+.tooltip {
+    @apply absolute z-50 bg-bg-card rounded-lg p-3 text-sm shadow-lg;
+    max-width: 200px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+}
+
+.tooltip.visible {
+    opacity: 1;
+}
+
+/* Quick Action Buttons Glow Effect */
+@keyframes buttonGlow {
+    0% {
+        box-shadow: 0 0 5px rgba(161, 222, 86, 0);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(161, 222, 86, 0.3);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(161, 222, 86, 0);
+    }
+}
+
+.quick-action-btn:hover {
+    animation: buttonGlow 2s infinite;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .chart-container {
+        height: 150px;
+    }
+}

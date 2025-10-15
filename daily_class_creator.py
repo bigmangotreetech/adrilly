@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Daily Class Creation Script for Adrilly
+Daily Class Creation Script for botle
 
 This script runs daily to automatically create classes for organizations based on their centers' schedules.
 Each class is created with the appropriate center_id and organization_id.
@@ -17,10 +17,12 @@ Arguments:
 import os
 import sys
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta, timezone
+
 from bson import ObjectId
 from pymongo import MongoClient
 from dotenv import load_dotenv
+import pytz
 
 # Add the app directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -55,7 +57,7 @@ class DailyClassCreator:
         """Get all active organizations or specific organization"""
         query = {'is_active': True, 'subscription_status': 'active'}
         if org_id:
-            query['_id'] = ObjectId(org_id)
+            query['_id'] = ObjectId(org_id) if isinstance(org_id, str) else org_id
         
         # print db name
         print(self.db.name)
@@ -63,8 +65,9 @@ class DailyClassCreator:
     
     def get_organization_centers(self, org_id):
         """Get all active centers for an organization"""
+        org_id_obj = ObjectId(org_id) if isinstance(org_id, str) else org_id
         return list(self.db.centers.find({
-            'organization_id': ObjectId(org_id),
+            'organization_id': org_id_obj,
             'is_active': True
         }))
     
@@ -89,34 +92,41 @@ class DailyClassCreator:
         student_ids = []
         group_ids = []
         
+        # Convert org_id to ObjectId if it's a string
+        org_id_obj = ObjectId(org_id) if isinstance(org_id, str) else org_id
+        
         # Get directly assigned students from schedule
         if schedule_item.get('assigned_students'):
             for student_id in schedule_item['assigned_students']:
                 print(f"Student ID: {student_id}")
+                # Convert student_id to ObjectId if it's a string
+                student_id_obj = ObjectId(student_id) if isinstance(student_id, str) else student_id
                 # Verify student exists and belongs to organization
                 student = self.db.users.find_one({
-                    '_id': ObjectId(student_id),
+                    '_id': student_id_obj,
                 })
                 if student:
-                    student_ids.append(ObjectId(student_id))
+                    student_ids.append(student_id_obj)
                     print(f"    Added student: {student.get('name', 'Unknown')} ({student_id})")
         
         # Get students from groups if schedule has assigned groups
         if schedule_item.get('assigned_groups'):
             for group_id in schedule_item['assigned_groups']:
+                # Convert group_id to ObjectId if it's a string
+                group_id_obj = ObjectId(group_id) if isinstance(group_id, str) else group_id
                 # Verify group exists and belongs to organization
                 group = self.db.groups.find_one({
-                    '_id': ObjectId(group_id),
-                    'organization_id': ObjectId(org_id),
+                    '_id': group_id_obj,
+                    'organization_id': org_id_obj,
                     'is_active': True
                 })
                 if group:
-                    group_ids.append(ObjectId(group_id))
+                    group_ids.append(group_id_obj)
                     
                     # Also get individual students from this group for logging
                     group_students = list(self.db.users.find({
-                        'groups': str(group_id),
-                        'organization_id': ObjectId(org_id),
+                        'groups': {'$in': [group_id_obj]},
+                        'organization_id': org_id_obj,
                         'role': 'student',
                         'is_active': True
                     }))
@@ -129,12 +139,70 @@ class DailyClassCreator:
         # Check for existing class within 1 hour window to avoid duplicates
         
         existing = self.db.classes.find_one({
-            'location.center_id': str(center_id),
+            'location.center_id': center_id,
             'scheduled_at': scheduled_at,
             'status': {'$in': ['scheduled', 'ongoing']}
         })
         
         return existing is not None
+
+    def update_class_from_schedule(self, schedule_item_id, coach_id=None, student_ids=None, group_ids=None, activity_id=None, max_participants=None, notes=None):
+        """Update future classes from a schedule item"""
+        try:
+            # Convert IDs to ObjectId
+            schedule_item_id = ObjectId(schedule_item_id)
+            update_fields = {
+                'updated_at': datetime.utcnow()
+            }
+
+            # Handle coach update
+            if coach_id is not None:
+                update_fields['coach_id'] = ObjectId(coach_id) if coach_id else None
+
+            # Handle student assignments
+            if student_ids is not None:
+                update_fields['student_ids'] = [ObjectId(sid) for sid in student_ids if sid]
+
+            # Handle group assignments
+            if group_ids is not None:
+                update_fields['group_ids'] = [ObjectId(gid) for gid in group_ids if gid]
+
+            # Handle max participants
+            if max_participants is not None:
+                update_fields['max_students'] = max_participants
+
+            # Handle notes
+            if notes is not None:
+                update_fields['notes'] = notes
+
+            # Handle activity change
+            if activity_id is not None:
+                activity = self.get_activity(activity_id)
+                if activity:
+                    # Update sport and title
+                    center = self.db.centers.find_one({
+                        '_id': {'$in': self.db.classes.distinct('location.center_id', {
+                            'schedule_item_id': schedule_item_id
+                        })}
+                    })
+                    if center:
+                        update_fields['sport'] = activity.get('sport_type', activity.get('name'))
+                        update_fields['title'] = f"{activity.get('name', 'Training Session')} - {center.get('name', 'Training Center')}"
+
+            # Update all future classes for this schedule item
+            result = self.db.classes.update_many(
+                {
+                    'schedule_item_id': schedule_item_id,
+                    'scheduled_at': {'$gte': datetime.utcnow()},  # Only future classes
+                    'status': {'$in': ['scheduled', 'ongoing']}  # Only active classes
+                },
+                {'$set': update_fields}
+            )
+            
+            return result.modified_count
+        except Exception as e:
+            print(f"Error updating classes from schedule: {str(e)}")
+            return 0
     
     def create_class_from_schedule(self, org_id, center, schedule_item, target_date):
         """Create a class from a schedule item for a specific date"""
@@ -157,7 +225,7 @@ class DailyClassCreator:
                     sport = activity.get('sport_type', activity.get('name'))
             
             # Parse start time and create scheduled datetime
-            start_time = time_slot.get('start_time', '09:00')
+            start_time = time_slot.get('start_time', '')
             if isinstance(start_time, str):
                 # Parse time string (format: "HH:MM")
                 hour, minute = map(int, start_time.split(':'))
@@ -165,7 +233,10 @@ class DailyClassCreator:
                 # If it's already a time object
                 hour, minute = start_time.hour, start_time.minute
             
-            scheduled_at = datetime.combine(target_date, datetime.min.time().replace(hour=hour, minute=minute))
+            ist = timezone(timedelta(hours=5, minutes=30))
+
+            scheduled_at = datetime.combine(target_date, datetime.min.time().replace(hour=hour, minute=minute, tzinfo=ist))
+            print('scheduled_at', scheduled_at)
             
             # Check if class already exists
             if self.class_already_exists(center['_id'], scheduled_at, schedule_item.get('activity_id')):
@@ -182,11 +253,11 @@ class DailyClassCreator:
             
             # Create class title
             center_name = center.get('name', 'Training Center')
-            title = f"{activity_name} - {center_name}"
+            title = f"{activity_name}"
             
             # Create location object
             location = {
-                'center_id': str(center['_id']),
+                'center_id': center['_id'],
                 'name': center_name,
                 'address': center.get('address', {})
             }
@@ -209,20 +280,31 @@ class DailyClassCreator:
             # Create the class
             new_class = Class(
                 title=title,
-                organization_id=str(org_id),
-                coach_id=str(coach_id) if coach_id else None,
+                organization_id=ObjectId(org_id),
+                coach_id=ObjectId(coach_id) if coach_id else None,
                 scheduled_at=scheduled_at,
                 duration_minutes=duration_minutes,
                 location=location,
-                group_ids=[str(gid) for gid in group_ids],
-                student_ids=[str(sid) for sid in student_ids],
+                group_ids=group_ids,
+                student_ids=student_ids,
                 sport=sport,
-                notes=f"Auto-generated from schedule on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                schedule_item_id=ObjectId(schedule_item['_id']),
+                notes=f"Auto-generated from schedule on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                price=activity.get('price', 0)
             )
-            
+
+            print(new_class.to_dict())
+            class_with_object_id = new_class.to_dict()
+            class_with_object_id['organization_id'] = ObjectId(class_with_object_id['organization_id'])
+            class_with_object_id['coach_id'] = ObjectId(class_with_object_id['coach_id'])
+            class_with_object_id['group_ids'] = [ObjectId(gid) for gid in class_with_object_id['group_ids']]
+            class_with_object_id['student_ids'] = [ObjectId(sid) for sid in class_with_object_id['student_ids']]
+            if class_with_object_id.get('schedule_item_id'):
+                class_with_object_id['schedule_item_id'] = ObjectId(class_with_object_id['schedule_item_id'])
             # Insert into database
-            result = self.db.classes.insert_one(new_class.to_dict())
-            
+            result = self.db.classes.insert_one(class_with_object_id)
+            print(result)
+            print('Price:',activity.get('price', 0))
             print(f"✅ Created class: {title} at {scheduled_at}")
             if total_assigned > 0:
                 print(f"    📚 Class has {len(student_ids)} direct students and {len(group_ids)} groups assigned")
@@ -389,7 +471,7 @@ def main():
             # Default to tomorrow
             start_date = (datetime.utcnow() + timedelta(days=1)).date()
         
-        print(f"🏃‍♂️ Adrilly Daily Class Creator")
+        print(f"🏃‍♂️ botle Daily Class Creator")
         print(f"⏰ Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
         # Show initial statistics

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Equipment Marketplace - Adrilly Sports Coaching{% endblock %}
+{% block title %}Equipment Marketplace - botle Sports Coaching{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -25,7 +25,7 @@
                            value="{{ request.args.get('search', '') }}">
                 </div>
                 <div class="form-group">
-                    <select name="category" class="form-control form-select">
+                    <select name="category" class="form-control form-select select2" data-placeholder="Filter by category">
                         <option value="">All Categories</option>
                         <option value="balls" {{ 'selected' if request.args.get('category') == 'balls' }}>Balls</option>
                         <option value="footwear" {{ 'selected' if request.args.get('category') == 'footwear' }}>Footwear</option>
@@ -35,7 +35,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <select name="condition" class="form-control form-select">
+                    <select name="condition" class="form-control form-select select2" data-placeholder="Filter by condition">
                         <option value="">All Conditions</option>
                         <option value="new" {{ 'selected' if request.args.get('condition') == 'new' }}>New</option>
                         <option value="excellent" {{ 'selected' if request.args.get('condition') == 'excellent' }}>Excellent</option>
@@ -181,7 +181,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="category" class="form-label">Category</label>
-                        <select class="form-control form-select" id="category" name="category" required>
+                        <select class="form-control form-select select2" id="category" name="category" required data-placeholder="Select category">
                             <option value="">Select category</option>
                             <option value="balls">Balls</option>
                             <option value="footwear">Footwear</option>
@@ -193,7 +193,7 @@
                     
                     <div class="form-group">
                         <label for="condition" class="form-label">Condition</label>
-                        <select class="form-control form-select" id="condition" name="condition" required>
+                        <select class="form-control form-select select2" id="condition" name="condition" required data-placeholder="Select condition">
                             <option value="">Select condition</option>
                             <option value="new">New</option>
                             <option value="excellent">Excellent</option>
@@ -319,7 +319,7 @@ function toggleView() {
 
 async function viewEquipment(equipmentId) {
     try {
-        const data = await Adrilly.api.get(`/api/equipment/${equipmentId}`);
+        const data = await botle.api.get(`/api/equipment/${equipmentId}`);
         const equipment = data.equipment;
         
         document.getElementById('detailTitle').textContent = equipment.title;
@@ -360,7 +360,7 @@ async function viewEquipment(equipmentId) {
         
         document.getElementById('equipmentDetailModal').classList.remove('hidden');
     } catch (error) {
-        Adrilly.showAlert('Error loading equipment details: ' + error.message, 'error');
+        botle.showAlert('Error loading equipment details: ' + error.message, 'error');
     }
 }
 
@@ -400,11 +400,11 @@ document.getElementById('contactForm').addEventListener('submit', async function
     const data = Object.fromEntries(formData.entries());
     
     try {
-        await Adrilly.api.post(`/api/equipment/${currentEquipmentId}/contact`, data);
-        Adrilly.showAlert('Message sent successfully! The seller will contact you.', 'success');
+        await botle.api.post(`/api/equipment/${currentEquipmentId}/contact`, data);
+        botle.showAlert('Message sent successfully! The seller will contact you.', 'success');
         closeContactModal();
     } catch (error) {
-        Adrilly.showAlert('Error sending message: ' + error.message, 'error');
+        botle.showAlert('Error sending message: ' + error.message, 'error');
     }
 });
 

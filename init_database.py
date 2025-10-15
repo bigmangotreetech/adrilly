@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Database initialization script for Adrilly sports coaching system
+Database initialization script for botle sports coaching system
 This script ensures that MongoDB database and all required collections exist
 """
 
@@ -11,7 +11,7 @@ from app.extensions import mongo, verify_database_connection, ensure_collection_
 
 def init_database():
     """Initialize database with all required collections and indexes"""
-    print("🚀 Initializing Adrilly Sports Coaching Database")
+    print("🚀 Initializing botle Sports Coaching Database")
     print("=" * 50)
     
     # Create Flask app context
@@ -166,7 +166,7 @@ def check_environment():
     return True
 
 if __name__ == '__main__':
-    print("Adrilly Sports Coaching - Database Initialization")
+    print("botle Sports Coaching - Database Initialization")
     print("=" * 50)
     
     # Check environment first

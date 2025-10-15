@@ -40,12 +40,14 @@ class WhatsAppService:
                 'to': f'whatsapp:{to_number}'
             }
             
+            print(message_data)
             if media_url:
                 message_data['media_url'] = [media_url]
             
             message = self.twilio_client.messages.create(**message_data)
             return True, message.sid
         except Exception as e:
+            print(e)
             return False, str(e)
     
     def send_interakt_message(self, to_number, message, template_name=None, parameters=None):

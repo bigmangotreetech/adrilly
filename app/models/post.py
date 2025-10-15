@@ -7,7 +7,8 @@ class Post:
     
     def __init__(self, title, content, author_id, organization_id, 
                  post_type='announcement', category=None, media_urls=None,
-                 tags=None, visibility='public', scheduled_for=None):
+                 tags=None, visibility='public', scheduled_for=None,
+                 associated_class=None):
         self.title = title
         self.content = content
         self.author_id = ObjectId(author_id) if author_id else None
@@ -18,7 +19,7 @@ class Post:
         self.tags = tags or []  # List of hashtags
         self.visibility = visibility  # 'public', 'students_only', 'coaches_only'
         self.scheduled_for = scheduled_for  # For scheduled posts
-        
+        self.associated_class = associated_class  # Associated class details
         # Status and engagement
         self.status = 'draft' if scheduled_for else 'published'  # 'draft', 'published', 'archived'
         self.is_pinned = False
@@ -42,6 +43,7 @@ class Post:
         # SEO and discovery
         self.keywords = []  # For internal search
         self.featured = False  # Featured posts get priority display
+        self.associated_class = associated_class  # Associated class details
     
     def to_dict(self, include_engagement=True):
         """Convert post to dictionary"""
@@ -65,7 +67,8 @@ class Post:
             'excerpt': self.excerpt,
             'shared_count': self.shared_count,
             'keywords': self.keywords,
-            'featured': self.featured
+            'featured': self.featured,
+            'associated_class': self.associated_class,
         }
         
         if include_engagement:
@@ -95,7 +98,8 @@ class Post:
             media_urls=data.get('media_urls', []),
             tags=data.get('tags', []),
             visibility=data.get('visibility', 'public'),
-            scheduled_for=data.get('scheduled_for')
+            scheduled_for=data.get('scheduled_for'),
+            associated_class=data.get('associated_class'),
         )
         
         # Set additional attributes
@@ -129,7 +133,8 @@ class Post:
             post.keywords = data['keywords']
         if 'featured' in data:
             post.featured = data['featured']
-        
+        if 'associated_class' in data:
+            post.associated_class = data['associated_class']
         return post
     
     def generate_excerpt(self, max_length=150):
@@ -265,7 +270,8 @@ class Comment:
             'created_at': self.created_at,
             'updated_at': self.updated_at,
             'is_flagged': self.is_flagged,
-            'flagged_reason': self.flagged_reason
+            'flagged_reason': self.flagged_reason,
+            'organization_id': str(self.organization_id) if self.organization_id else None,
         }
         
         # Only include _id if it exists and is not None

@@ -46,14 +46,16 @@ def get_users():
             # Super admin can see users from any organization
             org_filter = request.args.get('organization_id')
             if org_filter:
-                query = {'organization_id': ObjectId(org_filter)}
+                # Check if organization_id is in user's organization_ids array
+                query = {'organization_ids': ObjectId(org_filter)}
             else:
                 query = {}
         else:
             # Other roles can only see users in their organization
             if not organization_id:
                 return jsonify({'error': 'User must be associated with an organization'}), 400
-            query = {'organization_id': ObjectId(organization_id)}
+            # Check if organization_id is in user's organization_ids array
+            query = {'organization_ids': ObjectId(organization_id)}
         
         # Additional filters
         role_filter = request.args.get('role')
@@ -233,7 +235,7 @@ def create_group():
             coach_data = mongo.db.users.find_one({
                 '_id': ObjectId(data['coach_id']),
                 'role': {'$in': ['coach', 'center_admin']},
-                'organization_id': ObjectId(target_org_id)
+                'organization_ids': ObjectId(target_org_id)
             })
             if not coach_data:
                 return jsonify({'error': 'Invalid coach or coach not in organization'}), 400
@@ -485,13 +487,16 @@ def get_organization_stats():
         if not target_org_id:
             return jsonify({'error': 'Organization ID required'}), 400
         
-        org_filter = {'organization_id': ObjectId(target_org_id)}
+        # Filter for users (multi-org support)
+        user_org_filter = {'organization_ids': ObjectId(target_org_id)}
+        # Filter for other entities (single org)
+        entity_org_filter = {'organization_id': ObjectId(target_org_id)}
         
         # Get user counts by role
         user_stats = {}
         for role in ['org_admin', 'center_admin', 'coach', 'student']:
             count = mongo.db.users.count_documents({
-                **org_filter,
+                **user_org_filter,
                 'role': role,
                 'is_active': True
             })
@@ -499,7 +504,7 @@ def get_organization_stats():
         
         # Get group stats
         group_count = mongo.db.groups.count_documents({
-            **org_filter,
+            **entity_org_filter,
             'is_active': True
         })
         
@@ -508,13 +513,13 @@ def get_organization_stats():
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
         
         class_stats = {
-            'total_classes': mongo.db.classes.count_documents(org_filter),
+            'total_classes': mongo.db.classes.count_documents(entity_org_filter),
             'recent_classes': mongo.db.classes.count_documents({
-                **org_filter,
+                **entity_org_filter,
                 'scheduled_at': {'$gte': thirty_days_ago}
             }),
             'upcoming_classes': mongo.db.classes.count_documents({
-                **org_filter,
+                **entity_org_filter,
                 'scheduled_at': {'$gte': datetime.utcnow()},
                 'status': 'scheduled'
             })
@@ -523,11 +528,11 @@ def get_organization_stats():
         # Get payment stats
         payment_stats = {
             'pending_payments': mongo.db.payments.count_documents({
-                **org_filter,
+                **entity_org_filter,
                 'status': 'pending'
             }),
             'overdue_payments': mongo.db.payments.count_documents({
-                **org_filter,
+                **entity_org_filter,
                 'status': 'overdue'
             })
         }
@@ -541,4 +546,408 @@ def get_organization_stats():
         }), 200
     
     except Exception as e:
-        return jsonify({'error': 'Internal server error'}), 500 
+        return jsonify({'error': 'Internal server error'}), 500
+
+# Child profile management endpoints
+@users_bp.route('/<user_id>/children', methods=['GET'])
+@jwt_or_session_required()
+def get_children(user_id):
+    """Get all children of a parent user"""
+    try:
+        user_info = get_current_user_info()
+        current_user_id = user_info['user_id']
+        
+        # Check if user can access this data
+        if str(current_user_id) != str(user_id) and user_info['role'] not in ['super_admin', 'org_admin', 'center_admin', 'coach']:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Get children
+        children_cursor = mongo.db.users.find({
+            'parent_id': ObjectId(user_id),
+            'is_active': True
+        }).sort('created_at', -1)
+        
+        children = []
+        for child_data in children_cursor:
+            for key, value in child_data.items()    :
+                if '_id' in key:
+                    child_data[key] = str(value)
+                    
+            children.append(child_data)
+        print(children)
+        
+        return jsonify({
+            'children': children,
+            'total': len(children)
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+@users_bp.route('/<user_id>/children', methods=['POST'])
+@jwt_or_session_required()
+def add_child(user_id):
+    """Add a child profile to a parent user"""
+    from pymongo.errors import DuplicateKeyError
+    
+    try:
+        user_info = get_current_user_info()
+        current_user_id = user_info['user_id']
+        
+        # Check if user can add child
+        # if str(current_user_id) != str(user_id):
+        #     return jsonify({'error': 'Access denied'}), 403
+        
+        # Get parent user
+        parent_user = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+        if not parent_user:
+            return jsonify({'error': 'Parent user not found'}), 404
+        
+        # Get request data
+        data = request.get_json() if request.is_json else request.form
+        name = data.get('name') + ' (' +parent_user.get('name')+"'s child)"
+        age = data.get('age')
+        gender = data.get('gender')
+        
+        if not name:
+            return jsonify({'error': 'Name is required'}), 400
+        
+        # Count existing children to generate starting serial number
+        existing_children_count = mongo.db.users.count_documents({
+            'parent_id': ObjectId(user_id),
+            'is_active': True
+        })
+        child_serial = existing_children_count + 1
+        
+        # Get parent email and phone for generating child credentials
+        parent_phone = parent_user.get('phone_number', '')
+        parent_email = parent_user.get('email', '')
+        
+        # Try to create child with auto-incrementing serial number on duplicate
+        max_attempts = 100  # Prevent infinite loop
+        attempt = 0
+        
+        while attempt < max_attempts:
+            try:
+                # Generate unique phone number by appending serial to parent's phone
+                if parent_phone:
+                    child_phone = f"{parent_phone}{child_serial}"
+                else:
+                    child_phone = f"child{user_id}{child_serial}"
+                
+                # Generate unique email by appending serial to parent's email
+                if parent_email and '@' in parent_email:
+                    email_parts = parent_email.split('@')
+                    child_email = f"{email_parts[0]}_child{child_serial}@{email_parts[1]}"
+                else:
+                    child_email = f"child{child_serial}_{user_id}@parent.child"
+                
+                # Create child user - inherit parent's organizations
+                parent_org_ids = parent_user.get('organization_ids', [])
+                if not parent_org_ids and parent_user.get('organization_id'):
+                    parent_org_ids = [parent_user['organization_id']]
+                
+                child = User(
+                    phone_number=child_phone,
+                    name=name,
+                    role='student',
+                    organization_ids=parent_org_ids,  # Inherit all parent's organizations
+                    parent_id=user_id,
+                    age=int(age) if age else None,
+                    gender=gender
+                )
+                
+                # Set the unique email
+                child.email = child_email
+                
+                # Save to database
+                child_dict = child.to_dict()
+                child_dict['parent_id'] = ObjectId(user_id)
+                result = mongo.db.users.insert_one(child_dict)
+                child._id = result.inserted_id
+                
+                print(child_dict)
+
+                for key, value in child_dict.items():
+                    if '_id' in key:
+                        child_dict[key] = str(value)
+                    
+
+                return jsonify({
+                    'message': 'Child profile added successfully',
+                    'child': child_dict
+                }), 201
+                
+            except DuplicateKeyError as e:
+                # If duplicate email or phone, increment serial and try again
+                child_serial += 1
+                attempt += 1
+                continue
+        
+        # If we exhausted all attempts
+        return jsonify({'error': 'Unable to generate unique credentials after multiple attempts'}), 500
+    
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+@users_bp.route('/<user_id>/children/<child_id>', methods=['PUT'])
+@jwt_or_session_required()
+def update_child(user_id, child_id):
+    """Update a child profile"""
+    try:
+        user_info = get_current_user_info()
+        current_user_id = user_info['user_id']
+        
+        # Check if user can update child
+        # if str(current_user_id) != str(user_id):
+        #     return jsonify({'error': 'Access denied'}), 403
+        
+        # Verify child belongs to parent
+        child = mongo.db.users.find_one({
+            '_id': ObjectId(child_id),
+            'parent_id': ObjectId(user_id)
+        })
+        
+        if not child:
+            return jsonify({'error': 'Child not found'}), 404
+        
+        # Get update data
+        data = request.get_json() if request.is_json else request.form
+        update_fields = {}
+        
+        if 'name' in data:
+            update_fields['name'] = data['name']
+        if 'age' in data:
+            update_fields['age'] = int(data['age'])
+        if 'gender' in data:
+            update_fields['gender'] = data['gender']
+        
+        update_fields['updated_at'] = datetime.utcnow()
+        
+        # Update child
+        mongo.db.users.update_one(
+            {'_id': ObjectId(child_id)},
+            {'$set': update_fields}
+        )
+        
+        # Get updated child
+        updated_child = mongo.db.users.find_one({'_id': ObjectId(child_id)})
+        child_obj = User.from_dict(updated_child)
+        
+        return jsonify({
+            'message': 'Child profile updated successfully',
+            'child': child_obj.to_dict()
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+@users_bp.route('/<user_id>/children/<child_id>', methods=['DELETE'])
+@jwt_or_session_required()
+def delete_child(user_id, child_id):
+    """Delete/deactivate a child profile"""
+    try:
+        user_info = get_current_user_info()
+        current_user_id = user_info['user_id']
+        
+        # Check if user can delete child
+        # if str(current_user_id) != str(user_id):
+        #     return jsonify({'error': 'Access denied'}), 403
+        
+        # Verify child belongs to parent
+        child = mongo.db.users.find_one({
+            '_id': ObjectId(child_id),
+            'parent_id': ObjectId(user_id)
+        })
+        
+        if not child:
+            return jsonify({'error': 'Child not found'}), 404
+        
+        # Deactivate child (soft delete)
+        mongo.db.users.update_one(
+            {'_id': ObjectId(child_id)},
+            {
+                '$set': {
+                    'is_active': False,
+                    'updated_at': datetime.utcnow()
+                }
+            }
+        )
+        
+        return jsonify({'message': 'Child profile deleted successfully'}), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+# User dashboard data endpoints
+@users_bp.route('/<user_id>/upcoming-classes', methods=['GET'])
+@jwt_or_session_required()
+def get_user_upcoming_classes(user_id):
+    """Get upcoming classes for a user"""
+    try:
+        user_info = get_current_user_info()
+        current_user_id = user_info['user_id']
+        
+        # Check if user can access this data
+        if str(current_user_id) != str(user_id) and user_info['role'] not in ['super_admin', 'org_admin', 'center_admin', 'coach']:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        now = datetime.utcnow()
+        
+        # Get classes where user is enrolled
+        classes_cursor = mongo.db.classes.find({
+            'student_ids': ObjectId(user_id),
+            'scheduled_at': {'$gte': now},
+            'status': {'$in': ['scheduled', 'confirmed']}
+        }).sort('scheduled_at', 1).limit(50)
+        
+        classes = []
+        for class_doc in classes_cursor:
+            class_dict = {
+                '_id': str(class_doc['_id']),
+                'title': class_doc.get('title', ''),
+                'sport': class_doc.get('sport', ''),
+                'level': class_doc.get('level', ''),
+                'scheduled_at': class_doc['scheduled_at'].isoformat() if class_doc.get('scheduled_at') else None,
+                'duration_minutes': class_doc.get('duration_minutes', 60),
+                'location': class_doc.get('location', {}),
+                'status': class_doc.get('status', 'scheduled')
+            }
+            
+            # Get coach info
+            if class_doc.get('coach_id'):
+                coach = mongo.db.users.find_one({'_id': class_doc['coach_id']})
+                if coach:
+                    class_dict['coach_name'] = coach.get('name', '')
+                    class_dict['coach_phone'] = coach.get('phone_number', '')
+            
+            classes.append(class_dict)
+        
+        return jsonify({
+            'classes': classes,
+            'total': len(classes)
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+@users_bp.route('/<user_id>/attended-classes', methods=['GET'])
+@jwt_or_session_required()
+def get_user_attended_classes(user_id):
+    """Get attended classes for a user with attendance status"""
+    try:
+        user_info = get_current_user_info()
+        current_user_id = user_info['user_id']
+        
+        # Check if user can access this data
+        if str(current_user_id) != str(user_id) and user_info['role'] not in ['super_admin', 'org_admin', 'center_admin', 'coach']:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Get attendance records for this user
+        page = int(request.args.get('page', 1))
+        per_page = min(int(request.args.get('per_page', 20)), 100)
+        skip = (page - 1) * per_page
+        
+        attendance_cursor = mongo.db.attendance.find({
+            'student_id': ObjectId(user_id),
+            'status': {'$in': ['present', 'late', 'absent', 'excused']}
+        }).sort('created_at', -1).skip(skip).limit(per_page)
+        
+        attended_classes = []
+        for attendance_doc in attendance_cursor:
+            class_doc = mongo.db.classes.find_one({'_id': attendance_doc['class_id']})
+            if not class_doc:
+                continue
+            
+            class_dict = {
+                '_id': str(class_doc['_id']),
+                'title': class_doc.get('title', ''),
+                'sport': class_doc.get('sport', ''),
+                'level': class_doc.get('level', ''),
+                'scheduled_at': class_doc['scheduled_at'].isoformat() if class_doc.get('scheduled_at') else None,
+                'duration_minutes': class_doc.get('duration_minutes', 60),
+                'location': class_doc.get('location', {}),
+                'attendance_status': attendance_doc.get('status', 'unknown'),
+                'attendance_date': attendance_doc.get('created_at').isoformat() if attendance_doc.get('created_at') else None,
+                'notes': attendance_doc.get('notes', '')
+            }
+            
+            # Get coach info
+            if class_doc.get('coach_id'):
+                coach = mongo.db.users.find_one({'_id': class_doc['coach_id']})
+                if coach:
+                    class_dict['coach_name'] = coach.get('name', '')
+            
+            attended_classes.append(class_dict)
+        
+        total = mongo.db.attendance.count_documents({
+            'student_id': ObjectId(user_id),
+            'status': {'$in': ['present', 'late', 'absent', 'excused']}
+        })
+        
+        return jsonify({
+            'classes': attended_classes,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'pages': (total + per_page - 1) // per_page
+            }
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+@users_bp.route('/<user_id>/payments', methods=['GET'])
+@jwt_or_session_required()
+def get_user_payments(user_id):
+    """Get payment history for a user"""
+    try:
+        user_info = get_current_user_info()
+        current_user_id = user_info['user_id']
+        
+        # Check if user can access this data
+        if str(current_user_id) != str(user_id) and user_info['role'] not in ['super_admin', 'org_admin', 'center_admin', 'coach']:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Get payment records for this user
+        page = int(request.args.get('page', 1))
+        per_page = min(int(request.args.get('per_page', 50)), 100)
+        skip = (page - 1) * per_page
+        
+        payments_cursor = mongo.db.payments.find({
+            'student_id': ObjectId(user_id)
+        }).sort('due_date', -1).skip(skip).limit(per_page)
+        
+        payments = []
+        for payment_doc in payments_cursor:
+            payment_dict = {
+                '_id': str(payment_doc['_id']),
+                'amount': payment_doc.get('amount', 0),
+                'status': payment_doc.get('status', 'pending'),
+                'due_date': payment_doc['due_date'].isoformat() if payment_doc.get('due_date') else None,
+                'paid_date': payment_doc['paid_date'].isoformat() if payment_doc.get('paid_date') else None,
+                'description': payment_doc.get('description', ''),
+                'payment_method': payment_doc.get('payment_method', ''),
+                'transaction_id': payment_doc.get('transaction_id', ''),
+                'created_at': payment_doc['created_at'].isoformat() if payment_doc.get('created_at') else None
+            }
+            
+            payments.append(payment_dict)
+        
+        total = mongo.db.payments.count_documents({
+            'student_id': ObjectId(user_id)
+        })
+        
+        return jsonify({
+            'payments': payments,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'pages': (total + per_page - 1) // per_page
+            }
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500 

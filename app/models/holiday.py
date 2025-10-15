@@ -7,7 +7,7 @@ class Holiday:
     def __init__(self, name, date_observed, organization_id=None, country_code='IN', 
                  is_public_holiday=True, description=None, affects_scheduling=True,
                  locations=None, holiday_types=None, source='manual', is_enabled=True, 
-                 is_imported=False, api_data=None):
+                 is_imported=False, api_data=None, is_recurring=True):
         self.name = name
         self.date_observed = date_observed if isinstance(date_observed, date) else date_observed.date()
         self.organization_id = ObjectId(organization_id) if organization_id else None
@@ -26,6 +26,7 @@ class Holiday:
         self.imported_at = datetime.utcnow() if is_imported else None
         self.created_by = None  # User who added this holiday
         self.year = self.date_observed.year
+        self.is_recurring = is_recurring
         self.is_active = True
     
     def to_dict(self):
@@ -49,7 +50,8 @@ class Holiday:
             'imported_at': self.imported_at,
             'created_by': str(self.created_by) if self.created_by else None,
             'year': self.year,
-            'is_active': self.is_active
+            'is_active': self.is_active,
+            'is_recurring': self.is_recurring
         }
         
         # Only include _id if it exists and is not None
@@ -74,7 +76,8 @@ class Holiday:
             source=data.get('source', 'manual'),
             is_enabled=data.get('is_enabled', True),
             is_imported=data.get('is_imported', False),
-            api_data=data.get('api_data')
+            api_data=data.get('api_data'),
+            is_recurring=data.get('is_recurring', True)
         )
         
         # Set additional attributes
@@ -92,7 +95,7 @@ class Holiday:
             holiday.year = data['year']
         if 'is_active' in data:
             holiday.is_active = data['is_active']
-        
+            
         return holiday
     
     def is_today(self):

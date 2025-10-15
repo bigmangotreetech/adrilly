@@ -1,5 +1,4 @@
 from flask import Blueprint, request, jsonify, session
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from bson import ObjectId
 from app.extensions import mongo
 from app.services.file_upload_service import FileUploadService
@@ -7,17 +6,18 @@ from app.models.user import User
 from app.models.center import Center
 from app.models.organization import Organization
 import logging
+from app.utils.auth import jwt_or_session_required, get_current_user_info
 
 uploads_bp = Blueprint('uploads', __name__, url_prefix='/api/uploads')
 logger = logging.getLogger(__name__)
 
 @uploads_bp.route('/profile-picture', methods=['POST'])
-@jwt_required()
+@jwt_or_session_required()
 def upload_profile_picture():
     """Upload user profile picture"""
     try:
         # Get current user
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_info()['user_id']
         if not current_user_id:
             return jsonify({'error': 'User not authenticated'}), 401
         
@@ -80,12 +80,12 @@ def upload_profile_picture():
         return jsonify({'error': 'Internal server error'}), 500
 
 @uploads_bp.route('/organization/<organization_id>/banner', methods=['POST'])
-@jwt_required()
+@jwt_or_session_required()
 def upload_organization_banner(organization_id):
     """Upload organization banner"""
     try:
         # Get current user
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_info()['user_id']
         if not current_user_id:
             return jsonify({'error': 'User not authenticated'}), 401
         
@@ -158,12 +158,12 @@ def upload_organization_banner(organization_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @uploads_bp.route('/organization/<organization_id>/logo', methods=['POST'])
-@jwt_required()
+@jwt_or_session_required()
 def upload_organization_logo(organization_id):
     """Upload organization logo"""
     try:
         # Get current user
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_info()['user_id']
         if not current_user_id:
             return jsonify({'error': 'User not authenticated'}), 401
         
@@ -202,7 +202,6 @@ def upload_organization_logo(organization_id):
             upload_type='logo',
             organization_id=organization_id
         )
-        
         if not success:
             return jsonify({'error': message}), 400
         
@@ -236,12 +235,12 @@ def upload_organization_logo(organization_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @uploads_bp.route('/center/<center_id>/banner', methods=['POST'])
-@jwt_required()
+@jwt_or_session_required()
 def upload_center_banner(center_id):
     """Upload center banner"""
     try:
         # Get current user
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_info()['user_id']
         if not current_user_id:
             return jsonify({'error': 'User not authenticated'}), 401
         
@@ -315,12 +314,12 @@ def upload_center_banner(center_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @uploads_bp.route('/center/<center_id>/logo', methods=['POST'])
-@jwt_required()
+@jwt_or_session_required()
 def upload_center_logo(center_id):
     """Upload center logo"""
     try:
         # Get current user
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_info()['user_id']
         if not current_user_id:
             return jsonify({'error': 'User not authenticated'}), 401
         
@@ -394,12 +393,12 @@ def upload_center_logo(center_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @uploads_bp.route('/center/<center_id>/images', methods=['POST'])
-@jwt_required()
+@jwt_or_session_required()
 def upload_center_images(center_id):
     """Upload center images (multiple files)"""
     try:
         # Get current user
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_info()['user_id']
         if not current_user_id:
             return jsonify({'error': 'User not authenticated'}), 401
         
@@ -486,12 +485,12 @@ def upload_center_images(center_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @uploads_bp.route('/center/<center_id>/images/<path:image_url>', methods=['DELETE'])
-@jwt_required()
+@jwt_or_session_required()
 def delete_center_image(center_id, image_url):
     """Delete a specific center image"""
     try:
         # Get current user
-        current_user_id = get_jwt_identity()
+        current_user_id = get_current_user_info()['user_id']
         if not current_user_id:
             return jsonify({'error': 'User not authenticated'}), 401
         

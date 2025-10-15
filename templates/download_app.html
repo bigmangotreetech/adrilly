@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block login_content %}
+<style>
+   .sidebar {
+       display: none;
+   }
+   
+   .success-header {
+       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+       color: white;
+       padding: 3rem 2rem;
+       border-radius: 1rem;
+       margin-bottom: 2rem;
+   }
+   
+   .success-icon {
+       width: 80px;
+       height: 80px;
+       background: rgba(255, 255, 255, 0.2);
+       border-radius: 50%;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       margin: 0 auto 1rem;
+   }
+   
+   .app-store-btn {
+       background: #000;
+       color: white;
+       padding: 1rem 2rem;
+       border-radius: 0.75rem;
+       text-decoration: none;
+       display: inline-flex;
+       align-items: center;
+       gap: 1rem;
+       transition: all 0.3s ease;
+       border: 2px solid transparent;
+   }
+   
+   .app-store-btn:hover {
+       background: #1a1a1a;
+       color: white;
+       transform: translateY(-2px);
+       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+   }
+   
+   .play-store-btn {
+       background: linear-gradient(135deg, #01875f 0%, #006241 100%);
+       color: white;
+       padding: 1rem 2rem;
+       border-radius: 0.75rem;
+       text-decoration: none;
+       display: inline-flex;
+       align-items: center;
+       gap: 1rem;
+       transition: all 0.3s ease;
+       border: 2px solid transparent;
+   }
+   
+   .play-store-btn:hover {
+       background: linear-gradient(135deg, #006241 0%, #004a31 100%);
+       color: white;
+       transform: translateY(-2px);
+       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+   }
+   
+   .store-icon {
+       width: 40px;
+       height: 40px;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+   }
+   
+   .features-card {
+       background: linear-gradient(135deg, var(--accent-bg) 0%, rgba(118, 182, 39, 0.1) 100%);
+       border-left: 4px solid var(--accent-primary);
+       padding: 1.5rem;
+       border-radius: 0.5rem;
+       margin-bottom: 1rem;
+   }
+   
+   .feature-icon {
+       width: 50px;
+       height: 50px;
+       background: var(--accent-primary);
+       color: white;
+       border-radius: 50%;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       font-size: 1.5rem;
+   }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <!-- Success Header -->
+            <div class="success-header text-center shadow-lg">
+                <div class="success-icon">
+                    <i class="bi bi-check-circle-fill" style="font-size: 3rem;"></i>
+                </div>
+                <h1 class="display-4 fw-bold mb-3">Successfully Registered! 🎉</h1>
+                <p class="lead mb-0">You're all set! Download our app to manage your classes.</p>
+            </div>
+
+            <!-- Download App Section -->
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-body p-4">
+                    <h4 class="text-center mb-4 fw-bold text-primary">Download the App</h4>
+                    <p class="text-center text-muted mb-4">
+                        Get instant access to your schedule, receive notifications, and manage your classes on the go
+                    </p>
+                    
+                    <div class="row g-3 justify-content-center">
+                        <!-- App Store Button -->
+                        <div class="col-12 col-md-6 text-center">
+                            <a href="#" class="app-store-btn w-100 justify-content-center" target="_blank">
+                                <div class="store-icon">
+                                    <i class="bi bi-apple fs-1"></i>
+                                </div>
+                                <div class="text-start">
+                                    <div style="font-size: 0.75rem;">Download on the</div>
+                                    <div class="fw-bold" style="font-size: 1.25rem;">App Store</div>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <!-- Play Store Button -->
+                        <div class="col-12 col-md-6 text-center">
+                            <a href="#" class="play-store-btn w-100 justify-content-center" target="_blank">
+                                <div class="store-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M14.222 9.374c1.037-.61 1.037-2.137 0-2.748L11.528 5.04 8.32 8l3.207 2.96 2.694-1.586Zm-3.595 2.116L7.583 8.68 1.03 14.73c.201 1.029 1.36 1.61 2.303 1.055l7.294-4.295ZM1 13.396V2.603L6.846 8 1 13.396ZM1.03 1.27l6.553 6.05 3.044-2.81L3.333.215C2.39-.341 1.231.24 1.03 1.27Z"/>
+                                    </svg>
+                                </div>
+                                <div class="text-start">
+                                    <div style="font-size: 0.75rem;">GET IT ON</div>
+                                    <div class="fw-bold" style="font-size: 1.25rem;">Google Play</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <small class="text-muted">Available for iOS 12+ and Android 6.0+</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4">
+                    <h5 class="text-primary mb-4 fw-bold">
+                        <i class="bi bi-stars me-2"></i>What You Can Do With The App
+                    </h5>
+                    
+                    <div class="features-card">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="feature-icon">
+                                <i class="bi bi-calendar-check"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">View Your Schedule</h6>
+                                <p class="text-muted mb-0 small">See all your upcoming classes at a glance</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="features-card">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="feature-icon">
+                                <i class="bi bi-bell"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Get Notifications</h6>
+                                <p class="text-muted mb-0 small">Receive reminders and important updates</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="features-card">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="feature-icon">
+                                <i class="bi bi-person-check"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Mark Attendance</h6>
+                                <p class="text-muted mb-0 small">Easy check-in for your classes</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="features-card">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="feature-icon">
+                                <i class="bi bi-chat-dots"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Stay Connected</h6>
+                                <p class="text-muted mb-0 small">Communicate with coaches and classmates</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="text-center mt-4">
+                <p class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Use your phone number (<strong>{{ user_phone }}</strong>) to log in to the app
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set theme to dark
+document.documentElement.setAttribute('data-theme', 'dark');
+</script>
+
+{% endblock %}
+

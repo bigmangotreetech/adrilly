@@ -66,6 +66,11 @@ class Config:
     # Verification Code Settings
     VERIFICATION_CODE_EXPIRY = int(os.environ.get('VERIFICATION_CODE_EXPIRY') or 600)  # 10 minutes
     VERIFICATION_CODE_LENGTH = int(os.environ.get('VERIFICATION_CODE_LENGTH') or 6)
+    VERIFICATION_MAX_ATTEMPTS = int(os.environ.get('VERIFICATION_MAX_ATTEMPTS') or 3)
+    
+    # WhatsApp Verification Settings
+    WHATSAPP_VERIFICATION_ENABLED = os.environ.get('WHATSAPP_VERIFICATION_ENABLED', 'true').lower() == 'true'
+    WHATSAPP_VERIFICATION_PROVIDER = os.environ.get('WHATSAPP_VERIFICATION_PROVIDER', 'twilio')  # 'twilio' or 'interakt'
 
 class DevelopmentConfig(Config):
     """Development configuration"""

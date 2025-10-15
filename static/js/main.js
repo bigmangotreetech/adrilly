@@ -1,4 +1,4 @@
-// Adrilly Sports Coaching Management - Main JavaScript File
+// botle Sports Coaching Management - Main JavaScript File
 
 // Modern Micro Animations System
 class MicroAnimations {
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Global utilities
-window.Adrilly = {
+window.botle = {
     // Show alert message
     showAlert: function(message, type = 'info') {
         const alertDiv = document.createElement('div');
@@ -354,11 +354,11 @@ function initializeTheme() {
         // Remove loader from DOM after animation
         setTimeout(() => {
             pageLoader.remove();
-        }, 500);
+        }, 200);
         
         // Add staggered animations to elements
         addStaggeredAnimations();
-    }, 500);
+    }, 200);
 }
 
 // Mobile sidebar toggle
@@ -410,10 +410,10 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             const phoneInputs = form.querySelectorAll('input[type="tel"]');
             phoneInputs.forEach(input => {
-                if (input.value && !Adrilly.validatePhone(input.value)) {
+                if (input.value && !botle.validatePhone(input.value)) {
                     e.preventDefault();
                     input.classList.add('error');
-                    Adrilly.showAlert('Please enter a valid phone number', 'error');
+                    botle.showAlert('Please enter a valid phone number', 'error');
                     return false;
                 }
             });
@@ -424,6 +424,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
         setTimeout(() => {
+            // If alert is in modal, skip
+            if (alert.closest('.modal')) {
+                return;
+            }
             if (alert.parentNode) {
                 alert.style.opacity = '0';
                 alert.style.transition = 'opacity 0.3s';
@@ -554,7 +558,7 @@ window.FormUtils = {
         // Phone validation
         const phoneFields = form.querySelectorAll('input[type="tel"]');
         phoneFields.forEach(field => {
-            if (field.value && !Adrilly.validatePhone(field.value)) {
+            if (field.value && !botle.validatePhone(field.value)) {
                 errors.push('Please enter a valid phone number');
                 field.classList.add('error');
             }
@@ -607,5 +611,5 @@ window.DateUtils = {
 
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { Adrilly, TableUtils, FormUtils, DateUtils };
+    module.exports = { botle, TableUtils, FormUtils, DateUtils };
 } 

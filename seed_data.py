@@ -9,7 +9,7 @@ from app.models.user import User
 from app.models.organization import Organization, Group
 from app.models.class_schedule import Class
 from app.models.progress import Rubric
-from app.models.payment import Payment
+from app.models.payments import Payment
 from app.models.equipment import Equipment
 import pymongo
 from pymongo.errors import ServerSelectionTimeoutError, OperationFailure
@@ -508,12 +508,12 @@ def create_seed_data():
         for class_info in classes1_data:
             new_class = Class(
                 title=class_info['title'],
-                organization_id=org1_id,
-                coach_id=str(class_info['coach']._id),
+                organization_id=ObjectId(org1_id),
+                coach_id=ObjectId(class_info['coach']._id),
                 scheduled_at=class_info['scheduled_at'],
                 duration_minutes=90,
                 location={'name': 'Main Training Ground', 'address': '123 Sports Complex Road'},
-                group_ids=[str(class_info['group']._id)],
+                group_ids=[ObjectId(class_info['group']._id)],
                 sport=class_info['sport'],
                 level=class_info['group'].level,
                 notes='Regular training session'
@@ -545,12 +545,12 @@ def create_seed_data():
         for class_info in classes2_data:
             new_class = Class(
                 title=class_info['title'],
-                organization_id=org2_id,
-                coach_id=str(class_info['coach']._id),
+                organization_id=ObjectId(org2_id),
+                coach_id=ObjectId(class_info['coach']._id),
                 scheduled_at=class_info['scheduled_at'],
                 duration_minutes=120,
                 location={'name': 'Champions Pool & Track', 'address': '456 Champions Blvd'},
-                group_ids=[str(class_info['group']._id)],
+                group_ids=[ObjectId(class_info['group']._id)],
                 sport=class_info['sport'],
                 level=class_info['group'].level,
                 notes='Intensive training'
@@ -568,7 +568,7 @@ def create_seed_data():
             sport = rubric_name.split()[0].lower()
             rubric = Rubric(
                 name=f'{rubric_name} Assessment',
-                organization_id=org1_id,
+                organization_id=ObjectId(org1_id),
                 sport=sport
             )
             result = mongo.db.rubrics.insert_one(rubric.to_dict())
@@ -579,7 +579,7 @@ def create_seed_data():
             sport = rubric_name.split()[0].lower()
             rubric = Rubric(
                 name=f'{rubric_name} Assessment',
-                organization_id=org2_id,
+                organization_id=ObjectId(org2_id),
                 sport=sport
             )
             result = mongo.db.rubrics.insert_one(rubric.to_dict())
@@ -591,7 +591,7 @@ def create_seed_data():
         for i, student in enumerate(students1[:6]):
             payment = Payment(
                 student_id=str(student._id),
-                organization_id=org1_id,
+                organization_id=ObjectId(org1_id),
                 amount=150.0,
                 description='Monthly Training Fee - February 2024',
                 due_date=date.today() + timedelta(days=5),
@@ -617,7 +617,7 @@ def create_seed_data():
         for i, student in enumerate(students2[:4]):
             payment = Payment(
                 student_id=str(student._id),
-                organization_id=org2_id,
+                organization_id=ObjectId(org2_id),
                 amount=200.0,
                 description='Monthly Training Fee - February 2024',
                 due_date=date.today() + timedelta(days=10),
@@ -672,7 +672,7 @@ def create_seed_data():
                 description=equip_info['description'],
                 price=equip_info['price'],
                 owner_id=str(equip_info['owner']._id),
-                organization_id=org1_id,
+                organization_id=ObjectId(org1_id),
                 category=equip_info['category'],
                 condition=equip_info['condition'],
                 images=[f'https://example.com/{equip_info["category"]}.jpg'],
@@ -708,7 +708,7 @@ def create_seed_data():
                 description=equip_info['description'],
                 price=equip_info['price'],
                 owner_id=str(equip_info['owner']._id),
-                organization_id=org2_id,
+                organization_id=ObjectId(org2_id),
                 category=equip_info['category'],
                 condition=equip_info['condition'],
                 images=[f'https://example.com/{equip_info["category"]}.jpg'],

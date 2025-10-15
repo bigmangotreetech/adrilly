@@ -413,6 +413,53 @@ def switch_organization(org_id):
     except Exception as e:
         return jsonify({'error': 'Internal server error'}), 500
 
+@auth_bp.route('/change-password-api', methods=['POST'])
+@jwt_required()
+def change_password_api():
+    """Change user password"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'current_password' not in data or 'new_password' not in data:
+            return jsonify({'error': 'Current password and new password are required'}), 400
+        
+        current_password = data['current_password']
+        new_password = data['new_password']
+        
+        # Validate new password
+        if len(new_password) < 6:
+            return jsonify({'error': 'New password must be at least 6 characters long'}), 400
+        
+        user_id = get_jwt_identity()
+        
+        # Get user from database
+        user_data = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+        if not user_data:
+            return jsonify({'error': 'User not found'}), 404
+        
+        user = User.from_dict(user_data)
+        
+        # Verify current password
+        if not user.check_password(current_password):
+            return jsonify({'error': 'Current password is incorrect'}), 400
+        
+        # Update password
+        user.set_password(new_password)
+        
+        # Save to database
+        update_result = mongo.db.users.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$set': {'password_hash': user.password_hash}}
+        )
+        
+        if update_result.modified_count == 0:
+            return jsonify({'error': 'Failed to update password'}), 500
+        
+        return jsonify({'message': 'Password changed successfully'}), 200
+    
+    except Exception as e:
+        return jsonify({'error': 'Internal server error'}), 500
+
 # Helper function to check user permissions
 def require_role(allowed_roles):
     """Decorator to check user role"""

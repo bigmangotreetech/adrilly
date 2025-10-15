@@ -4,9 +4,11 @@ from bson import ObjectId
 from app.extensions import mongo
 from app.models.post import Post, Comment
 from app.models.user import User
-from typing import Tuple, List, Dict, Any, Optional
+from typing import Tuple, List, Dict, Any, Optional, Union
 import re
 from pymongo import DESCENDING, ASCENDING
+import pytz
+import timeago
 
 class FeedService:
     """Service for managing organization feed and social features"""
@@ -15,14 +17,16 @@ class FeedService:
     def create_post(
         title: str,
         content: str,
-        author_id: str,
-        organization_id: str,
+        author_id: Union[str, ObjectId],
+        organization_id: Union[str, ObjectId],
         post_type: str = 'announcement',
         category: str = None,
         media_urls: List[str] = None,
         tags: List[str] = None,
         visibility: str = 'public',
-        scheduled_for: datetime = None
+        scheduled_for: datetime = None,
+        associated_class_id: str = None,
+
     ) -> Tuple[bool, str, Optional[Dict]]:
         """
         Create a new post
@@ -38,20 +42,24 @@ class FeedService:
             tags: List of hashtags
             visibility: Visibility setting
             scheduled_for: Optional scheduled publish time
-            
+            associated_class_id: Optional associated class ID
         Returns:
             Tuple of (success, message, post_data)
         """
         try:
+            # Convert IDs to ObjectId
+            author_id_obj = ObjectId(author_id) if isinstance(author_id, str) else author_id
+            organization_id_obj = ObjectId(organization_id) if isinstance(organization_id, str) else organization_id
+            
             # Validate author
-            author_data = mongo.db.users.find_one({'_id': ObjectId(author_id)})
+            author_data = mongo.db.users.find_one({'_id': author_id_obj})
             if not author_data:
                 return False, "Author not found", None
             
             author = User.from_dict(author_data)
             
             # Check if author can create posts
-            if not FeedService._can_user_create_posts(author, organization_id):
+            if not FeedService._can_user_create_posts(author, organization_id_obj):
                 return False, "Insufficient permissions to create posts", None
             
             # Clean and validate content
@@ -61,6 +69,21 @@ class FeedService:
             
             # Process tags
             tags = FeedService._process_tags(tags or [])
+            
+            # Get associated class info if provided
+            associated_class = None
+            if associated_class_id:
+                class_data = mongo.db.classes.find_one({'_id': ObjectId(associated_class_id)})
+                if class_data:
+                    coach_data = mongo.db.users.find_one({'_id': class_data['coach_id']})
+                    associated_class = class_data
+
+
+            if isinstance(organization_id, str):
+                organization_id = ObjectId(organization_id)
+            
+            if isinstance(author_id, str):
+                author_id = ObjectId(author_id)
             
             # Create post
             post = Post(
@@ -73,7 +96,8 @@ class FeedService:
                 media_urls=media_urls or [],
                 tags=tags,
                 visibility=visibility,
-                scheduled_for=scheduled_for
+                scheduled_for=scheduled_for,
+                associated_class=associated_class,
             )
             
             # Generate excerpt
@@ -81,9 +105,10 @@ class FeedService:
             
             # Generate keywords for search
             post.keywords = FeedService._extract_keywords(title + " " + content)
-            
+            post_dict = post.to_dict()
+            post_dict['organization_id'] = ObjectId(organization_id)
             # Insert into database
-            result = mongo.db.posts.insert_one(post.to_dict())
+            result = mongo.db.posts.insert_one(post_dict)
             post._id = result.inserted_id
             
             current_app.logger.info(f"Post created by {author.name} ({author_id}) in org {organization_id}")
@@ -96,8 +121,8 @@ class FeedService:
     
     @staticmethod
     def get_organization_feed(
-        organization_id: str,
-        user_id: str,
+        organization_id: Union[str, ObjectId],
+        user_id: Union[str, ObjectId],
         page: int = 1,
         per_page: int = 10,
         post_type: str = None,
@@ -118,8 +143,12 @@ class FeedService:
             Tuple of (success, message, feed_data)
         """
         try:
+            # Convert IDs to ObjectId
+            user_id_obj = ObjectId(user_id) if isinstance(user_id, str) else user_id
+            organization_id_obj = ObjectId(organization_id) if isinstance(organization_id, str) else organization_id
+            
             # Get user for permission check
-            user_data = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+            user_data = mongo.db.users.find_one({'_id': user_id_obj})
             if not user_data:
                 return False, "User not found", {}
             
@@ -127,7 +156,7 @@ class FeedService:
             
             # Build query
             query = {
-                'organization_id': ObjectId(organization_id),
+                'organization_id': organization_id_obj,
                 'status': 'published'
             }
             
@@ -153,6 +182,8 @@ class FeedService:
                 ('published_at', DESCENDING)
             ]).skip(skip).limit(per_page)
             
+
+            print("posts query", query)
             posts = []
             for post_data in posts_cursor:
                 post = Post.from_dict(post_data)
@@ -162,7 +193,10 @@ class FeedService:
                     {'_id': post._id},
                     {'$inc': {'views_count': 1}}
                 )
-                
+
+                # Show as x days ago, x hours ago, x minutes ago, x seconds ago
+                post.published_at = timeago.format(post.published_at)
+
                 # Get author info
                 author_data = mongo.db.users.find_one({'_id': post.author_id})
                 author_info = {
@@ -185,6 +219,8 @@ class FeedService:
             total_posts = mongo.db.posts.count_documents(query)
             total_pages = (total_posts + per_page - 1) // per_page
             
+
+            print("posts", posts)
             feed_data = {
                 'posts': posts,
                 'pagination': {
@@ -362,16 +398,20 @@ class FeedService:
     
     @staticmethod
     def search_posts(
-        organization_id: str,
+        organization_id: Union[str, ObjectId],
         query: str,
-        user_id: str,
+        user_id: Union[str, ObjectId],
         page: int = 1,
         per_page: int = 10
     ) -> Tuple[bool, str, Dict]:
         """Search posts in organization"""
         try:
+            # Convert IDs to ObjectId
+            user_id_obj = ObjectId(user_id) if isinstance(user_id, str) else user_id
+            organization_id_obj = ObjectId(organization_id) if isinstance(organization_id, str) else organization_id
+            
             # Get user for permission check
-            user_data = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+            user_data = mongo.db.users.find_one({'_id': user_id_obj})
             if not user_data:
                 return False, "User not found", {}
             
@@ -379,7 +419,7 @@ class FeedService:
             
             # Build search query
             search_query = {
-                'organization_id': ObjectId(organization_id),
+                'organization_id': organization_id_obj,
                 'status': 'published',
                 '$or': [
                     {'title': {'$regex': query, '$options': 'i'}},
@@ -440,10 +480,13 @@ class FeedService:
             return False, "Error searching posts", {}
     
     @staticmethod
-    def _can_user_create_posts(user: User, organization_id: str) -> bool:
+    def _can_user_create_posts(user: User, organization_id: Union[str, ObjectId]) -> bool:
         """Check if user can create posts"""
+        # Convert organization_id to ObjectId if it's a string
+        org_id_obj = ObjectId(organization_id) if isinstance(organization_id, str) else organization_id
+        
         # Must be in the same organization
-        if str(user.organization_id) != str(organization_id):
+        if user.organization_id != org_id_obj:
             return False
         
         # Only coaches and admins can create posts

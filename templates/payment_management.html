@@ -113,7 +113,7 @@
         <form id="createPaymentForm">
             <div class="form-group">
                 <label for="studentSelect">Student</label>
-                <select id="studentSelect" name="student_id" required>
+                <select class="form-control form-select select2-search" id="studentSelect" name="student_id" required data-placeholder="Search for a student">
                     <option value="">Select Student...</option>
                     <!-- Populated via JavaScript -->
                 </select>
@@ -465,12 +465,29 @@ async function loadStudents() {
             const data = await response.json();
             const select = document.getElementById('studentSelect');
             
+            // Clear existing options except the first one
+            while (select.children.length > 1) {
+                select.removeChild(select.lastChild);
+            }
+            
             data.users.forEach(student => {
                 const option = document.createElement('option');
                 option.value = student._id;
-                option.textContent = `${student.name} (${student.phone_number || 'No phone'})`;
+                option.textContent = `${student.name}${student.email ? ' - ' + student.email : ''}${student.phone_number ? ' - ' + student.phone_number : ''}`;
                 select.appendChild(option);
             });
+            
+            // Reinitialize Select2 after populating options
+            if (window.jQuery && jQuery.fn.select2) {
+                $('#studentSelect').select2('destroy').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    placeholder: 'Search for a student',
+                    allowClear: true,
+                    minimumInputLength: 0,
+                    dropdownAutoWidth: true
+                });
+            }
         }
     } catch (error) {
         console.error('Error loading students:', error);

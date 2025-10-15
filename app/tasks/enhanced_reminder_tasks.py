@@ -1,8 +1,7 @@
-from celery import Celery
 from datetime import datetime, timedelta
 from app.extensions import mongo
 from app.models.class_schedule import Class
-from app.models.payment import Payment
+from app.models.payments import Payment
 from app.models.user import User
 from app.services.enhanced_whatsapp_service import EnhancedWhatsAppService
 from bson import ObjectId
@@ -12,9 +11,8 @@ import sys
 # Add the root directory to Python path for daily_class_creator import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-# Initialize Celery
-celery = Celery('enhanced_reminders')
-celery.config_from_object('config')
+# Import the shared Celery instance from extensions
+from app.extensions import celery
 
 @celery.task
 def send_automated_class_reminders():
@@ -367,67 +365,85 @@ Have a great day! 🌟
         print(f"Error in send_daily_digest: {str(e)}")
         return f"Error: {str(e)}"
 
-@celery.task
-def create_daily_classes(days_ahead=7, org_id=None):
-    """Celery task to automatically create classes based on center schedules"""
-    try:
-        from daily_class_creator import DailyClassCreator
-        
-        creator = DailyClassCreator()
-        
-        # Start from tomorrow
-        start_date = (datetime.utcnow() + timedelta(days=1)).date()
-        
-        print(f"🚀 Starting automated class creation")
-        print(f"📅 Creating classes for {days_ahead} days starting from {start_date}")
-        
-        # Create classes
-        created_classes = creator.create_classes_for_range(
-            start_date=start_date,
-            days_ahead=days_ahead,
-            org_id=org_id
-        )
-        
-        # Cleanup old classes (older than 30 days)
-        cleaned_count = creator.cleanup_old_classes(30)
-        
-        creator.close()
-        
-        result = {
-            'success': True,
-            'created_classes': len(created_classes),
-            'cleaned_classes': cleaned_count,
-            'timestamp': datetime.utcnow().isoformat()
-        }
-        
-        print(f"✅ Class creation task completed: {result}")
-        return f"Created {len(created_classes)} classes, cleaned {cleaned_count} old classes"
-        
-    except Exception as e:
-        error_msg = f"Error in create_daily_classes: {str(e)}"
-        print(f"❌ {error_msg}")
-        return error_msg
+# Class creation tasks are now handled in app.tasks.class_creation_tasks
+# Import them here for backward compatibility
+try:
+    from app.tasks.class_creation_tasks import create_daily_classes, create_classes_for_organization
+except ImportError:
+    # Fallback dummy functions if import fails
+    @celery.task
+    def create_daily_classes(days_ahead=7, org_id=None):
+        """Fallback task - use app.tasks.class_creation_tasks instead"""
+        logger.warning("Using fallback create_daily_classes. Please use app.tasks.class_creation_tasks instead.")
+        return "Fallback task used"
+    
+    @celery.task
+    def create_classes_for_organization(org_id, days_ahead=7):
+        """Fallback task - use app.tasks.class_creation_tasks instead"""
+        logger.warning("Using fallback create_classes_for_organization. Please use app.tasks.class_creation_tasks instead.")
+        return "Fallback task used"
 
-@celery.task
-def create_classes_for_organization(org_id, days_ahead=7):
-    """Create classes for a specific organization"""
-    return create_daily_classes(days_ahead=days_ahead, org_id=org_id)
+# Periodic task configuration
+from celery.schedules import crontab
 
-# Task scheduling configuration
-if __name__ == '__main__':
-    # This would be configured in your task scheduler (like Celery Beat)
+@celery.on_after_configure.connect
+def setup_periodic_tasks(sender, **kwargs):
+    """Setup all periodic tasks for the application"""
     
-    # Example schedule configuration:
-    # Every 30 minutes - check for class reminders
-    # send_automated_class_reminders.apply_async()
+    # Send class reminders every 30 minutes
+    sender.add_periodic_task(
+        1800.0,  # 30 minutes
+        send_automated_class_reminders.s(),
+        name='send automated class reminders'
+    )
     
-    # Daily at 9 AM - send payment reminders  
-    # send_payment_reminders.apply_async()
+    # Send payment reminders daily at 9 AM
+    sender.add_periodic_task(
+        crontab(hour=9, minute=0),  # Daily at 9:00 AM
+        send_payment_reminders.s(),
+        name='send payment reminders'
+    )
     
-    # Daily at 10 PM - send daily digest
-    # send_daily_digest.apply_async()
+    # Send welcome messages to new users daily at 10 AM
+    sender.add_periodic_task(
+        crontab(hour=10, minute=0),  # Daily at 10:00 AM
+        send_welcome_messages_to_new_users.s(),
+        name='send welcome messages'
+    )
     
-    # Weekly - cleanup old logs
-    # cleanup_old_whatsapp_logs.apply_async()
+    # Update class statuses every 15 minutes
+    sender.add_periodic_task(
+        900.0,  # 15 minutes
+        update_class_statuses.s(),
+        name='update class statuses'
+    )
     
-    pass
+    # Send daily digest at 8 PM
+    sender.add_periodic_task(
+        crontab(hour=20, minute=0),  # Daily at 8:00 PM
+        send_daily_digest.s(),
+        name='send daily digest'
+    )
+    
+    # Create daily classes every day at 6 AM
+    sender.add_periodic_task(
+        crontab(hour=6, minute=0),  # Daily at 6:00 AM
+        create_daily_classes.s(days_ahead=7),
+        name='create daily classes'
+    )
+    
+    # Clean up old WhatsApp logs weekly on Sunday at 2 AM
+    sender.add_periodic_task(
+        crontab(hour=2, minute=0, day_of_week=0),  # Sunday at 2:00 AM
+        cleanup_old_whatsapp_logs.s(),
+        name='cleanup old whatsapp logs'
+    )
+    
+    # Generate analytics reports daily at 11 PM
+    sender.add_periodic_task(
+        crontab(hour=23, minute=0),  # Daily at 11:00 PM
+        generate_whatsapp_analytics_report.s(),
+        name='generate analytics reports'
+    )
+    
+    print("✅ All periodic tasks configured successfully")

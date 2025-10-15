@@ -1,0 +1,77 @@
+<!-- Class Search Modal -->
+<div class="modal fade" id="classSearchModal" tabindex="-1" aria-labelledby="classSearchModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="classSearchModalLabel">Search Classes</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Search Form -->
+        <div class="mb-4">
+          <div class="input-group">
+            <input type="text" id="classSearchInput" class="form-control" placeholder="Search by class name or date">
+            <button class="btn btn-outline-secondary" type="button" id="searchClassesBtn">
+              <i class="fas fa-search"></i> Search
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Results -->
+        <div id="classSearchResults" class="list-group">
+          <!-- Results will be populated dynamically -->
+          <div class="text-center text-muted py-3" id="classSearchPlaceholder">
+            Start typing to search for classes
+          </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="classSearchLoading" class="text-center py-3 d-none">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="classSearchError" class="alert alert-danger d-none" role="alert">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Class Search Result Template -->
+<template id="classSearchResultTemplate">
+  <button type="button" class="list-group-item list-group-item-action class-search-result" data-class-id="">
+    <div class="d-flex w-100 justify-content-between">
+      <h6 class="mb-1 class-name"></h6>
+      <small class="text-muted scheduled-at"></small>
+    </div>
+    <p class="mb-1">
+      <small class="text-muted">
+        <span class="coach-name"></span>
+        <span class="center-name"></span>
+      </small>
+    </p>
+  </button>
+</template>
+
+<!-- Class Details Template -->
+<template id="classDetailsTemplate">
+  <div class="class-details bg-light p-3 rounded mb-3">
+    <h6 class="class-name mb-2"></h6>
+    <div class="text-muted">
+      <div><i class="fas fa-calendar"></i> <span class="scheduled-at"></span></div>
+      <div><i class="fas fa-user"></i> Coach: <span class="coach-name"></span></div>
+      <div><i class="fas fa-map-marker-alt"></i> Center: <span class="center-name"></span></div>
+    </div>
+    <div class="mt-2">
+      <button type="button" class="btn btn-primary btn-sm book-class-btn">
+        <i class="fas fa-calendar-check"></i> Book Class
+      </button>
+    </div>
+  </div>
+</template>

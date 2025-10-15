@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}My Profile - Adrilly Sports Coaching{% endblock %}
+{% block title %}My Profile - botle Sports Coaching{% endblock %}
 
 {% block content %}
 <div class="page-header-modern">
@@ -284,48 +284,43 @@
 </div>
 
 <!-- Change Password Modal -->
-<div id="changePasswordModal" class="modal-overlay-modern" style="display: none;">
-    <div class="modal-modern">
-        <div class="modal-header-modern">
-            <div class="modal-title-section">
-                <h3 class="modal-title-modern">Change Password</h3>
-                <p class="modal-subtitle-modern">Update your account password</p>
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button class="modal-close-modern" onclick="closeChangePasswordModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+            <form id="changePasswordForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Current Password</label>
+                        <input type="password" class="form-control" id="current_password" name="current_password" required>
+                        <div class="form-text">Enter your current password to verify your identity</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                        <div class="form-text">Password must be at least 8 characters long with letters and numbers</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        <div class="form-text">Re-enter your new password to confirm</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Change Password
+                    </button>
+                </div>
+            </form>
         </div>
-        <form id="changePasswordForm">
-            <div class="modal-body-modern">
-                <div class="form-field-modern">
-                    <label for="current_password" class="form-label-modern">Current Password</label>
-                    <input type="password" class="form-input-modern" id="current_password" name="current_password" required>
-                    <div class="form-hint">Enter your current password to verify your identity</div>
-                </div>
-                
-                <div class="form-field-modern">
-                    <label for="new_password" class="form-label-modern">New Password</label>
-                    <input type="password" class="form-input-modern" id="new_password" name="new_password" required>
-                    <div class="form-hint">Password must be at least 8 characters long with letters and numbers</div>
-                </div>
-                
-                <div class="form-field-modern">
-                    <label for="confirm_password" class="form-label-modern">Confirm New Password</label>
-                    <input type="password" class="form-input-modern" id="confirm_password" name="confirm_password" required>
-                    <div class="form-hint">Re-enter your new password to confirm</div>
-                </div>
-            </div>
-            <div class="modal-footer-modern">
-                <button type="button" class="btn btn-outline" onclick="closeChangePasswordModal()">
-                    Cancel
-                </button>
-                <button type="submit" class="btn btn-primary">
-                    Change Password
-                </button>
-            </div>
-        </form>
     </div>
 </div>
 
@@ -1149,7 +1144,7 @@ async function saveProfile() {
         const result = await response.json();
         
         if (response.ok) {
-            Adrilly.showAlert('Profile updated successfully!', 'success');
+            botle.showAlert('Profile updated successfully!', 'success');
             toggleEditMode(); // Exit edit mode
             
             // Update the page with new data
@@ -1157,20 +1152,26 @@ async function saveProfile() {
                 window.location.reload();
             }, 1000);
         } else {
-            Adrilly.showAlert(result.error || 'Failed to update profile', 'error');
+            botle.showAlert(result.error || 'Failed to update profile', 'error');
         }
     } catch (error) {
         console.error('Error updating profile:', error);
-        Adrilly.showAlert('Failed to update profile. Please try again.', 'error');
+        botle.showAlert('Failed to update profile. Please try again.', 'error');
     }
 }
 
 function openChangePasswordModal() {
-    document.getElementById('changePasswordModal').style.display = 'flex';
+    const modalElement = document.getElementById('changePasswordModal');
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
 }
 
 function closeChangePasswordModal() {
-    document.getElementById('changePasswordModal').style.display = 'none';
+    const modalElement = document.getElementById('changePasswordModal');
+    const modal = bootstrap.Modal.getInstance(modalElement);
+    if (modal) {
+        modal.hide();
+    }
     document.getElementById('changePasswordForm').reset();
 }
 
@@ -1185,12 +1186,12 @@ document.getElementById('changePasswordForm').addEventListener('submit', async f
     
     // Client-side validation
     if (newPassword !== confirmPassword) {
-        Adrilly.showAlert('New passwords do not match', 'error');
+        botle.showAlert('New passwords do not match', 'error');
         return;
     }
     
     if (newPassword.length < 8) {
-        Adrilly.showAlert('New password must be at least 8 characters long', 'error');
+        botle.showAlert('New password must be at least 8 characters long', 'error');
         return;
     }
     
@@ -1210,14 +1211,14 @@ document.getElementById('changePasswordForm').addEventListener('submit', async f
         const result = await response.json();
         
         if (response.ok) {
-            Adrilly.showAlert('Password changed successfully!', 'success');
+            botle.showAlert('Password changed successfully!', 'success');
             closeChangePasswordModal();
         } else {
-            Adrilly.showAlert(result.error || 'Failed to change password', 'error');
+            botle.showAlert(result.error || 'Failed to change password', 'error');
         }
     } catch (error) {
         console.error('Error changing password:', error);
-        Adrilly.showAlert('Failed to change password. Please try again.', 'error');
+        botle.showAlert('Failed to change password. Please try again.', 'error');
     }
 });
 
@@ -1244,14 +1245,14 @@ async function uploadProfilePicture() {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-        Adrilly.showAlert('Please select a valid image file (JPEG, PNG, GIF, or WebP)', 'error');
+        botle.showAlert('Please select a valid image file (JPEG, PNG, GIF, or WebP)', 'error');
         return;
     }
     
     // Validate file size (10MB max)
     const maxSize = 10 * 1024 * 1024; // 10MB in bytes
     if (file.size > maxSize) {
-        Adrilly.showAlert('File size must be less than 10MB', 'error');
+        botle.showAlert('File size must be less than 10MB', 'error');
         return;
     }
     
@@ -1294,9 +1295,9 @@ async function uploadProfilePicture() {
                 avatarContainer.insertBefore(newImage, overlay);
             }
             
-            Adrilly.showAlert('Profile picture updated successfully!', 'success');
+            botle.showAlert('Profile picture updated successfully!', 'success');
         } else {
-            Adrilly.showAlert(result.error || 'Failed to upload profile picture', 'error');
+            botle.showAlert(result.error || 'Failed to upload profile picture', 'error');
         }
         
         // Restore overlay content
@@ -1305,7 +1306,7 @@ async function uploadProfilePicture() {
         
     } catch (error) {
         console.error('Error uploading profile picture:', error);
-        Adrilly.showAlert('Failed to upload profile picture. Please try again.', 'error');
+        botle.showAlert('Failed to upload profile picture. Please try again.', 'error');
         
         // Restore overlay content
         const overlay = document.querySelector('.avatar-upload-overlay');

@@ -1,166 +1,103 @@
 from datetime import datetime
 from bson import ObjectId
+from typing import Optional, Dict, List
+from decimal import Decimal
 
 class Equipment:
-    """Equipment model for marketplace listings"""
-    
-    def __init__(self, title, description, price, owner_id, organization_id=None,
-                 category=None, condition=None, images=None, contact_info=None, 
-                 location=None, negotiable=True):
-        self.title = title
-        self.description = description
-        self.price = float(price)
-        self.owner_id = ObjectId(owner_id) if owner_id else None
-        self.organization_id = ObjectId(organization_id) if organization_id else None
-        self.category = category  # 'balls', 'equipment', 'apparel', 'accessories'
-        self.condition = condition or 'good'  # 'new', 'excellent', 'good', 'fair', 'poor'
-        self.images = images or []  # List of image URLs
-        self.contact_info = contact_info or {}
-        self.status = 'available'  # 'available', 'sold', 'reserved', 'inactive'
-        self.location = location
-        self.tags = []  # For search and categorization
-        self.views_count = 0
-        self.created_at = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
-        self.featured = False
-        self.negotiable = negotiable
-    
-    def to_dict(self):
-        """Convert equipment to dictionary"""
-        data = {
-            'title': self.title,
-            'description': self.description,
-            'price': self.price,
-            'owner_id': str(self.owner_id) if self.owner_id else None,
-            'organization_id': str(self.organization_id) if self.organization_id else None,
-            'category': self.category,
-            'condition': self.condition,
-            'images': self.images,
-            'contact_info': self.contact_info,
-            'status': self.status,
-            'location': self.location,
-            'tags': self.tags,
-            'views_count': self.views_count,
-            'created_at': self.created_at,
-            'updated_at': self.updated_at,
-            'featured': self.featured,
-            'negotiable': self.negotiable
-        }
-        
-        # Only include _id if it exists and is not None
-        if hasattr(self, '_id') and self._id is not None:
-            data['_id'] = str(self._id)
-            
-        return data
-    
-    @classmethod
-    def from_dict(cls, data):
-        """Create equipment from dictionary"""
-        equipment = cls(
-            title=data['title'],
-            description=data['description'],
-            price=data['price'],
-            owner_id=data.get('owner_id'),
-            organization_id=data.get('organization_id'),
-            category=data.get('category'),
-            condition=data.get('condition'),
-            images=data.get('images', []),
-            contact_info=data.get('contact_info', {})
-        )
-        
-        # Set additional attributes
-        if '_id' in data:
-            equipment._id = data['_id']
-        if 'status' in data:
-            equipment.status = data['status']
-        if 'location' in data:
-            equipment.location = data['location']
-        if 'tags' in data:
-            equipment.tags = data['tags']
-        if 'views_count' in data:
-            equipment.views_count = data['views_count']
-        if 'created_at' in data:
-            equipment.created_at = data['created_at']
-        if 'updated_at' in data:
-            equipment.updated_at = data['updated_at']
-        if 'featured' in data:
-            equipment.featured = data['featured']
-        if 'negotiable' in data:
-            equipment.negotiable = data['negotiable']
-        
-        return equipment
-    
-    def mark_sold(self):
-        """Mark equipment as sold"""
-        self.status = 'sold'
-        self.updated_at = datetime.utcnow()
-    
-    def increment_views(self):
-        """Increment view count"""
-        self.views_count += 1
-        # Note: In a real application, you might want to update this
-        # directly in the database without updating the updated_at field
-    
-    def add_tag(self, tag):
-        """Add a tag to the equipment"""
-        if tag not in self.tags:
-            self.tags.append(tag)
-            self.updated_at = datetime.utcnow()
-    
-    def remove_tag(self, tag):
-        """Remove a tag from the equipment"""
-        if tag in self.tags:
-            self.tags.remove(tag)
-            self.updated_at = datetime.utcnow()
-
-class EquipmentCategory:
-    """Equipment category model for organizing marketplace"""
-    
-    def __init__(self, name, description=None, parent_category_id=None,
-                 organization_id=None):
+    """
+    Equipment model for tracking sports and training equipment inventory.
+    """
+    def __init__(self,
+                 _id: ObjectId,
+                 name: str,
+                 organization_id: ObjectId,
+                 type: str,  # 'sports', 'training', 'safety', etc.
+                 status: str,  # 'available', 'in_use', 'maintenance', 'retired'
+                 quantity: int,
+                 center_id: Optional[ObjectId] = None,
+                 description: Optional[str] = None,
+                 specifications: Optional[Dict] = None,
+                 condition: Optional[str] = None,
+                 purchase_date: Optional[datetime] = None,
+                 purchase_price: Optional[Decimal] = None,
+                 rental_price: Optional[Decimal] = None,
+                 maintenance_history: Optional[List[Dict]] = None,
+                 current_assignment: Optional[Dict] = None,
+                 images: Optional[List[str]] = None,
+                 metadata: Optional[Dict] = None,
+                 created_at: datetime = None,
+                 updated_at: datetime = None):
+        self._id = _id
         self.name = name
+        self.organization_id = organization_id
+        self.type = type
+        self.status = status
+        self.quantity = quantity
+        self.center_id = center_id
         self.description = description
-        self.parent_category_id = ObjectId(parent_category_id) if parent_category_id else None
-        self.organization_id = ObjectId(organization_id) if organization_id else None
-        self.is_active = True
-        self.sort_order = 0
-        self.created_at = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
-    
-    def to_dict(self):
-        """Convert category to dictionary"""
+        self.specifications = specifications or {}
+        self.condition = condition
+        self.purchase_date = purchase_date
+        self.purchase_price = purchase_price
+        self.rental_price = rental_price
+        self.maintenance_history = maintenance_history or []
+        self.current_assignment = current_assignment or {}
+        self.images = images or []
+        self.metadata = metadata or {}
+        self.created_at = created_at or datetime.utcnow()
+        self.updated_at = updated_at or datetime.utcnow()
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'Equipment':
+        purchase_price = data.get('purchase_price')
+        if purchase_price is not None:
+            purchase_price = Decimal(str(purchase_price))
+            
+        rental_price = data.get('rental_price')
+        if rental_price is not None:
+            rental_price = Decimal(str(rental_price))
+            
+        return cls(
+            _id=data.get('_id'),
+            name=data.get('name'),
+            organization_id=data.get('organization_id'),
+            type=data.get('type'),
+            status=data.get('status'),
+            quantity=data.get('quantity'),
+            center_id=data.get('center_id'),
+            description=data.get('description'),
+            specifications=data.get('specifications'),
+            condition=data.get('condition'),
+            purchase_date=data.get('purchase_date'),
+            purchase_price=purchase_price,
+            rental_price=rental_price,
+            maintenance_history=data.get('maintenance_history'),
+            current_assignment=data.get('current_assignment'),
+            images=data.get('images'),
+            metadata=data.get('metadata'),
+            created_at=data.get('created_at'),
+            updated_at=data.get('updated_at')
+        )
+
+    def to_dict(self) -> dict:
         return {
-            '_id': str(self._id) if hasattr(self, '_id') else None,
+            '_id': self._id,
             'name': self.name,
+            'organization_id': self.organization_id,
+            'type': self.type,
+            'status': self.status,
+            'quantity': self.quantity,
+            'center_id': self.center_id,
             'description': self.description,
-            'parent_category_id': str(self.parent_category_id) if self.parent_category_id else None,
-            'organization_id': str(self.organization_id) if self.organization_id else None,
-            'is_active': self.is_active,
-            'sort_order': self.sort_order,
+            'specifications': self.specifications,
+            'condition': self.condition,
+            'purchase_date': self.purchase_date,
+            'purchase_price': str(self.purchase_price) if self.purchase_price else None,
+            'rental_price': str(self.rental_price) if self.rental_price else None,
+            'maintenance_history': self.maintenance_history,
+            'current_assignment': self.current_assignment,
+            'images': self.images,
+            'metadata': self.metadata,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
-    
-    @classmethod
-    def from_dict(cls, data):
-        """Create category from dictionary"""
-        category = cls(
-            name=data['name'],
-            description=data.get('description'),
-            parent_category_id=data.get('parent_category_id'),
-            organization_id=data.get('organization_id')
-        )
-        
-        # Set additional attributes
-        if '_id' in data:
-            category._id = data['_id']
-        if 'is_active' in data:
-            category.is_active = data['is_active']
-        if 'sort_order' in data:
-            category.sort_order = data['sort_order']
-        if 'created_at' in data:
-            category.created_at = data['created_at']
-        if 'updated_at' in data:
-            category.updated_at = data['updated_at']
-        
-        return category 

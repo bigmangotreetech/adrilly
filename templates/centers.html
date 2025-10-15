@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Centers Management - Adrilly Sports Coaching{% endblock %}
+{% block title %}Centers Management - botle Sports Coaching{% endblock %}
 
 {% block content %}
 <div class="centers-page">
@@ -45,7 +45,7 @@
                 
                 <div class="filter-controls">
                     <div class="filter-dropdown">
-                        <select name="status" class="filter-select" id="statusFilter">
+                        <select name="status" class="filter-select select2" id="statusFilter" data-placeholder="Filter by status">
                             <option value="">All Status</option>
                             <option value="active" {{ 'selected' if request.args.get('status') == 'active' }}>Active</option>
                             <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' }}>Inactive</option>
@@ -53,7 +53,7 @@
                     </div>
                     
                     <div class="filter-dropdown">
-                        <select name="facility" class="filter-select" id="facilityFilter">
+                        <select name="facility" class="filter-select select2" id="facilityFilter" data-placeholder="Filter by facility">
                             <option value="">All Facilities</option>
                             <option value="yoga" {{ 'selected' if request.args.get('facility') == 'yoga' }}>Yoga</option>
                             <option value="pilates" {{ 'selected' if request.args.get('facility') == 'pilates' }}>Pilates</option>
@@ -197,282 +197,262 @@
 </div>
 
 <!-- Create Center Modal -->
-<div id="createCenterModal" class="modal-overlay-modern" style="display: none;">
-    <div class="modal-modern" style="max-width: 600px;">
-        <div class="modal-header-modern">
-            <div class="modal-title-modern">
-                <h3>Add New Center</h3>
-                <p class="modal-subtitle-modern">Create a new training center</p>
+<div class="modal fade" id="createCenterModal" tabindex="-1" aria-labelledby="createCenterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createCenterModalLabel">Add New Center</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button class="modal-close-modern" onclick="closeCreateCenterModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
         <form id="createCenterForm" method="POST" action="{{ url_for('web.create_center') }}">
-            <div class="modal-body-modern">
-                <div class="form-field-modern">
-                    <label for="center_name" class="form-label-modern">
-                        <span class="label-text">Center Name</span>
-                        <span class="label-required">*</span>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="center_name" class="form-label">
+                        <span>Center Name</span>
+                        <span class="text-danger">*</span>
                     </label>
-                    <input type="text" class="form-input-modern" id="center_name" name="name" 
+                    <input type="text" class="form-control" id="center_name" name="name" 
                            placeholder="Enter center name" required>
-                    <div class="form-feedback-modern" id="centerNameFeedback"></div>
+                    <div class="invalid-feedback" id="centerNameFeedback"></div>
                 </div>
                 
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="center_phone" class="form-label-modern">
-                            <span class="label-text">Phone</span>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="center_phone" class="form-label">
+                            <span>Phone</span>
                         </label>
-                        <input type="tel" class="form-input-modern" id="center_phone" name="contact_phone" 
+                        <input type="tel" class="form-control" id="center_phone" name="contact_phone" 
                                placeholder="Enter phone number">
-                        <div class="form-feedback-modern" id="centerPhoneFeedback"></div>
+                        <div class="invalid-feedback" id="centerPhoneFeedback"></div>
                     </div>
                     
-                    <div class="form-field-modern">
-                        <label for="center_email" class="form-label-modern">
-                            <span class="label-text">Email</span>
+                    <div class="col-md-6 mb-3">
+                        <label for="center_email" class="form-label">
+                            <span>Email</span>
                         </label>
-                        <input type="email" class="form-input-modern" id="center_email" name="contact_email" 
+                        <input type="email" class="form-control" id="center_email" name="contact_email" 
                                placeholder="Enter email address">
-                        <div class="form-feedback-modern" id="centerEmailFeedback"></div>
+                        <div class="invalid-feedback" id="centerEmailFeedback"></div>
                     </div>
                 </div>
                 
-                <div class="form-field-modern">
-                    <label for="center_address" class="form-label-modern">
-                        <span class="label-text">Street Address</span>
+                <div class="mb-3">
+                    <label for="center_address" class="form-label">
+                        <span>Street Address</span>
                     </label>
-                    <input type="text" class="form-input-modern" id="center_address" name="street" 
+                    <input type="text" class="form-control" id="center_address" name="street" 
                            placeholder="Enter street address">
-                    <div class="form-feedback-modern" id="centerAddressFeedback"></div>
+                    <div class="invalid-feedback" id="centerAddressFeedback"></div>
                 </div>
                 
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="center_city" class="form-label-modern">
-                            <span class="label-text">City</span>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="center_city" class="form-label">
+                            <span>City</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="center_city" name="city" 
+                        <input type="text" class="form-control" id="center_city" name="city" 
                                placeholder="Enter city">
-                        <div class="form-feedback-modern" id="centerCityFeedback"></div>
+                        <div class="invalid-feedback" id="centerCityFeedback"></div>
                     </div>
                     
-                    <div class="form-field-modern">
-                        <label for="center_state" class="form-label-modern">
-                            <span class="label-text">State</span>
+                    <div class="col-md-6 mb-3">
+                        <label for="center_state" class="form-label">
+                            <span>State</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="center_state" name="state" 
+                        <input type="text" class="form-control" id="center_state" name="state" 
                                placeholder="Enter state">
-                        <div class="form-feedback-modern" id="centerStateFeedback"></div>
+                        <div class="invalid-feedback" id="centerStateFeedback"></div>
                     </div>
                 </div>
                 
 
-                <div class="form-field-modern">
-                    <label for="activities" class="form-label-modern">
-                        <span class="label-text">Activities Offered</span>
+                <div class="mb-3 d-none">
+                    <label for="activities" class="form-label">
+                        <span>Activities Offered</span>
                     </label>
+                    <small class="form-text">
+                        Enter activities separated by commas or click popular activities below
+                    </small>
                     <div class="activities-section">
-                        <div class="popular-activities">
-                            <div class="popular-activities-header">
-                                <span class="activities-label">Popular Activities</span>
-                                <span class="activities-hint">Click to add</span>
-                            </div>
-                            <div class="activity-tags">
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('Football')">Football</button>
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('Basketball')">Basketball</button>
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('Tennis')">Tennis</button>
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('Swimming')">Swimming</button>
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('Yoga')">Yoga</button>
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('Pilates')">Pilates</button>
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('Boxing')">Boxing</button>
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('MMA')">MMA</button>
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('Dance')">Dance</button>
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('Gymnastics')">Gymnastics</button>
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('Cricket')">Cricket</button>
-                                <button type="button" class="activity-tag" onclick="addCenterActivity('Badminton')">Badminton</button>
-                            </div>
-                        </div>
-                        <input type="text" class="form-input-modern" id="activities" name="activities"
-                               placeholder="Type activities separated by commas or click popular activities above"
+                        <input type="text" class="form-control" id="activities" name="activities"
                                title="Enter activities separated by commas">
-                        <div class="form-help-text">
-                            Enter activities separated by commas or click popular activities above
+
+                        <div class="popular-activities mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-medium">Popular Activities</span>
+                                <span class="text-muted small">Click to add</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('Football')">Football</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('Basketball')">Basketball</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('Tennis')">Tennis</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('Swimming')">Swimming</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('Yoga')">Yoga</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('Pilates')">Pilates</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('Boxing')">Boxing</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('MMA')">MMA</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('Dance')">Dance</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('Gymnastics')">Gymnastics</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('Cricket')">Cricket</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addCenterActivity('Badminton')">Badminton</button>
+                            </div>
                         </div>
+                        
+                        
                     </div>
-                    <div class="form-feedback-modern" id="activitiesFeedback"></div>
+                    <div class="invalid-feedback" id="activitiesFeedback"></div>
                 </div>
             </div>
-            <div class="modal-footer-modern">
-                <button type="button" class="btn btn-secondary-modern" onclick="closeCreateCenterModal()">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     Cancel
                 </button>
-                <button type="button" class="btn btn-primary-modern" onclick="createCenter()" id="createCenterBtn">
+                <button type="button" class="btn btn-primary" onclick="createCenter()" id="createCenterBtn">
                     <span class="btn-text">Create Center</span>
-                    <div class="btn-loading hidden">
-                        <svg class="loading-spinner" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"></circle>
-                            <path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                        </svg>
+                    <div class="btn-loading d-none">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Creating...
                     </div>
                 </button>
             </div>
         </form>
-                    </div>
-                </div>
+        </div>
+    </div>
+</div>
                 
 <!-- View Center Modal -->
-<div id="viewCenterModal" class="modal-overlay-modern" style="display: none;">
-    <div class="modal-modern" style="max-width: 800px;">
-        <div class="modal-header-modern">
-            <div class="modal-title-modern">
-                <h3>Center Details</h3>
-                <p class="modal-subtitle-modern">View center information</p>
-                        </div>
-            <button class="modal-close-modern" onclick="closeViewCenterModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-                        </div>
-        <div class="modal-body-modern">
-            <div class="loading-state" id="viewCenterLoading">
-                <div class="loading-spinner-large">
-                    <svg class="loading-spinner" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"></circle>
-                        <path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
+<div class="modal fade" id="viewCenterModal" tabindex="-1" aria-labelledby="viewCenterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewCenterModalLabel">Center Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-4" id="viewCenterLoading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
-                <p>Loading center details...</p>
+                    <p class="mt-2">Loading center details...</p>
                 </div>
-            <div class="center-details-content" id="centerDetailsContent" style="display: none;">
-                <!-- Content will be populated dynamically -->
+                <div class="center-details-content d-none" id="centerDetailsContent">
+                    <!-- Content will be populated dynamically -->
+                </div>
+                <div class="text-center d-none" id="viewCenterError">
+                    <div class="text-warning mb-3">
+                        <i class="bi bi-exclamation-triangle display-4"></i>
+                    </div>
+                    <h4>Error Loading Center</h4>
+                    <p class="text-muted" id="viewCenterErrorMessage"></p>
+                    <button class="btn btn-primary" onclick="retryLoadCenter()">Try Again</button>
+                </div>
             </div>
-            <div class="error-state" id="viewCenterError" style="display: none;">
-                <div class="error-icon">⚠️</div>
-                <h4>Error Loading Center</h4>
-                <p class="error-message" id="viewCenterErrorMessage"></p>
-                <button class="btn btn-primary-modern" onclick="retryLoadCenter()">Try Again</button>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+                <button class="btn btn-primary" onclick="editCenterFromView()" id="editFromViewBtn">
+                    <i class="bi bi-pencil me-2"></i>
+                    Edit Center
+                </button>
             </div>
-        </div>
-        <div class="modal-footer-modern">
-            <button class="btn btn-secondary-modern" onclick="closeViewCenterModal()">
-                Close
-            </button>
-            <button class="btn btn-primary-modern" onclick="editCenterFromView()" id="editFromViewBtn">
-                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                </svg>
-                Edit Center
-            </button>
         </div>
     </div>
 </div>
 
 <!-- Edit Center Modal -->
-<div id="editCenterModal" class="modal-overlay-modern" style="display: none;">
-    <div class="modal-modern" style="max-width: 600px;">
-        <div class="modal-header-modern">
-            <div class="modal-title-modern">
-                <h3>Edit Center</h3>
-                <p class="modal-subtitle-modern">Update center information</p>
+<div class="modal fade" id="editCenterModal" tabindex="-1" aria-labelledby="editCenterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editCenterModalLabel">Edit Center</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button class="modal-close-modern" onclick="closeEditCenterModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
         <form id="editCenterForm" onsubmit="return false;">
-            <div class="modal-body-modern">
-                <div class="form-grid-modern">
-                    <div class="form-group-modern form-group-full">
-                        <label for="edit_center_name" class="form-label-modern">
-                            <span class="label-text">Center Name</span>
-                            <span class="label-required">*</span>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="edit_center_name" class="form-label">
+                            <span>Center Name</span>
+                            <span class="text-danger">*</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="edit_center_name" name="name" 
+                        <input type="text" class="form-control" id="edit_center_name" name="name" 
                                placeholder="Enter center name" required>
-                        <div class="form-feedback-modern" id="editCenterNameFeedback"></div>
+                        <div class="invalid-feedback" id="editCenterNameFeedback"></div>
                     </div>
                     
-                    <div class="form-group-modern form-group-half">
-                        <label for="edit_center_phone" class="form-label-modern">
-                            <span class="label-text">Phone</span>
+                    <div class="col-md-6 mb-3">
+                        <label for="edit_center_phone" class="form-label">
+                            <span>Phone</span>
                         </label>
-                        <input type="tel" class="form-input-modern" id="edit_center_phone" name="contact_phone" 
+                        <input type="tel" class="form-control" id="edit_center_phone" name="contact_phone" 
                                placeholder="Enter phone number">
-                        <div class="form-feedback-modern" id="editCenterPhoneFeedback"></div>
+                        <div class="invalid-feedback" id="editCenterPhoneFeedback"></div>
                     </div>
                     
-                    <div class="form-group-modern form-group-half">
-                        <label for="edit_center_email" class="form-label-modern">
-                            <span class="label-text">Email</span>
+                    <div class="col-md-6 mb-3">
+                        <label for="edit_center_email" class="form-label">
+                            <span>Email</span>
                         </label>
-                        <input type="email" class="form-input-modern" id="edit_center_email" name="contact_email" 
+                        <input type="email" class="form-control" id="edit_center_email" name="contact_email" 
                                placeholder="Enter email address">
-                        <div class="form-feedback-modern" id="editCenterEmailFeedback"></div>
+                        <div class="invalid-feedback" id="editCenterPhoneFeedback"></div>
                     </div>
                     
-                    <div class="form-group-modern form-group-full">
-                        <label for="edit_center_address" class="form-label-modern">
-                            <span class="label-text">Street Address</span>
+                    <div class="col-12 mb-3">
+                        <label for="edit_center_address" class="form-label">
+                            <span>Street Address</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="edit_center_address" name="street" 
+                        <input type="text" class="form-control" id="edit_center_address" name="street" 
                                placeholder="Enter street address">
-                        <div class="form-feedback-modern" id="editCenterAddressFeedback"></div>
+                        <div class="invalid-feedback" id="editCenterAddressFeedback"></div>
                     </div>
                     
-                    <div class="form-group-modern form-group-half">
-                        <label for="edit_center_city" class="form-label-modern">
-                            <span class="label-text">City</span>
+                    <div class="col-md-6 mb-3">
+                        <label for="edit_center_city" class="form-label">
+                            <span>City</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="edit_center_city" name="city" 
+                        <input type="text" class="form-control" id="edit_center_city" name="city" 
                                placeholder="Enter city">
-                        <div class="form-feedback-modern" id="editCenterCityFeedback"></div>
+                        <div class="invalid-feedback" id="editCenterCityFeedback"></div>
                     </div>
                     
-                    <div class="form-group-modern form-group-half">
-                        <label for="edit_center_state" class="form-label-modern">
-                            <span class="label-text">State</span>
+                    <div class="col-md-6 mb-3">
+                        <label for="edit_center_state" class="form-label">
+                            <span>State</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="edit_center_state" name="state" 
+                        <input type="text" class="form-control" id="edit_center_state" name="state" 
                                placeholder="Enter state">
-                        <div class="form-feedback-modern" id="editCenterStateFeedback"></div>
+                        <div class="invalid-feedback" id="editCenterStateFeedback"></div>
                     </div>
                     
-                    <div class="form-group-modern form-group-full">
-                        <label for="edit_facilities" class="form-label-modern">
-                            <span class="label-text">Facilities</span>
+                    <div class="col-12 mb-3">
+                        <label for="edit_facilities" class="form-label">
+                            <span>Facilities</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="edit_facilities" name="facilities"
+                        <input type="text" class="form-control" id="edit_facilities" name="facilities"
                                placeholder="e.g. Yoga, Pilates, Tennis, Football, Swimming, Gym, Dance">
-                        <div class="form-help-modern">
+                        <div class="form-text">
                             Enter facilities separated by commas (e.g., Yoga, Pilates, Tennis, Football)
                         </div>
-                        <div class="form-feedback-modern" id="editFacilitiesFeedback"></div>
+                        <div class="invalid-feedback" id="editFacilitiesFeedback"></div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer-modern">
-                <button type="button" class="btn btn-secondary-modern" onclick="closeEditCenterModal()">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     Cancel
                 </button>
-                <button type="button" class="btn btn-primary-modern" onclick="updateCenter()" id="updateCenterBtn">
+                <button type="button" class="btn btn-primary" onclick="updateCenter()" id="updateCenterBtn">
                     <span class="btn-text">Save Changes</span>
-                    <div class="btn-loading hidden">
-                        <svg class="loading-spinner" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"></circle>
-                            <path fill="currentColor" opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                        </svg>
+                    <div class="btn-loading d-none">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Saving...
                     </div>
                 </button>
             </div>
         </form>
+        </div>
     </div>
 </div>
 <!-- Action Dropdown Portal -->
@@ -1471,15 +1451,23 @@ function addCenterActivity(activityName) {
 
 // Modal Functions
 function openCreateCenterModal() {
-    const modal = document.getElementById('createCenterModal');
-    modal.style.display = 'flex';
-    clearValidationStates();
-    setupFormValidation();
+    const modalElement = document.getElementById('createCenterModal');
+    if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+        clearValidationStates();
+        setupFormValidation();
+    }
 }
 
 function closeCreateCenterModal() {
-    const modal = document.getElementById('createCenterModal');
-    modal.style.display = 'none';
+    const modalElement = document.getElementById('createCenterModal');
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+    }
     document.getElementById('createCenterForm').reset();
     clearValidationStates();
 }
@@ -1522,7 +1510,7 @@ function deleteCenter(centerId, centerName) {
                 if (row) {
                     row.remove();
                 }
-                Adrilly.showAlert('Center deleted successfully!', 'success');
+                botle.showAlert('Center deleted successfully!', 'success');
             } else {
                 throw new Error(data.message || 'Failed to delete center');
             }
@@ -1532,13 +1520,13 @@ function deleteCenter(centerId, centerName) {
             if (row) {
                 row.style.opacity = '1';
             }
-            Adrilly.showAlert('Error deleting center: ' + error.message, 'error');
+            botle.showAlert('Error deleting center: ' + error.message, 'error');
         });
     }
 }
 
 function exportCenters() {
-    Adrilly.showAlert('Export functionality coming soon!', 'info');
+    botle.showAlert('Export functionality coming soon!', 'info');
 }
 
 // Dropdown Functions
@@ -1634,16 +1622,16 @@ document.addEventListener('keydown', function(event) {
 
 // Form Validation Functions
 function clearValidationStates() {
-    const inputs = document.querySelectorAll('.form-input-modern');
-    const feedbacks = document.querySelectorAll('.form-feedback-modern');
+    const inputs = document.querySelectorAll('.form-control');
+    const feedbacks = document.querySelectorAll('.invalid-feedback');
     
     inputs.forEach(input => {
-        input.classList.remove('error', 'success');
+        input.classList.remove('is-invalid', 'is-valid');
     });
     
     feedbacks.forEach(feedback => {
         feedback.textContent = '';
-        feedback.className = 'form-feedback-modern';
+        feedback.className = 'invalid-feedback';
     });
 }
 
@@ -1724,16 +1712,16 @@ function validatePhone(phone, feedbackId) {
 }
 
 function setFieldError(input, feedback, message) {
-    input.classList.remove('success');
-    input.classList.add('error');
-    feedback.className = 'form-feedback-modern error';
+    input.classList.remove('is-valid');
+    input.classList.add('is-invalid');
+    feedback.className = 'invalid-feedback';
     feedback.textContent = message;
 }
 
 function setFieldSuccess(input, feedback, message) {
-    input.classList.remove('error');
-    input.classList.add('success');
-    feedback.className = 'form-feedback-modern success';
+    input.classList.remove('is-invalid');
+    input.classList.add('is-valid');
+    feedback.className = 'valid-feedback';
     feedback.textContent = message;
 }
 
@@ -1741,8 +1729,8 @@ function clearFieldValidation(inputId, feedbackId) {
     const input = document.getElementById(inputId);
     const feedback = document.getElementById(feedbackId);
     
-    input.classList.remove('error', 'success');
-    feedback.className = 'form-feedback-modern';
+    input.classList.remove('is-invalid', 'is-valid');
+    feedback.className = 'invalid-feedback';
     feedback.textContent = '';
 }
 
@@ -1780,13 +1768,13 @@ function createCenter() {
     .then(data => {
         if (data && data.success) {
     closeCreateCenterModal();
-            Adrilly.showAlert('Center created successfully!', 'success');
+            botle.showAlert('Center created successfully!', 'success');
             setTimeout(() => window.location.reload(), 1000);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        Adrilly.showAlert('Error creating center. Please try again.', 'error');
+        botle.showAlert('Error creating center. Please try again.', 'error');
     })
     .finally(() => {
         // Reset button state
@@ -1803,39 +1791,49 @@ let currentCenterData = null;
 // View Center Modal Functions
 function openViewCenterModal(centerId) {
     currentCenterId = centerId;
-    const modal = document.getElementById('viewCenterModal');
-    const loading = document.getElementById('viewCenterLoading');
-    const content = document.getElementById('centerDetailsContent');
-    const error = document.getElementById('viewCenterError');
-    
-    // Show modal with loading state
-    modal.style.display = 'flex';
-    loading.style.display = 'block';
-    content.style.display = 'none';
-    error.style.display = 'none';
-    
-    // Fetch center data
-    fetch(`/api/centers/${centerId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            currentCenterData = data;
-            displayCenterDetails(data);
-            loading.style.display = 'none';
-            content.style.display = 'block';
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            loading.style.display = 'none';
-            error.style.display = 'block';
-            document.getElementById('viewCenterErrorMessage').textContent = error.message;
-        });
+    const modalElement = document.getElementById('viewCenterModal');
+    if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+        
+        const loading = document.getElementById('viewCenterLoading');
+        const content = document.getElementById('centerDetailsContent');
+        const error = document.getElementById('viewCenterError');
+        
+        // Show loading state
+        loading.classList.remove('d-none');
+        content.classList.add('d-none');
+        error.classList.add('d-none');
+        
+        // Fetch center data
+        fetch(`/api/centers/${centerId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                currentCenterData = data;
+                displayCenterDetails(data);
+                loading.classList.add('d-none');
+                content.classList.remove('d-none');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loading.classList.add('d-none');
+                error.classList.remove('d-none');
+                document.getElementById('viewCenterErrorMessage').textContent = error.message;
+            });
+    }
 }
 
 function closeViewCenterModal() {
-    document.getElementById('viewCenterModal').style.display = 'none';
+    const modalElement = document.getElementById('viewCenterModal');
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+    }
     currentCenterId = null;
     currentCenterData = null;
 }
@@ -1942,11 +1940,14 @@ function editCenterFromView() {
 
 function openEditCenterModal(centerId, centerData = null) {
     currentCenterId = centerId;
-    const modal = document.getElementById('editCenterModal');
+    const modalElement = document.getElementById('editCenterModal');
     
     if (centerData) {
         populateEditForm(centerData);
-        modal.style.display = 'flex';
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        }
         setupEditFormValidation();
     } else {
         // Fetch center data if not provided
@@ -1957,18 +1958,27 @@ function openEditCenterModal(centerId, centerData = null) {
                     throw new Error(data.error);
                 }
                 populateEditForm(data);
-                modal.style.display = 'flex';
+                if (modalElement) {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                }
                 setupEditFormValidation();
             })
             .catch(error => {
                 console.error('Error:', error);
-                Adrilly.showAlert('Error loading center data: ' + error.message, 'error');
+                botle.showAlert('Error loading center data: ' + error.message, 'error');
             });
     }
 }
 
 function closeEditCenterModal() {
-    document.getElementById('editCenterModal').style.display = 'none';
+    const modalElement = document.getElementById('editCenterModal');
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
+    }
     document.getElementById('editCenterForm').reset();
     clearEditValidationStates();
     currentCenterId = null;
@@ -1985,16 +1995,16 @@ function populateEditForm(center) {
 }
 
 function clearEditValidationStates() {
-    const inputs = document.querySelectorAll('#editCenterModal .form-input-modern');
-    const feedbacks = document.querySelectorAll('#editCenterModal .form-feedback-modern');
+    const inputs = document.querySelectorAll('#editCenterModal .form-control');
+    const feedbacks = document.querySelectorAll('#editCenterModal .invalid-feedback');
     
     inputs.forEach(input => {
-        input.classList.remove('error', 'success');
+        input.classList.remove('is-invalid', 'is-valid');
     });
     
     feedbacks.forEach(feedback => {
         feedback.textContent = '';
-        feedback.className = 'form-feedback-modern';
+        feedback.className = 'invalid-feedback';
     });
 }
 
@@ -2123,7 +2133,7 @@ function updateCenter() {
     .then(data => {
         if (data.success) {
             closeEditCenterModal();
-            Adrilly.showAlert('Center updated successfully!', 'success');
+            botle.showAlert('Center updated successfully!', 'success');
             setTimeout(() => window.location.reload(), 1000);
         } else {
             throw new Error(data.error || 'Failed to update center');
@@ -2131,7 +2141,7 @@ function updateCenter() {
     })
     .catch(error => {
         console.error('Error:', error);
-        Adrilly.showAlert('Error updating center: ' + error.message, 'error');
+        botle.showAlert('Error updating center: ' + error.message, 'error');
     })
     .finally(() => {
         // Reset button state

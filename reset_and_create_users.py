@@ -17,14 +17,105 @@ def reset_and_create_users():
         
         print("🧹 Clearing existing users...")
         
+        
+        collections = ['activities', 'activity_links', 'attendance', 'bookings', 'cancellations', 'centers', 'class_pictures', 'classes', 'comments', 'equipment', 'likes', 'notifications', 'org_holidays', 'organizations', 'otps', 'payment_links', 'payment_plans', 'payments', 'posts', 'progress', 'rsvps', 'rubrics', 'schedules', 'time_slots']
+        for collection in collections:
+            result = mongo.db[collection].delete_many({})
+            print(f"   Deleted {result.deleted_count} existing {collection}")
+
+        result = mongo.db.activities.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing activities")
+
+        result = mongo.db.activity_links.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing timeslots")
+        
+        result = mongo.db.attendance.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing attendance")
+
+        result = mongo.db.bookings.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing bookings")
+        
+        result = mongo.db.cancellations.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing cancellations")
+        
+        result = mongo.db.centers.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing centers")
+
+        result = mongo.db.class_pictures.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing class pictures")
+
+        result = mongo.db.classes.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing classes")
+
+        result = mongo.db.comments.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing comments")
+
+
+        result = mongo.db.equipment.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing equipment")
+
+        # result = mongo.db.holidays.delete_many({})
+        # print(f"   Deleted {result.deleted_count} existing holidays")
+
+        result = mongo.db.likes.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing likes")
+
+        result = mongo.db.notifications.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing notifications")
+
+        result = mongo.db.org_holidays.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing org holidays")
+
+        # Clear existing organizations to start fresh
+        result = mongo.db.organizations.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing organizations")
+
+        result = mongo.db.otps.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing otps")
+
+        result = mongo.db.payment_links.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing payment links")
+
+        result = mongo.db.payment_plans.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing payment plans")
+
+        result = mongo.db.payments.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing payments")
+
+
+        result = mongo.db.posts.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing posts")
+
+        result = mongo.db.progress.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing progress")
+
+        result = mongo.db.rsvps.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing profile data")
+
+        result = mongo.db.rubrics.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing rubrics")
+
+        result = mongo.db.schedules.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing schedules")
+
+        result = mongo.db.time_slots.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing time slots")
+
+        result = mongo.db.payments.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing payments")
+
         # Clear all existing users
         result = mongo.db.users.delete_many({})
         print(f"   Deleted {result.deleted_count} existing users")
         
-        # Clear existing organizations to start fresh
-        result = mongo.db.organizations.delete_many({})
-        print(f"   Deleted {result.deleted_count} existing organizations")
-        
+        result = mongo.db.groups.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing groups") 
+
+        result = mongo.db.equipment.delete_many({})
+        print(f"   Deleted {result.deleted_count} existing equipment")
+
+
+
         print("\n🏢 Creating default organization...")
         # Create a default organization
         default_org = Organization(
@@ -32,7 +123,6 @@ def reset_and_create_users():
             owner_id=None,
             contact_info={'email': 'admin@testsports.com', 'phone': '1234567890'},
             address={'street': '123 Test St', 'city': 'Test City', 'state': 'TC', 'zip': '12345'},
-            sports=['football', 'basketball', 'tennis']
         )
         result = mongo.db.organizations.insert_one(default_org.to_dict())
         default_org._id = result.inserted_id
@@ -46,6 +136,7 @@ def reset_and_create_users():
             {
                 'phone_number': '1000000000',
                 'name': 'Super Admin',
+                'email': 'superadmin@testsports.com',
                 'role': 'super_admin',
                 'password': 'admin123',
                 'organization_id': None  # Super admin doesn't need org
@@ -53,6 +144,7 @@ def reset_and_create_users():
             {
                 'phone_number': '1234567890',
                 'name': 'Org Admin',
+                'email': 'orgadmin@testsports.com',
                 'role': 'org_admin', 
                 'password': 'admin123',
                 'organization_id': org_id
@@ -60,6 +152,7 @@ def reset_and_create_users():
             {
                 'phone_number': '1234567891',
                 'name': 'Coach Admin',
+                'email': 'coachadmin@testsports.com',
                 'role': 'coach_admin',
                 'password': 'coach123',
                 'organization_id': org_id
@@ -67,6 +160,7 @@ def reset_and_create_users():
             {
                 'phone_number': '1234567892',
                 'name': 'Senior Coach',
+                'email': 'seniorcoach@testsports.com',
                 'role': 'coach',
                 'password': 'coach123',
                 'organization_id': org_id
@@ -74,6 +168,7 @@ def reset_and_create_users():
             {
                 'phone_number': '1234567893',
                 'name': 'Basketball Coach',
+                'email': 'basketballcoach@testsports.com',
                 'role': 'coach',
                 'password': 'coach123',
                 'organization_id': org_id
@@ -81,13 +176,15 @@ def reset_and_create_users():
             {
                 'phone_number': '9876543210',
                 'name': 'Test Student 1',
+                'email': 'student1@testsports.com',
                 'role': 'student',
                 'password': 'student123',
                 'organization_id': org_id
             },
             {
                 'phone_number': '9876543211',
-                'name': 'Test Student 2', 
+                'name': 'Test Student 2',
+                'email': 'student2@testsports.com',
                 'role': 'student',
                 'password': 'student123',
                 'organization_id': org_id
@@ -95,6 +192,7 @@ def reset_and_create_users():
             {
                 'phone_number': '9876543212',
                 'name': 'Test Student 3',
+                'email': 'student3@testsports.com',
                 'role': 'student', 
                 'password': 'student123',
                 'organization_id': org_id
@@ -102,6 +200,7 @@ def reset_and_create_users():
             {
                 'phone_number': '5555555555',
                 'name': 'Quick Test User',
+                'email': 'quicktest@testsports.com',
                 'role': 'coach',
                 'password': 'test123',
                 'organization_id': org_id
@@ -116,6 +215,7 @@ def reset_and_create_users():
             new_user = User(
                 phone_number=user_data['phone_number'],
                 name=user_data['name'],
+                email=user_data['email'],
                 role=user_data['role'],
                 password=user_data['password'],
                 organization_id=user_data['organization_id']

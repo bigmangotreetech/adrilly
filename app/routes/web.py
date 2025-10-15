@@ -1,11 +1,42 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, jsonify
 from bson import ObjectId
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, time
+from dateutil.relativedelta import relativedelta
 from app.extensions import mongo
 from app.services.auth_service import AuthService
 from app.models.user import User
 from functools import wraps
 from app.utils.auth import jwt_or_session_required, get_current_user_info
+from app.services.holiday_service import HolidayService
+from app.routes.class_cancellation import HolidaySchema
+from app.services.whatsapp_service import WhatsAppService
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from marshmallow import Schema, fields, ValidationError
+import traceback
+from daily_class_creator import DailyClassCreator
+import secrets
+from app.models.activity_links import ActivityLink
+from app.services.file_upload_service import FileUploadService
+from app.helpers.app_helper import get_user_info_from_session_or_claims
+from app.services.enhanced_whatsapp_service import EnhancedWhatsAppService
+
+
+
+def get_class_info(class_id):
+    """Get detailed information about a class"""
+    class_doc = mongo.db.classes.find_one({'_id': ObjectId(class_id)})
+    if not class_doc:
+        return None
+    
+    schedule = mongo.db.schedules.find_one({'_id': class_doc['schedule_id']})
+    activity = mongo.db.activities.find_one({'_id': schedule['activity_id']})
+    center = mongo.db.centers.find_one({'_id': schedule['center_id']})
+    
+    return {
+        'activity_name': activity['name'],
+        'schedule_time': schedule['time'].strftime('%I:%M %p'),
+        'center_name': center['name']
+    }
 
 def serialize_for_json(data):
     """Convert MongoDB documents to JSON-serializable format"""
@@ -39,10 +70,29 @@ def login_required(f):
         if 'user_id' not in session:
             flash('Please log in to access this page.', 'error')
             return redirect(url_for('web.login'))
+        
+        # Handle organization_ids for multi-organization support
         if 'organization_id' not in session or session['organization_id'] is None:
             user = mongo.db.users.find_one({'_id': ObjectId(session['user_id'])})
-            session['organization_id'] = str(user['organization_id'])
-        print(session['organization_id'])
+            if user is None:
+                return redirect(url_for('web.logout'))
+            
+            # Try to get organization_ids first (new field), then fallback to organization_id
+            org_ids = user.get('organization_ids', [])
+            if not org_ids and user.get('organization_id'):
+                org_ids = [user['organization_id']]
+            
+            if org_ids:
+                # Store all organization_ids in session
+                session['organization_ids'] = [str(oid) for oid in org_ids]
+                # Set active organization to first one
+                session['organization_id'] = str(org_ids[0])
+            else:
+                # User has no organizations
+                session['organization_ids'] = []
+                session['organization_id'] = None
+        
+        print(session.get('organization_id'))
         return f(*args, **kwargs)
     return wrapper
 
@@ -63,12 +113,18 @@ def role_required(roles):
         return wrapper
     return decorator
 
+
+@web_bp.route('/test-whatsapp', methods=['GET'])
+def test_whatsapp():
+    """Test WhatsApp endpoint"""
+    whatsapp_service = WhatsAppService()
+    whatsapp_service.send_message('+919945613932', 'Hello, this is a test message')
+    return jsonify({'message': 'WhatsApp message sent'}), 200
+
 @web_bp.route('/')
 def index():
     """Landing page"""
-    if 'user_id' in session:
-        return redirect(url_for('web.dashboard'))
-    return redirect(url_for('web.login'))
+    return render_template('index.html')
 
 @web_bp.route('/login', methods=['GET'])
 def login():
@@ -115,8 +171,18 @@ def verify_code():
             session['role'] = user_data.get('role', 'student')
             session['phone_number'] = user_data.get('phone_number', '')
             
-            # Set organization_id if available
-            if user_data.get('organization_id'):
+            # Handle multiple organizations - store all organization_ids and set active one
+            organization_ids = user_data.get('organization_ids', [])
+            if not organization_ids and user_data.get('organization_id'):
+                # Backward compatibility: if only organization_id exists, use it
+                organization_ids = [str(user_data['organization_id'])]
+            
+            session['organization_ids'] = [str(oid) for oid in organization_ids] if organization_ids else []
+            
+            # Set active organization (default to first one)
+            if organization_ids:
+                session['organization_id'] = str(organization_ids[0])
+            elif user_data.get('organization_id'):
                 session['organization_id'] = str(user_data['organization_id'])
             
             # Return success response for AJAX
@@ -153,8 +219,18 @@ def legacy_login():
             session['last_name'] = user.get('last_name', '')
             session['role'] = user.get('role', 'student')
             
-            # Set organization_id if available
-            if user.get('organization_id'):
+            # Handle multiple organizations - store all organization_ids and set active one
+            organization_ids = user.get('organization_ids', [])
+            if not organization_ids and user.get('organization_id'):
+                # Backward compatibility: if only organization_id exists, use it
+                organization_ids = [str(user['organization_id'])]
+            
+            session['organization_ids'] = [str(oid) for oid in organization_ids] if organization_ids else []
+            
+            # Set active organization (default to first one)
+            if organization_ids:
+                session['organization_id'] = str(organization_ids[0])
+            elif user.get('organization_id'):
                 session['organization_id'] = str(user['organization_id'])
             
             flash(f'Welcome back, {user.get("first_name", "User")}!', 'success')
@@ -211,7 +287,6 @@ def register():
     return render_template('register.html')
 
 @web_bp.route('/logout')
-@login_required
 def logout():
     """Logout"""
     session.clear()
@@ -225,12 +300,23 @@ def dashboard():
     try:
         user_role = session.get('role')
         user_name = session.get('first_name', 'User')
+        current_user = mongo.db.users.find_one({'_id': ObjectId(session.get('user_id'))})
+        org_id = ObjectId(session.get('organization_id'))
+        import time
+        # Get today's date
+        today = datetime.now()
+        start_of_day = datetime.combine(today.date(), datetime.min.time())
+        end_of_day = datetime.combine(today.date(), datetime.max.time())
+        start_of_month = datetime(today.year, today.month, 1)
         
-        # Get user-specific stats based on role
-        stats = {}\
+        # Initialize stats
+        stats = {}
+        weekly_schedule = []
+        todays_classes = []
+        updates = []
+        attendance_data = []
+        revenue_data = []
 
-
-        
         if user_role == 'super_admin':
             # Super admin stats
             total_orgs = mongo.db.organizations.count_documents({})
@@ -238,59 +324,303 @@ def dashboard():
             active_orgs = mongo.db.organizations.count_documents({'is_active': True})
             
             stats = {
-                'total_organizations': total_orgs,
-                'total_users': total_users,
-                'active_organizations': active_orgs,
-                'pending_requests': 0  # Placeholder
+                'today_classes': mongo.db.classes.count_documents({'date': {'$gte': start_of_day, '$lte': end_of_day}}),
+                'attendance_rate': 85,  # Calculate from actual data
+                'no_shows': mongo.db.attendance.count_documents({'date': {'$gte': start_of_day}, 'status': 'absent'}),
+                'monthly_revenue': sum(p.get('amount', 0) for p in mongo.db.payments.find({'date': {'$gte': start_of_month}}))
             }
+            
+            # Get recent updates
+            updates = list(mongo.db.announcements.find().sort('created_at', -1).limit(5))
         
         elif user_role in ['org_admin', 'coach_admin']:
-            # Organization admin stats
-            org_id = session.get('organization_id')
-            if org_id:
-                total_users = mongo.db.users.count_documents({'organization_id': org_id})
-                total_coaches = mongo.db.users.count_documents({'organization_id': org_id, 'role': {'$in': ['coach', 'coach_admin']}})
-                total_students = mongo.db.users.count_documents({'organization_id': org_id, 'role': 'student'})
-                total_centers = mongo.db.centers.count_documents({'organization_id': org_id}) if 'centers' in mongo.db.list_collection_names() else 0
+            # Get today's classes
+            todays_classes = list(mongo.db.classes.find({
+                'organization_id': org_id,
+                'scheduled_at': {'$gte': start_of_day, '$lte': end_of_day}
+            }))
+            
+            # Get next upcoming class
+            next_class_data = mongo.db.classes.find_one({
+                'organization_id': org_id,
+                'scheduled_at': {'$gt': datetime.now()},
+                'status': {'$ne': 'cancelled'}
+            }, sort=[('scheduled_at', 1)])
+
+            if next_class_data:
+                # Get coach details
+                coach = mongo.db.users.find_one({'_id': next_class_data.get('coach_id')})
+                coach_name = f"{coach.get('first_name', '')} {coach.get('last_name', '')}" if coach else 'Unassigned'
                 
-                stats = {
-                    'total_users': total_users,
-                    'total_coaches': total_coaches,
+                # Get center details
+                center = mongo.db.centers.find_one({'_id': next_class_data.get('center_id')})
+                center_name = center.get('name', 'No location') if center else 'No location'
+                
+                # Get enrollment count
+                total_students = mongo.db.class_enrollments.count_documents({
+                    'class_id': next_class_data['_id']
+                })
+                
+                # Get RSVP count
+                rsvp_count = mongo.db.class_enrollments.count_documents({
+                    'class_id': next_class_data['_id'],
+                    'rsvp_status': 'confirmed'
+                })
+                
+                next_class = {
+                    'title': next_class_data.get('title', 'Untitled Class'),
+                    'time': next_class_data['scheduled_at'].strftime('%I:%M %p'),
                     'total_students': total_students,
-                    'total_centers': total_centers
+                    'rsvp_count': rsvp_count,
+                    'coach_name': coach_name,
+                    'center': center_name
                 }
-                print(stats)
+            else:
+                next_class = None
+            
+            # Calculate attendance rate
+            total_attendance = mongo.db.attendance.count_documents({'organization_id': org_id})
+            present_attendance = mongo.db.attendance.count_documents({'organization_id': org_id, 'status': 'present'})
+            attendance_rate = (present_attendance / total_attendance * 100) if total_attendance > 0 else 0
+            
+            # Get monthly revenue
+            monthly_revenue = sum(p.get('amount', 0) for p in mongo.db.payments.find({
+                'organization_id': org_id,
+                'date': {'$gte': start_of_month}
+            }))
+            
+            stats = {
+                'today_classes': len(todays_classes),
+                'attendance_rate': round(attendance_rate, 1),
+                'no_shows': mongo.db.attendance.count_documents({
+                    'organization_id': org_id,
+                    'date': {'$gte': start_of_day},
+                    'status': 'absent'
+                }),
+                'monthly_revenue': monthly_revenue
+            }
+            
+            # Get weekly schedule
+            # Get current week's start and end
+            today = datetime.now()
+            week_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
+            
+            weekly_schedule = list(mongo.db.classes.find({
+                'organization_id': org_id,
+                'scheduled_at': {'$gte': week_start, '$lte': week_end}
+            }).sort('scheduled_at', 1))
+            
+            
+            # Format classes for display
+            for class_ in todays_classes:
+                print(class_)
+                checked_in = mongo.db.attendance.count_documents({
+                    'class_id': class_['_id'],
+                    'status': 'present'
+                })
+                total_students = mongo.db.class_enrollments.count_documents({
+                    'class_id': class_['_id']
+                })
+                class_['checked_in'] = checked_in
+                class_['total'] = total_students
+            
+            # Get recent updates
+            updates = list(mongo.db.announcements.find({
+                'organization_id': org_id
+            }).sort('created_at', -1).limit(5))
+            
+            # Get attendance trend data (last 7 days)
+            attendance_labels = []
+            attendance_data = []
+            for i in range(6, -1, -1):
+                date = today - timedelta(days=i)
+                total = mongo.db.attendance.count_documents({
+                    'organization_id': org_id,
+                    'scheduled_at': {'$gte': datetime.combine(date.date(), datetime.min.time()),
+                            '$lte': datetime.combine(date.date(), datetime.max.time())}
+                })
+                present = mongo.db.attendance.count_documents({
+                    'organization_id': org_id,
+                    'scheduled_at': {'$gte': datetime.combine(date.date(), datetime.min.time()),
+                            '$lte': datetime.combine(date.date(), datetime.max.time())},
+                    'status': 'present'
+                })
+                rate = (present / total * 100) if total > 0 else 0
+                attendance_labels.append(date.strftime('%d %b'))
+                attendance_data.append(round(rate, 1))
+            
+            # Get revenue trend data (last 6 months)
+            revenue_labels = []
+            revenue_data = []
+            for i in range(5, -1, -1):
+                month_date = today - relativedelta(months=i)
+                month_start = datetime(month_date.year, month_date.month, 1)
+                month_end = (month_start + relativedelta(months=1)) - timedelta(days=1)
+                revenue = sum(p.get('amount', 0) for p in mongo.db.payments.find({
+                    'organization_id': org_id,
+                    'date': {'$gte': month_start, '$lte': month_end}
+                }))
+                revenue_labels.append(month_date.strftime('%b %Y'))
+                revenue_data.append(revenue)
         
         elif user_role == 'coach':
-            # Coach stats
-            user_id = session.get('user_id')
-            # Add coach-specific stats here
+            # Get today's classes for this coach
+            todays_classes = list(mongo.db.classes.find({
+                'organization_id': org_id,
+                'coach_id': ObjectId(session.get('user_id')),
+                'scheduled_at': {'$gte': start_of_day, '$lte': end_of_day}
+            }))
+            
+            # Calculate attendance rate for coach's classes
+            total_attendance = mongo.db.attendance.count_documents({
+                'organization_id': org_id,
+                'coach_id': ObjectId(session.get('user_id'))
+            })
+            present_attendance = mongo.db.attendance.count_documents({
+                'organization_id': org_id,
+                'coach_id': ObjectId(session.get('user_id')),
+                'status': 'present'
+            })
+            attendance_rate = (present_attendance / total_attendance * 100) if total_attendance > 0 else 0
+            
             stats = {
-                'my_classes': 0,  # Placeholder
-                'total_students': 0,  # Placeholder
-                'attendance_rate': '0%',  # Placeholder
-                'upcoming_sessions': 0  # Placeholder
+                'today_classes': len(todays_classes),
+                'attendance_rate': round(attendance_rate, 1),
+                'no_shows': mongo.db.attendance.count_documents({
+                    'organization_id': org_id,
+                    'coach_id': ObjectId(session.get('user_id')),
+                    'date': {'$gte': start_of_day},
+                    'status': 'absent'
+                }),
+                'monthly_revenue': 0  # Coaches don't see revenue
             }
+            
+            # Get weekly schedule for this coach
+            # Get current week's start and end
+            today = datetime.now()
+            week_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
+            
+            weekly_schedule = list(mongo.db.classes.find({
+                'organization_id': org_id,
+                'coach_id': ObjectId(session.get('user_id')),
+                'scheduled_at': {'$gte': week_start, '$lte': week_end}
+            }).sort('scheduled_at', 1))
+            
+            # Format classes for display
+            for class_ in todays_classes:
+                checked_in = mongo.db.attendance.count_documents({
+                    'class_id': class_['_id'],
+                    'status': 'present'
+                })
+                total_students = mongo.db.class_enrollments.count_documents({
+                    'class_id': class_['_id']
+                })
+                class_['checked_in'] = checked_in
+                class_['total'] = total_students
+            
+            # Get recent updates
+            updates = list(mongo.db.announcements.find({
+                'organization_id': org_id
+            }).sort('created_at', -1).limit(5))
+            
+            # Get attendance trend data (last 7 days)
+            attendance_labels = []
+            attendance_data = []
+            for i in range(6, -1, -1):
+                date = today - timedelta(days=i)
+                total = mongo.db.attendance.count_documents({
+                    'organization_id': org_id,
+                    'coach_id': ObjectId(session.get('user_id')),
+                    'scheduled_at': {'$gte': datetime.combine(date.date(), datetime.min.time()),
+                            '$lte': datetime.combine(date.date(), datetime.max.time())}
+                })
+                present = mongo.db.attendance.count_documents({
+                    'organization_id': org_id,
+                    'coach_id': ObjectId(session.get('user_id')),
+                    'scheduled_at': {'$gte': datetime.combine(date.date(), datetime.min.time()),
+                            '$lte': datetime.combine(date.date(), datetime.max.time())},
+                    'status': 'present'
+                })
+                rate = (present / total * 100) if total > 0 else 0
+                attendance_labels.append(date.strftime('%d %b'))
+                attendance_data.append(round(rate, 1))
+            
+            # Coaches don't see revenue data
+            revenue_labels = []
+            revenue_data = []
+
+        # Format weekly schedule for display
+        # Get the current week's start (Monday)
+        today = datetime.now()
+        current_weekday = today.weekday()  # Monday is 0, Sunday is 6
+        week_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+        formatted_schedule = {'days': []}
         
-        elif user_role == 'student':
-            # Student stats
-            user_id = session.get('user_id')
-            # Add student-specific stats here
-            stats = {
-                'enrolled_classes': 0,  # Placeholder
-                'attendance_rate': '0%',  # Placeholder
-                'next_class': 'No upcoming classes',  # Placeholder
-                'payments_due': 0  # Placeholder
+        # Create entries for each day of the week
+        for day_offset in range(7):
+            current_date = week_start + timedelta(days=day_offset)
+            day_classes = [c for c in weekly_schedule if c['scheduled_at'].date() == current_date.date()]
+            
+            day_data = {
+                'name': current_date.strftime('%A'),  # Full day name
+                'date': current_date.strftime('%b %d'),  # Month and day
+                'is_today': current_date.date() == today.date(),
+                'class_count': len(day_classes),
+                'classes': []
             }
+            
+            # Format classes for this day
+            for class_ in day_classes:
+                day_data['classes'].append({
+                    'title': class_.get('title', 'Untitled Class'),
+                    'time': class_['scheduled_at'].strftime('%I:%M %p')
+                })
+            
+            formatted_schedule['days'].append(day_data)
         
-        return render_template('dashboard.html', 
-                             user_role=user_role, 
-                             user_name=user_name, 
-                             stats=stats)
-    
+        # Replace the weekly_schedule with our formatted version
+        weekly_schedule = formatted_schedule
+
+        # Format updates for display
+        for update in updates:
+            update['time'] = update['created_at'].strftime('%d %b, %I:%M %p')
+
+        return render_template('dashboard.html',
+            stats=stats,
+            weekly_schedule=weekly_schedule,
+            todays_classes=todays_classes,
+            updates=updates,
+            attendance_labels=attendance_labels,
+            attendance_data=attendance_data,
+            revenue_labels=revenue_labels,
+            revenue_data=revenue_data,
+            next_class=next_class
+        )
+
+       
     except Exception as e:
         current_app.logger.error(f"Dashboard error: {str(e)}")
         return render_template('dashboard.html', stats={})
+
+def _get_pagination_range(current_page, total_pages, window=5):
+    """Generate a smart pagination range with ellipsis support"""
+    if total_pages <= window:
+        return list(range(1, total_pages + 1))
+    
+    # Calculate the range around current page
+    half_window = window // 2
+    start = max(1, current_page - half_window)
+    end = min(total_pages, current_page + half_window)
+    
+    # Adjust if we're near the beginning or end
+    if start <= 3:
+        return list(range(1, min(window + 1, total_pages + 1)))
+    elif end >= total_pages - 2:
+        return list(range(max(1, total_pages - window + 1), total_pages + 1))
+    else:
+        return list(range(start, end + 1))
 
 @web_bp.route('/users')
 @login_required
@@ -299,23 +629,29 @@ def users():
     """Users management page"""
     try:
         user_role = session.get('role')
-        
         # Build query based on user role
         query = {}
         if user_role in ['org_admin', 'coach_admin']:
             org_id = session.get('organization_id')
             if org_id:
-                query['organization_id'] = org_id
+                # Check if organization_id is in user's organization_ids array (multi-org support)
+                query['organization_ids'] = ObjectId(org_id)
         
-        # Get search and filter parameters
-        search = request.args.get('search', '')
+        # Get search and filter parameters with validation
+        search = request.args.get('search', '').strip()[:100]  # Limit search length
         role_filter = request.args.get('role', '')
         status_filter = request.args.get('status', '')
-        org_filter = request.args.get('organization', '')  # New organization filter
+        org_filter = request.args.get('organization', '')
         sort_by = request.args.get('sort', 'name')
         sort_order = request.args.get('order', 'asc')
-        page = int(request.args.get('page', 1))
-        per_page = 20
+        
+        # Pagination parameters with validation
+        try:
+            page = max(1, int(request.args.get('page', 1)))
+            per_page = min(100, max(5, int(request.args.get('per_page', 20))))  # Allow customizable page size
+        except (ValueError, TypeError):
+            page = 1
+            per_page = 20
         
         # Handle search with proper field name support
         if search:
@@ -336,7 +672,9 @@ def users():
         
         # Organization filter (only for super admin)
         if org_filter and user_role == 'super_admin':
-            query['organization_id'] = ObjectId(org_filter)
+            query['organization_ids'] = ObjectId(org_filter)
+        else:
+            query['organization_ids'] = ObjectId(session.get('organization_id'))
         
         # Handle sorting
         sort_direction = 1 if sort_order == 'asc' else -1
@@ -355,15 +693,17 @@ def users():
         # Get total count for pagination
         total_count = mongo.db.users.count_documents(query)
         
-        # Calculate pagination
+        # Calculate pagination with bounds checking
+        total_pages = max(1, (total_count + per_page - 1) // per_page)
+        page = min(page, total_pages)  # Ensure page doesn't exceed total pages
         skip = (page - 1) * per_page
-        total_pages = (total_count + per_page - 1) // per_page
         
         # Get users with pagination and sorting
+        print(query)
         users_cursor = mongo.db.users.find(query).sort(mongo_sort_field, sort_direction).skip(skip).limit(per_page)
         users = list(users_cursor)
         
-        # Create pagination info
+        # Create comprehensive pagination info
         pagination = {
             'page': page,
             'per_page': per_page,
@@ -373,7 +713,11 @@ def users():
             'has_next': page < total_pages,
             'prev_num': page - 1 if page > 1 else None,
             'next_num': page + 1 if page < total_pages else None,
-            'iter_pages': lambda: range(max(1, page - 2), min(total_pages + 1, page + 3))
+            'start_index': skip + 1 if total_count > 0 else 0,
+            'end_index': min(skip + per_page, total_count),
+            'iter_pages': _get_pagination_range(page, total_pages),
+            'per_page_options': [10, 20, 50, 100],
+            'showing_all': total_count <= per_page
         }
         
         # Convert ObjectId to string for template
@@ -389,13 +733,43 @@ def users():
             organizations = list(orgs_cursor)
             for org in organizations:
                 org['_id'] = str(org['_id'])
+
+        subscriptions = mongo.db.subscriptions.find({'organization_id': ObjectId(session.get('organization_id'))})
+        subscriptions = list(subscriptions)
+        for subscription in subscriptions:
+            subscription['_id'] = str(subscription['_id'])
+            if subscription.get('organization_id'):
+                subscription['organization_id'] = str(subscription['organization_id'])
+
         
-        return render_template('users.html', users=users, pagination=pagination, organizations=organizations)
+        return render_template('users.html', users=users, pagination=pagination, organizations=organizations, subscriptions=subscriptions)
     
     except Exception as e:
         current_app.logger.error(f"Users page error: {str(e)}")
         flash('Error loading users.', 'error')
         return render_template('users.html', users=[], organizations=[])
+    
+@web_bp.route('/api/dashboard/stats/<user_id>', methods=['GET'])
+@login_required
+def user_stats(user_id):
+    print("Getting user stats for user: ", user_id)
+    """User stats page"""
+    user = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+    if not user:
+        flash('User not found.', 'error')
+        print("User not found")
+        return jsonify({'error': 'User not found'}), 404
+    if user['role'] == 'coach':
+        print("Getting classes for cocah")
+        classes_today = mongo.db.classes.count_documents({'coach_id': ObjectId(user_id), 'scheduled_at': {'$gte': datetime.now()}})
+        from datetime import datetime, timedelta
+        start_of_week = datetime.now() - timedelta(days=datetime.now().weekday())
+        end_of_week = start_of_week + timedelta(days=7) 
+        this_weeks_classes = mongo.db.classes.count_documents({'coach_id': ObjectId(user_id), 'scheduled_at': {'$gte': start_of_week, '$lte': end_of_week}})
+        print("Classes today: ", classes_today)
+        print("Classes this week: ", this_weeks_classes)
+        return jsonify({'todaysClasses': classes_today, 'thisWeeksClasses': this_weeks_classes})
+    
 
 @web_bp.route('/users/<user_id>')
 @login_required
@@ -426,6 +800,85 @@ def user_detail(user_id):
     except Exception as e:
         current_app.logger.error(f"User detail error: {str(e)}")
         flash('Error loading user details.', 'error')
+        return redirect(url_for('web.users'))
+
+@web_bp.route('/user-dashboard')
+@login_required
+def user_dashboard():
+    """User dashboard page with classes, payments, and child profiles"""
+    try:
+        user_id = request.args.get('user_id')
+        organization_id = request.args.get('organization_id')
+        
+        # Get user data
+        user_data = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+        print(user_data)
+        if not user_data:
+            flash('User not found.', 'error')
+            return redirect(url_for('web.dashboard'))
+        
+        # Convert ObjectIds to strings
+        user_data['_id'] = str(user_data['_id'])
+        if user_data.get('organization_id'):
+            user_data['organization_id'] = str(user_data['organization_id'])
+        
+        # Get organization data
+        organization_data = None
+        if organization_id:
+            organization_data = mongo.db.organizations.find_one({'_id': ObjectId(organization_id)})
+            if organization_data:
+                organization_data['_id'] = str(organization_data['_id'])
+        
+        return render_template('user_dashboard.html', user=user_data, organization=organization_data)
+    
+    except Exception as e:
+        current_app.logger.error(f"User dashboard error: {str(e)}")
+        flash('Error loading dashboard.', 'error')
+        return redirect(url_for('web.dashboard'))
+
+@web_bp.route('/user-dashboard/<user_id>')
+@login_required
+def user_dashboard_by_id(user_id):
+    """User dashboard page for admins to view any user"""
+    try:
+        current_user_id = session.get('user_id')
+        current_role = session.get('role')
+        organization_id = session.get('organization_id')
+        
+        # Check permissions
+        if current_role not in ['super_admin', 'org_admin', 'center_admin', 'coach'] and str(current_user_id) != str(user_id):
+            flash('You do not have permission to view this dashboard.', 'error')
+            return redirect(url_for('web.dashboard'))
+        
+        # Get user data
+        user_data = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+        if not user_data:
+            flash('User not found.', 'error')
+            return redirect(url_for('web.users'))
+        
+        # Check organization permissions
+        if current_role in ['org_admin', 'center_admin', 'coach']:
+            if str(user_data.get('organization_id')) != organization_id:
+                flash('You do not have permission to view this user.', 'error')
+                return redirect(url_for('web.users'))
+        
+        # Convert ObjectIds to strings
+        user_data['_id'] = str(user_data['_id'])
+        if user_data.get('organization_id'):
+            user_data['organization_id'] = str(user_data['organization_id'])
+        
+        # Get organization data
+        organization_data = None
+        if user_data.get('organization_id'):
+            organization_data = mongo.db.organizations.find_one({'_id': ObjectId(user_data['organization_id'])})
+            if organization_data:
+                organization_data['_id'] = str(organization_data['_id'])
+        
+        return render_template('user_dashboard.html', user=user_data, organization=organization_data)
+    
+    except Exception as e:
+        current_app.logger.error(f"User dashboard error: {str(e)}")
+        flash('Error loading dashboard.', 'error')
         return redirect(url_for('web.users'))
 
 @web_bp.route('/profile')
@@ -605,67 +1058,646 @@ def classes():
         flash('Error loading classes.', 'error')
         return render_template('classes.html', classes=[])
 
+import razorpay
+from os import environ
+
+# Initialize Razorpay client
+razorpay_client = razorpay.Client(
+    auth=(environ.get('RAZORPAY_API_KEY'), environ.get('RAZORPAY_API_SECRET'))
+)
+
+@web_bp.route('/payment/<token>', methods=['GET'])
+def process_payment(token):
+    try:
+        # Get payment link details
+        payment_link = mongo.db.payment_links.find_one({
+            'token': token,
+            'status': 'pending',
+            'expires_at': {'$gt': datetime.utcnow()}
+        })
+        
+        if not payment_link:
+            flash('Invalid or expired payment link', 'error')
+            return redirect(url_for('web.dashboard'))
+            
+        # Get user and subscription details
+        user = mongo.db.users.find_one({'_id': payment_link['user_id']})
+        subscription = mongo.db.subscriptions.find_one({'_id': payment_link['subscription_id']})
+        
+        # Create Razorpay order
+        order_amount = subscription['price'] * 100  # Convert to paise
+        order_currency = 'INR'
+        
+        order_data = {
+            'amount': order_amount,
+            'currency': order_currency,
+            'payment_capture': 1,  # Auto-capture payment
+            'notes': {
+                'payment_link_id': str(payment_link['_id']),
+                'user_id': str(user['_id']),
+                'subscription_id': str(subscription['_id'])
+            }
+        }
+        
+        # Create order
+        order = razorpay_client.order.create(data=order_data)
+        
+        # Update payment link with order details
+        mongo.db.payment_links.update_one(
+            {'_id': payment_link['_id']},
+            {
+                '$set': {
+                    'razorpay_order_id': order['id'],
+                    'updated_at': datetime.utcnow()
+                }
+            }
+        )
+        
+        return render_template(
+            'payment.html',
+            payment_link=payment_link,
+            user=user,
+            subscription=subscription,
+            razorpay_order=order,
+            razorpay_key=environ.get('RAZORPAY_API_KEY')
+        )
+        
+    except Exception as e:
+        current_app.logger.error(f"Error processing payment: {str(e)}")
+        flash('Error processing payment', 'error')
+        return redirect(url_for('web.dashboard'))
+
+@web_bp.route('/payment/verify', methods=['POST'])
+def verify_payment():
+    try:
+        # Get payment verification data
+        payment_id = request.form.get('razorpay_payment_id')
+        order_id = request.form.get('razorpay_order_id')
+        signature = request.form.get('razorpay_signature')
+        
+        # Verify signature
+        try:
+            razorpay_client.utility.verify_payment_signature({
+                'razorpay_payment_id': payment_id,
+                'razorpay_order_id': order_id,
+                'razorpay_signature': signature
+            })
+        except Exception as e:
+            current_app.logger.error(f"Payment signature verification failed: {str(e)}")
+            return jsonify({'error': 'Payment verification failed'}), 400
+        
+        # Get payment link from order ID
+        payment_link = mongo.db.payment_links.find_one({'razorpay_order_id': order_id})
+        if not payment_link:
+            return jsonify({'error': 'Payment link not found'}), 404
+            
+        # Update payment link status
+        mongo.db.payment_links.update_one(
+            {'_id': payment_link['_id']},
+            {
+                '$set': {
+                    'status': 'completed',
+                    'paid_at': datetime.utcnow(),
+                    'razorpay_payment_id': payment_id,
+                    'razorpay_signature': signature
+                }
+            }
+        )
+        
+        # Update user's subscription
+        mongo.db.users.update_one(
+            {'_id': payment_link['user_id']},
+            {
+                '$set': {
+                    'subscription_ids': [payment_link['subscription_id']],
+                    'updated_at': datetime.utcnow()
+                }
+            }
+        )
+        
+        return jsonify({'success': True, 'redirect_url': url_for('web.dashboard')})
+        
+    except Exception as e:
+        current_app.logger.error(f"Error verifying payment: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@web_bp.route('/razorpay-webhook', methods=['POST'])
+def razorpay_webhook():
+    try:
+        # Verify webhook signature
+        webhook_signature = request.headers.get('X-Razorpay-Signature')
+        webhook_secret = environ.get('RAZORPAY_WEBHOOK_SECRET')
+        
+        razorpay_client.utility.verify_webhook_signature(
+            request.data.decode(),
+            webhook_signature,
+            webhook_secret
+        )
+        
+        # Process webhook event
+        event_data = request.json
+        event_type = event_data.get('event')
+        
+        if event_type == 'payment.captured':
+            payment_id = event_data['payload']['payment']['entity']['id']
+            order_id = event_data['payload']['payment']['entity']['order_id']
+            
+            # Update payment status
+            payment_link = mongo.db.payment_links.find_one({'razorpay_order_id': order_id})
+            if payment_link and payment_link['status'] != 'completed':
+                # Update payment link status
+                mongo.db.payment_links.update_one(
+                    {'_id': payment_link['_id']},
+                    {
+                        '$set': {
+                            'status': 'completed',
+                            'paid_at': datetime.utcnow(),
+                            'razorpay_payment_id': payment_id
+                        }
+                    }
+                )
+                
+                # Update user's subscription
+                mongo.db.users.update_one(
+                    {'_id': payment_link['user_id']},
+                    {
+                        '$set': {
+                            'subscription_ids': [payment_link['subscription_id']],
+                            'updated_at': datetime.utcnow()
+                        }
+                    }
+                )
+        
+        return jsonify({'success': True}), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error processing webhook: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@web_bp.route('/api/generate-payment-link', methods=['POST'])
+@login_required
+@role_required(['org_admin', 'coach_admin'])
+def generate_payment_link():
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        subscription_id = data.get('subscription_id')
+        
+        if not all([user_id, subscription_id]):
+            return jsonify({'error': 'Missing required fields'}), 400
+            
+        # Get user and subscription details
+        user = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+        subscription = mongo.db.subscriptions.find_one({'_id': ObjectId(subscription_id)})
+        
+        if not user or not subscription:
+            return jsonify({'error': 'Invalid user or subscription'}), 404
+            
+        # Generate a unique token for the payment link
+        token = secrets.token_urlsafe(32)
+        
+        # Store payment link details
+        payment_link = {
+            'token': token,
+            'user_id': ObjectId(user_id),
+            'subscription_id': ObjectId(subscription_id),
+            'amount': subscription['price'],
+            'status': 'pending',
+            'expires_at': datetime.utcnow() + timedelta(hours=24),
+            'created_at': datetime.utcnow(),
+            'created_by': ObjectId(session['user_id'])
+        }
+        
+        result = mongo.db.payment_links.insert_one(payment_link)
+        
+        if not result.inserted_id:
+            return jsonify({'error': 'Failed to generate payment link'}), 500
+            
+        # Generate the actual payment URL
+        payment_url = url_for('web.process_payment', token=token, _external=True)
+        
+        return jsonify({
+            'payment_link': payment_url,
+            'expires_at': payment_link['expires_at'].isoformat()
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error generating payment link: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@web_bp.route('/api/users/<user_id>/subscription', methods=['POST'])
+@login_required
+@role_required(['org_admin', 'coach_admin'])
+def update_user_subscription(user_id):
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        subscription_id = data.get('subscription_id')
+        if not subscription_id:
+            return jsonify({'error': 'Subscription ID is required'}), 400
+            
+        # Convert IDs to ObjectId
+        user_id = ObjectId(user_id)
+        subscription_id = ObjectId(subscription_id)
+        
+        # Get user and subscription
+        user = mongo.db.users.find_one({'_id': user_id})
+        subscription = mongo.db.subscriptions.find_one({'_id': subscription_id})
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        if not subscription:
+            return jsonify({'error': 'Subscription not found'}), 404
+            
+        # Update user's subscription
+        result = mongo.db.users.update_one(
+            {'_id': user_id},
+            {
+                '$set': {
+                    'subscription_ids': [subscription_id],
+                    'updated_at': datetime.utcnow()
+                }
+            }
+        )
+        
+        if result.modified_count > 0:
+            return jsonify({'message': 'Subscription updated successfully'}), 200
+        else:
+            return jsonify({'error': 'Failed to update subscription'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@web_bp.route('/create_subscription', methods=['POST'])
+@login_required
+@role_required(['org_admin', 'coach_admin'])
+def create_subscription():
+    try:
+        # Get form data
+        name = request.form.get('name')
+        price = request.form.get('price')
+        description = request.form.get('description')
+        cycle_type = request.form.get('cycle_type')
+        
+        # Validate required fields
+        if not all([name, price, cycle_type]):
+            flash('Name and price are required', 'error')
+            return redirect(url_for('web.payments'))
+        
+        # Convert price to integer
+        try:
+            price = int(price)
+            if price < 0:
+                raise ValueError("Price cannot be negative")
+        except ValueError:
+            flash('Invalid price value', 'error')
+            return redirect(url_for('web.payments'))
+        
+        # Get organization ID from session
+        organization_id = session.get('organization_id')
+        
+        # Create subscription
+        from app.models.subscription import Subscription
+        subscription = Subscription.create(
+            name=name,
+            price=price,
+            description=description,
+            cycle_type=cycle_type,
+            organization_id=organization_id,
+        )
+        
+        if subscription:
+            flash('Subscription plan created successfully', 'success')
+        else:
+            flash('Failed to create subscription plan', 'error')
+            
+    except Exception as e:
+        flash(f'Error creating subscription: {str(e)}', 'error')
+    
+    return redirect(url_for('web.payments'))
+
+@web_bp.route('/api/subscriptions/<subscription_id>/<action>', methods=['POST'])
+@login_required
+@role_required(['org_admin', 'coach_admin'])
+def toggle_subscription(subscription_id, action, cycle_type):
+    try:
+        from app.models.subscription import Subscription
+        
+        if action not in ['activate', 'deactivate']:
+            return jsonify({'error': 'Invalid action'}), 400
+        
+        active_status = action == 'activate'
+        success = Subscription.toggle_status(subscription_id, active_status, cycle_type)
+        
+        if success:
+            return jsonify({'message': f'Subscription {action}d successfully'}), 200
+        else:
+            return jsonify({'error': 'Failed to update subscription status'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @web_bp.route('/payments')
 @login_required
 def payments():
-    """Payments management page"""
+    """Payment management page - shows users with billing dates and subscription plans"""
     try:
         user_role = session.get('role')
         user_id = session.get('user_id')
+        organization_id = session.get('organization_id')
         
-        # Build query based on user role
-        query = {}
+        # Get subscriptions if user is org_admin or coach_admin
+        subscriptions = []
+        if user_role in ['org_admin', 'coach_admin']:
+            from app.models.subscription import Subscription
+            subscriptions = Subscription.get_all(organization_id)
+        org_id = session.get('organization_id')
+        
+        # Students redirect to their own payments
         if user_role == 'student':
-            # Students see only their payments
-            query['student_id'] = ObjectId(user_id)
-        elif user_role in ['org_admin', 'coach_admin']:
-            # Org admins see all payments in their organization
-            org_id = session.get('organization_id')
-            if org_id:
-                query['organization_id'] = ObjectId(org_id)
+            return redirect(url_for('web.user_payments', user_id=user_id))
         
-        # Get filter parameters
-        status = request.args.get('status', '')
-        payment_type = request.args.get('type', '')
-        
-        if status:
-            query['status'] = status
-        
-        if payment_type:
-            query['type'] = payment_type
-        
-        # Mock payments data
-        payments_list = [
-            {
-                '_id': '1',
-                'student_name': 'Alex Johnson',
-                'class_name': 'Football Training - Beginners',
-                'amount': 80.00,
-                'due_date': '2024-02-01',
-                'paid_date': '2024-01-28',
-                'status': 'Paid',
-                'payment_method': 'Credit Card',
-                'type': 'Monthly Fee'
-            },
-            {
-                '_id': '2',
-                'student_name': 'Sarah Williams',
-                'class_name': 'Basketball Advanced',
-                'amount': 100.00,
-                'due_date': '2024-02-01',
-                'paid_date': None,
-                'status': 'Pending',
-                'payment_method': '',
-                'type': 'Monthly Fee'
+        # For admins and coaches, show users with billing dates
+        if user_role in ['org_admin', 'coach_admin'] and org_id:
+            # Get users with billing_date in the organization
+            users_query = {
+                'organization_id': ObjectId(org_id),
+                'role': 'student',
+                'billing_start_date': {'$exists': True, '$ne': None}
             }
-        ]
+            
+            # Get search filter
+            search = request.args.get('search', '').strip()
+            if search:
+                users_query['$or'] = [
+                    {'name': {'$regex': search, '$options': 'i'}},
+                    {'email': {'$regex': search, '$options': 'i'}},
+                    {'phone_number': {'$regex': search, '$options': 'i'}}
+                ]
+            
+            current_app.logger.info(f"Users query: {users_query}")
+            users = list(mongo.db.users.find(users_query).sort('name', 1))
+            current_app.logger.info(f"Found {len(users)} users with search: '{search}'")
+            
+            # Get payment summary for each user
+            for user in users:
+                user['_id'] = str(user['_id'])
+                
+                # Get payment statistics for this user
+                payment_stats = mongo.db.payments.aggregate([
+                    {
+                        '$match': {
+                            'student_id': ObjectId(user['_id']),
+                            'organization_id': ObjectId(org_id)
+                        }
+                    },
+                    {
+                        '$group': {
+                            '_id': '$status',
+                            'count': {'$sum': 1},
+                            'total_amount': {'$sum': '$amount'}
+                        }
+                    }
+                ])
+                
+                stats = {stat['_id']: {'count': stat['count'], 'amount': stat['total_amount']} 
+                        for stat in payment_stats}
+                
+                user['payment_stats'] = {
+                    'total_payments': sum(s['count'] for s in stats.values()),
+                    'total_amount': sum(s['amount'] for s in stats.values()),
+                    'paid_count': stats.get('paid', {}).get('count', 0),
+                    'paid_amount': stats.get('paid', {}).get('amount', 0),
+                    'pending_count': stats.get('pending', {}).get('count', 0),
+                    'pending_amount': stats.get('pending', {}).get('amount', 0),
+                    'overdue_count': stats.get('overdue', {}).get('count', 0),
+                    'overdue_amount': stats.get('overdue', {}).get('amount', 0)
+                }
+                
+                # Get next billing date
+                if user.get('billing_date'):
+                    from datetime import datetime, timedelta
+                    today = datetime.now().date()
+                    billing_day = user['billing_date']
+                    
+                    # Calculate next billing date
+                    current_month_billing = today.replace(day=billing_day)
+                    if current_month_billing <= today:
+                        # Next month
+                        if today.month == 12:
+                            next_billing = current_month_billing.replace(year=today.year + 1, month=1)
+                        else:
+                            next_billing = current_month_billing.replace(month=today.month + 1)
+                    else:
+                        next_billing = current_month_billing
+                    
+                    user['next_billing_date'] = next_billing
+                    user['days_until_billing'] = (next_billing - today).days
+            
+            return render_template('payments_new.html', users=users, search=search, subscriptions=subscriptions)
         
-        return render_template('payments.html', payments=payments_list)
+        else:
+            flash('Access denied.', 'error')
+            return redirect(url_for('web.dashboard'))
     
     except Exception as e:
         current_app.logger.error(f"Payments page error: {str(e)}")
-        flash('Error loading payments.', 'error')
-        return render_template('payments.html', payments=[])
+        flash('Error loading payment users.', 'error')
+        return render_template('payments_new.html', users=[])
+
+@web_bp.route('/payments/user/<user_id>')
+@login_required
+def user_payments(user_id):
+    """Show all payments for a specific user"""
+    try:
+        user_role = session.get('role')
+        current_user_id = session.get('user_id')
+        org_id = session.get('organization_id')
+        
+        # Check permissions
+        if user_role == 'student' and str(current_user_id) != str(user_id):
+            flash('Access denied.', 'error')
+            return redirect(url_for('web.dashboard'))
+        
+        # Get user details
+        user = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+        if not user:
+            flash('User not found.', 'error')
+            return redirect(url_for('web.payments'))
+        
+        # For org admins, ensure user is in their organization
+        user_org_ids = user.get('organization_ids', [])
+        if not user_org_ids and user.get('organization_id'):
+            user_org_ids = [user['organization_id']]
+        
+        if user_role in ['org_admin', 'coach_admin'] and org_id not in [str(oid) for oid in user_org_ids]:
+            flash('Access denied.', 'error')
+            return redirect(url_for('web.payments'))
+        
+        # Get all payments for this user
+        payments_query = {'student_id': ObjectId(user_id)}
+        if org_id:
+            payments_query['organization_id'] = ObjectId(org_id)
+        
+        payments = list(mongo.db.payments.find(payments_query).sort('created_at', -1))
+        print(payments)
+        # Convert ObjectIds to strings
+        for payment in payments:
+            payment['_id'] = str(payment['_id'])
+            payment['student_id'] = str(payment['student_id'])
+            payment['organization_id'] = str(payment['organization_id'])
+        
+        user['_id'] = str(user['_id'])
+        if user.get('organization_id'):
+            user['organization_id'] = str(user['organization_id'])
+        
+        return render_template('user_payments.html', user=user, payments=payments)
+    
+    except Exception as e:
+        current_app.logger.error(f"User payments error: {str(e)}")
+        flash('Error loading user payments.', 'error')
+        return redirect(url_for('web.payments'))
+
+@web_bp.route('/payments/create', methods=['GET', 'POST'])
+@login_required
+@role_required(['org_admin', 'coach_admin'])
+def create_payment():
+    """Create new payment"""
+    if request.method == 'GET':
+        # Show create payment form
+        org_id = session.get('organization_id')
+        user_id = request.args.get('user_id')
+        
+        # Get students in the organization
+        students_query = {
+            'organization_id': ObjectId(org_id),
+            'role': 'student'
+        }
+        
+        current_app.logger.info(f"Students query: {students_query}")
+        
+        students = list(mongo.db.users.find(students_query).sort('name', 1))
+        
+        # Convert ObjectIds to strings
+        for student in students:
+            student['_id'] = str(student['_id'])
+            if student.get('organization_id'):
+                student['organization_id'] = str(student['organization_id'])
+        
+        print(f"Found {len(students)} students for organization {org_id}")
+        if len(students) == 0:
+            current_app.logger.warning(f"No students found for organization {org_id}. Check if students exist and are active.")
+        
+        return render_template('create_payment.html', students=students, selected_user_id=user_id)
+    
+    else:
+            org_id = session.get('organization_id')
+            created_by = session.get('user_id')
+            
+            # Get form data
+            student_id = request.form.get('student_id')
+            amount = float(request.form.get('amount', 0))
+            description = request.form.get('description', '')
+            due_date_str = request.form.get('due_date')
+            payment_type = request.form.get('payment_type', 'monthly')
+            notes = request.form.get('notes', '')
+            
+            # Validate required fields
+            if not all([student_id, amount, description, due_date_str]):
+                flash('Please fill in all required fields.', 'error')
+                return redirect(request.url)
+            
+            # Parse due date
+            from datetime import datetime
+            due_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+            print(due_date)
+            
+            # Create payment record
+            payment = {
+                'student_id': ObjectId(student_id),
+                'organization_id': ObjectId(org_id),
+                'amount': amount,
+                'description': description,
+                'due_date': due_date_str,
+                'payment_type': payment_type,
+                'status': 'pending',
+                'notes': notes,
+                'created_at': datetime.now(),
+                'created_by': ObjectId(created_by),
+                'updated_at': datetime.now()
+            }
+            
+            result = mongo.db.payments.insert_one(payment)
+            
+            flash('Payment created successfully!', 'success')
+            return redirect(url_for('web.user_payments', user_id=student_id))
+            
+        
+
+@web_bp.route('/api/payments/<payment_id>/mark-paid', methods=['POST'])
+@login_required
+@role_required(['org_admin', 'coach_admin'])
+def mark_payment_paid(payment_id):
+    """Mark a payment as paid"""
+    try:
+        org_id = session.get('organization_id')
+        
+        # Get the payment
+        payment = mongo.db.payments.find_one({
+            '_id': ObjectId(payment_id),
+            'organization_id': ObjectId(org_id)
+        })
+        
+        if not payment:
+            return jsonify({'error': 'Payment not found'}), 404
+        
+        # Get form data
+        data = request.get_json()
+        paid_amount = float(data.get('paid_amount', 0))
+        payment_method = data.get('payment_method', '')
+        payment_reference = data.get('payment_reference', '')
+        notes = data.get('notes', '')
+        
+        # Validate required fields
+        if not paid_amount or not payment_method:
+            return jsonify({'error': 'Amount and payment method are required'}), 400
+        
+        # Update payment
+        from datetime import datetime
+        update_data = {
+            'status': 'paid',
+            'paid_amount': paid_amount,
+            'paid_date': datetime.now().date(),
+            'payment_method': payment_method,
+            'payment_reference': payment_reference,
+            'updated_at': datetime.now()
+        }
+        
+        if notes:
+            # Append to existing notes if any
+            existing_notes = payment.get('notes', '')
+            if existing_notes:
+                update_data['notes'] = f"{existing_notes}\n\nPayment recorded: {notes}"
+            else:
+                update_data['notes'] = f"Payment recorded: {notes}"
+        
+        result = mongo.db.payments.update_one(
+            {'_id': ObjectId(payment_id)},
+            {'$set': update_data}
+        )
+        
+        if result.modified_count > 0:
+            return jsonify({'success': True, 'message': 'Payment marked as paid successfully'})
+        else:
+            return jsonify({'error': 'Failed to update payment'}), 500
+            
+    except ValueError as e:
+        return jsonify({'error': 'Invalid amount format'}), 400
+    except Exception as e:
+        current_app.logger.error(f"Mark payment paid error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @web_bp.route('/groups')
 @login_required
@@ -1206,6 +2238,8 @@ def update_organization_settings(org_id, current_org):
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
         whatsapp_number = request.form.get('whatsapp_number', '').strip()
+        google_maps_link = request.form.get('google_maps_link', '').strip()
+        terms_and_conditions = request.form.get('terms_and_conditions', '').strip()
         
         # Contact information
         contact_email = request.form.get('contact_info[email]', '').strip()
@@ -1219,7 +2253,44 @@ def update_organization_settings(org_id, current_org):
             'zipcode': request.form.get('address[zipcode]', '').strip(),
             'country': request.form.get('address[country]', '').strip()
         }
+
+        logo_url = None
+        banner_url = None
+
+        # Initialize file upload service
+        upload_service = FileUploadService()
+
+        print(request.files, 'logo' in request.files, 'banner' in request.files)
+        # Implement logo and banner
+        if 'logo' in request.files:
+            logo = request.files['logo']
+            if logo.filename != '':
+                success, message, logo_url = upload_service.upload_file(
+                    file=logo,
+                    upload_type='logo',
+                    organization_id=str(org_id),
+                    user_id=session.get('user_id')
+                )
+                print(success, message, banner_url)
+                if not success:
+                    flash(f'Error uploading logo: {message}', 'error')
+                    return redirect(url_for('web.organization_settings'))
         
+        if 'banner' in request.files:
+            banner = request.files['banner']
+            if banner.filename != '':
+                success, message, banner_url = upload_service.upload_file(
+                    file=banner,
+                    upload_type='banner',
+                    organization_id=str(org_id),
+                    user_id=session.get('user_id')
+                )
+                print(success, message, banner_url)
+                if not success:
+                    flash(f'Error uploading banner: {message}', 'error')
+                    return redirect(url_for('web.organization_settings'))
+        
+        print(logo_url, banner_url)
         # Activities
         activities_str = request.form.get('activities', '')
         activities = [activity.strip() for activity in activities_str.split(',') if activity.strip()]
@@ -1243,6 +2314,8 @@ def update_organization_settings(org_id, current_org):
             'name': name,
             'description': description,
             'whatsapp_number': whatsapp_number,
+            'google_maps_link': google_maps_link,
+            'terms_and_conditions': terms_and_conditions,
             'contact_info': {
                 'email': contact_email,
                 'phone': contact_phone
@@ -1251,6 +2324,11 @@ def update_organization_settings(org_id, current_org):
             'activities': activities,
             'updated_at': datetime.utcnow()
         }
+
+        if logo_url:
+            update_data['logo_url'] = logo_url
+        if banner_url:
+            update_data['banner_url'] = banner_url
         
         # Update organization
         result = mongo.db.organizations.update_one(
@@ -1514,7 +2592,7 @@ def export_users():
         if user_role in ['org_admin', 'coach_admin']:
             org_id = session.get('organization_id')
             if org_id:
-                query['organization_id'] = org_id
+                query['organization_ids'] = ObjectId(org_id)
         
         # Get filter parameters from request args
         search = request.args.get('search', '')
@@ -1541,7 +2619,7 @@ def export_users():
         
         # Organization filter (only for super admin)
         if org_filter and user_role == 'super_admin':
-            query['organization_id'] = ObjectId(org_filter)
+            query['organization_ids'] = ObjectId(org_filter)
         
         # Get all users (no pagination for export)
         users_cursor = mongo.db.users.find(query).sort('created_at', -1)
@@ -1799,6 +2877,9 @@ def api_get_user(user_id):
         user['_id'] = str(user['_id'])
         if user.get('organization_id'):
             user['organization_id'] = str(user['organization_id'])
+
+        if user.get('subscription_ids'):
+            user['subscription_ids'] = [str(subscription_id) for subscription_id in user['subscription_ids']]
         
         return jsonify(user), 200
     
@@ -2044,9 +3125,10 @@ def create_user():
             name=name,
             password=password,
             role=role,
-            organization_id=org_id,
+            organization_id=ObjectId(org_id),
             created_by=current_user_id,
-            email=email
+            email=email,
+            billing_start_date=billing_start_date
         )
         
         if status_code == 201:
@@ -2099,13 +3181,7 @@ def create_user():
     
     return redirect(url_for('web.users'))
 
-@web_bp.route('/payments/create', methods=['POST'])
-@login_required
-@role_required(['org_admin', 'coach_admin'])
-def create_payment():
-    """Create new payment"""
-    flash('Payment creation coming soon!', 'info')
-    return redirect(url_for('web.payments'))
+# Removed - replaced with new create_payment route above
 
 @web_bp.route('/equipment/create', methods=['POST'])
 @login_required
@@ -2187,11 +3263,11 @@ def center_schedule(center_id):
         
         # Get coaches assigned to this center
         coaches = list(mongo.db.users.find({
-            'organization_id': org_id,
+            'organization_id': ObjectId(org_id),
             'role': {'$in': ['coach', 'coach_admin']}
         }))
 
-        students = list(mongo.db.users.find({'organization_id': org_id, 'role': 'student'}))
+        students = list(mongo.db.users.find({'organization_id': ObjectId(org_id), 'role': 'student'}))
         
         # Convert ObjectIds to strings for template serialization
         center['_id'] = str(center['_id'])
@@ -2219,20 +3295,34 @@ def center_schedule(center_id):
             activity['organization_id'] = str(activity['organization_id'])
             if activity.get('created_by'):
                 activity['created_by'] = str(activity['created_by'])
+            if activity.get('default_coach_id'):
+                activity['default_coach_id'] = str(activity['default_coach_id'])
         
         for coach in coaches:
             coach['_id'] = str(coach['_id'])
             if coach.get('organization_id'):
                 coach['organization_id'] = str(coach['organization_id'])
+            if 'organization_ids' in coach:
+                coach['organization_ids'] = [str(org_id) for org_id in coach['organization_ids']]
+
+
+        if 'created_by' in center:
+            center['created_by'] = str(center['created_by'])
 
         for student in students:
+            for key, value in student.items():
+                if '_ids' in key:
+                    student[key] = [str(org_id) for org_id in value]
+                elif '_id' in key:
+                    student[key] = str(value)
+            if student.get('subscription_ids'):
+                student['subscription_ids'] = [str(sid) for sid in student['subscription_ids']]
             print(student)
-            student['_id'] = str(student['_id'])
-            if student.get('organization_id'):
-                student['organization_id'] = str(student['organization_id'])
-
+            print('--------')
+            
         current_app.logger.info(f"Successfully loaded schedule page data for center: {center['name']}")
         
+
         return render_template('schedule.html', 
                              center=center, 
                              time_slots=time_slots,
@@ -2327,6 +3417,8 @@ def api_get_schedule(center_id):
 def api_create_schedule_item(center_id):
     """Create a new schedule item"""
     try:
+        # ... existing validation code ...
+
         data = request.get_json()
 
         # Validate required fields
@@ -2355,32 +3447,74 @@ def api_create_schedule_item(center_id):
         if existing:
             return jsonify({'error': 'Time slot already occupied'}), 409
         
+        
+
+        # Get activity to check for default coach
+        activity = mongo.db.activities.find_one({'_id': ObjectId(data['activity_id'])})
+        
+        # Use provided coach_id if available, otherwise use activity's default_coach_id
+        coach_id = data.get('default_coach_id')
+        if not coach_id and activity.get('default_coach_id'):
+            coach_id = str(activity['default_coach_id'])
+        
         # Create schedule item
         schedule_item = {
             'center_id': ObjectId(center_id),
-            'day_of_week': data['day_of_week'],
+            'day_of_week': int(data['day_of_week']),  # Ensure it's stored as integer
             'time_slot_id': ObjectId(data['time_slot_id']),
             'activity_id': ObjectId(data['activity_id']),
-            'coach_id': ObjectId(data['coach_id']) if data.get('coach_id') else None,
+            'coach_id': ObjectId(coach_id) if coach_id else None,
             'max_participants': data.get('max_participants'),
             'notes': data.get('notes', ''),
             'created_at': datetime.utcnow(),
             'created_by': ObjectId(session.get('user_id'))
         }
+
+        center = mongo.db.centers.find_one({"_id": ObjectId(center_id)})
         
         result = mongo.db.schedules.insert_one(schedule_item)
+        schedule_item['_id'] = result.inserted_id
         
-        # Convert ObjectIds to strings for JSON serialization
-        schedule_item['_id'] = str(result.inserted_id)
-        schedule_item['center_id'] = str(schedule_item['center_id'])
-        schedule_item['time_slot_id'] = str(schedule_item['time_slot_id'])
-        schedule_item['activity_id'] = str(schedule_item['activity_id'])
-        if schedule_item.get('coach_id'):
-            schedule_item['coach_id'] = str(schedule_item['coach_id'])
-        schedule_item['created_by'] = str(schedule_item['created_by'])
-        
-        return jsonify({'schedule_item': schedule_item}), 201
-    
+        # Create classes for the next 14 days
+        creator = DailyClassCreator()
+        try:
+            start_date = datetime.utcnow().date()
+            days_ahead = 14
+            created_classes = []
+            
+            for day_offset in range(days_ahead):
+                target_date = start_date + timedelta(days=day_offset)
+                # Compare numeric day of week (0=Monday, 6=Sunday)
+                if target_date.weekday() == schedule_item['day_of_week']:
+                    class_id = creator.create_class_from_schedule(
+                        str(center['organization_id']), 
+                        center, 
+                        schedule_item, 
+                        target_date
+                    )
+                    if class_id:
+                        created_classes.append(str(class_id))
+            
+            # Convert ObjectIds to strings for response
+            response_item = {
+                '_id': str(schedule_item['_id']),
+                'center_id': str(schedule_item['center_id']),
+                'time_slot_id': str(schedule_item['time_slot_id']),
+                'activity_id': str(schedule_item['activity_id']),
+                'coach_id': str(schedule_item['coach_id']) if schedule_item.get('coach_id') else None,
+                'day_of_week': schedule_item['day_of_week'],
+                'max_participants': schedule_item['max_participants'],
+                'notes': schedule_item['notes'],
+                'created_classes': created_classes
+            }
+            
+            return jsonify({
+                'schedule_item': response_item,
+                'created_classes': len(created_classes)
+            }), 201
+        finally:
+            creator.close()
+            
     except Exception as e:
         current_app.logger.error(f"API create schedule error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
@@ -2420,10 +3554,29 @@ def api_update_schedule_item(center_id, schedule_id):
             {'_id': ObjectId(schedule_id)},
             {'$set': update_data}
         )
-        
+
         if result.modified_count > 0:
-            return jsonify({'message': 'Schedule item updated successfully'}), 200
+            print("Updating classes from schedule")
+            # Create an instance of DailyClassCreator and update affected classes
+            from daily_class_creator import DailyClassCreator
+            creator = DailyClassCreator()
+            try:
+                # Extract the relevant data for class updates
+                updated_classes = creator.update_class_from_schedule(
+                    schedule_id,
+                    coach_id=data.get('coach_id'),
+                    student_ids=data.get('assigned_students', []),
+                    group_ids=data.get('assigned_groups', [])
+                )
+                print("Updated classes: ", updated_classes)
+                return jsonify({
+                    'message': 'Schedule item updated successfully',
+                    'updated_classes': updated_classes
+                }), 200
+            finally:
+                creator.close()
         else:
+            print("No changes made")
             return jsonify({'message': 'No changes made'}), 200
     
     except Exception as e:
@@ -2434,17 +3587,98 @@ def api_update_schedule_item(center_id, schedule_id):
 @login_required
 @role_required(['org_admin', 'coach_admin', 'coach'])
 def api_delete_schedule_item(center_id, schedule_id):
-    """Delete a schedule item"""
+    """Delete a schedule item and optionally its associated future classes"""
     try:
-        result = mongo.db.schedules.delete_one({'_id': ObjectId(schedule_id)})
+        # Get JSON data, with a default empty dict if no data sent
+        data = request.get_json() or {}
+        delete_classes = data.get('delete_classes', False)
         
-        if result.deleted_count > 0:
-            return jsonify({'message': 'Schedule item deleted successfully'}), 200
-        else:
+        # Get existing schedule item
+        schedule_item = mongo.db.schedules.find_one({'_id': ObjectId(schedule_id)})
+        if not schedule_item:
             return jsonify({'error': 'Schedule item not found'}), 404
-    
+
+        # Delete the schedule item
+        mongo.db.schedules.delete_one({'_id': ObjectId(schedule_id)})
+        
+        if delete_classes:
+            # Delete all future classes
+            result = mongo.db.classes.delete_many({
+                'schedule_item_id': ObjectId(schedule_id),
+                'scheduled_at': {'$gte': datetime.utcnow()},
+                'status': {'$in': ['scheduled', 'ongoing']}
+            })
+            
+            return jsonify({
+                'message': 'Schedule item and future classes deleted successfully',
+                'affected_classes': result.deleted_count
+            }), 200
+        else:
+            # Just remove schedule_item_id reference from future classes
+            result = mongo.db.classes.update_many(
+                {
+                    'schedule_item_id': ObjectId(schedule_id),
+                    'scheduled_at': {'$gte': datetime.utcnow()},
+                    'status': {'$in': ['scheduled', 'ongoing']}
+                },
+                {
+                    '$unset': {'schedule_item_id': ""},
+                    '$set': {
+                        'updated_at': datetime.utcnow(),
+                        'notes': 'Original schedule item deleted'
+                    }
+                }
+            )
+            
+            return jsonify({
+                'message': 'Schedule item deleted. Classes preserved as independent sessions.',
+                'affected_classes': result.modified_count
+            }), 200
+
     except Exception as e:
         current_app.logger.error(f"API delete schedule error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@web_bp.route('/api/centers/<center_id>/schedule/<schedule_id>/affected-classes', methods=['GET'])
+@login_required
+@role_required(['org_admin', 'coach_admin', 'coach'])
+def api_get_affected_classes(center_id, schedule_id):
+    """Get list of classes that would be affected by schedule deletion"""
+    try:
+        # Find all future classes for this schedule
+        future_classes = list(mongo.db.classes.find({
+            'schedule_item_id': ObjectId(schedule_id),
+            'scheduled_at': {'$gte': datetime.utcnow()},
+            'status': {'$in': ['scheduled', 'ongoing']}
+        }).sort('scheduled_at', 1))  # Sort by date ascending
+        
+        # Get additional info for each class
+        classes_info = []
+        for class_obj in future_classes:
+            # Get coach name if exists
+            coach_name = "No coach assigned"
+            if class_obj.get('coach_id'):
+                coach = mongo.db.users.find_one({'_id': class_obj['coach_id']})
+                if coach:
+                    coach_name = coach.get('name', 'Unknown Coach')
+            
+            # Format class info
+            classes_info.append({
+                'id': str(class_obj['_id']),
+                'title': class_obj['title'],
+                'scheduled_at': class_obj['scheduled_at'].strftime('%Y-%m-%d %H:%M'),
+                'coach_name': coach_name,
+                'student_count': len(class_obj.get('student_ids', [])),
+                'group_count': len(class_obj.get('group_ids', []))
+            })
+        
+        return jsonify({
+            'classes': classes_info,
+            'total_count': len(classes_info)
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"API get affected classes error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 # Time Slots Management
@@ -2566,6 +3800,10 @@ def api_get_activities(org_id):
         for activity in activities:
             activity['_id'] = str(activity['_id'])
             activity['organization_id'] = str(activity['organization_id'])
+            activity['created_by'] = str(activity['created_by'])
+            activity['default_coach_id'] = str(activity['default_coach_id'])
+
+        print(activities)
         
         return jsonify({'activities': activities}), 200
     
@@ -2582,16 +3820,17 @@ def api_create_activity(org_id):
         data = request.get_json()
         
         # Validate required fields
-        required_fields = ['name', 'type']
+        required_fields = ['name']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'{field} is required'}), 400
         
+        print(data)
         # Create activity
         activity = {
             'organization_id': ObjectId(org_id),
             'name': data['name'],
-            'type': data['type'],
+            'default_coach_id': ObjectId(data['default_coach_id']) if data.get('default_coach_id') else None,
             'description': data.get('description', ''),
             'duration_minutes': int(data.get('duration_minutes', 60)),
             'max_participants': int(data.get('max_participants', 20)),
@@ -2600,7 +3839,10 @@ def api_create_activity(org_id):
             'color': data.get('color', '#3B82F6'),
             'is_active': data.get('is_active', True),
             'created_at': datetime.utcnow(),
-            'created_by': ObjectId(session.get('user_id'))
+            'created_by': ObjectId(session.get('user_id')),
+            'price': float(data.get('price', 0)),
+            'feedback_metrics': data.get('feedback_metrics', [])
+
         }
         
         result = mongo.db.activities.insert_one(activity)
@@ -2609,11 +3851,81 @@ def api_create_activity(org_id):
         activity['_id'] = str(result.inserted_id)
         activity['organization_id'] = str(activity['organization_id'])
         activity['created_by'] = str(activity['created_by'])
+        activity['price'] = str(activity['price'])
+        activity['default_coach_id'] = str(activity['default_coach_id'])
         
         return jsonify({'activity': activity}), 201
     
     except Exception as e:
         current_app.logger.error(f"API create activity error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@web_bp.route('/api/organizations/<org_id>/activities/<activity_id>', methods=['PUT'])
+@login_required
+@role_required(['org_admin', 'coach_admin'])
+def api_update_activity(org_id, activity_id):
+    """Update an existing activity"""
+    try:
+        # Check permissions
+        user_org_id = session.get('organization_id')
+        if str(user_org_id) != org_id:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data.get('name'):
+            return jsonify({'error': 'Activity name is required'}), 400
+        
+        # Build update document
+        update_data = {
+            'name': data['name'],
+            'description': data.get('description', ''),
+            'duration_minutes': int(data.get('duration_minutes', 60)),
+            'max_participants': int(data.get('max_participants', 20)),
+            'required_equipment': data.get('required_equipment', []),
+            'skill_level': data.get('skill_level', 'beginner'),
+            'color': data.get('color', '#3B82F6'),
+            'is_active': data.get('is_active', True),
+            'price': float(data.get('price', 0)),
+            'feedback_metrics': data.get('feedback_metrics', []),
+            'updated_at': datetime.utcnow()
+        }
+        
+        # Update default_coach_id if provided
+        if data.get('default_coach_id'):
+            update_data['default_coach_id'] = ObjectId(data['default_coach_id'])
+        
+        # Update activity
+        result = mongo.db.activities.update_one(
+            {
+                '_id': ObjectId(activity_id),
+                'organization_id': ObjectId(org_id)
+            },
+            {'$set': update_data}
+        )
+        
+        if result.matched_count > 0:
+            # Fetch updated activity
+            activity = mongo.db.activities.find_one({
+                '_id': ObjectId(activity_id),
+                'organization_id': ObjectId(org_id)
+            })
+            
+            # Convert ObjectIds to strings for JSON serialization
+            activity['_id'] = str(activity['_id'])
+            activity['organization_id'] = str(activity['organization_id'])
+            if activity.get('created_by'):
+                activity['created_by'] = str(activity['created_by'])
+            if activity.get('default_coach_id'):
+                activity['default_coach_id'] = str(activity['default_coach_id'])
+            
+            return jsonify({'activity': activity, 'message': 'Activity updated successfully'}), 200
+        else:
+            return jsonify({'error': 'Activity not found'}), 404
+    
+    except Exception as e:
+        current_app.logger.error(f"Update activity error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @web_bp.route('/api/organizations/<org_id>/activities/<activity_id>', methods=['DELETE'])
@@ -2841,28 +4153,349 @@ def create_holiday():
     """Create a holiday"""
     data = request.form
     print(data)
+    data = dict(data)
+    data['date_observed'] = datetime.strptime(data['start_date'], '%Y-%m-%d')
+    # Use same logic as class_cancellation.py
+    schema = HolidaySchema()
+    schema.name = data['name']
+    schema.date_observed = data['date_observed']
+    schema.description = data['description']
+    schema.affects_scheduling = True
 
-    # Create a holiday in mongo
-    holiday = {
-        'name': data.get('name'),
-        'date_observed': data.get('date_observed'),
-        'organization_id': ObjectId(session.get('organization_id')),
-        'description': data.get('description'),
-        'type': data.get('type'),
-        'created_at': datetime.utcnow(),
-        'created_by': ObjectId(session.get('user_id'))
-    }
-    result = mongo.db.holidays.insert_one(holiday)
-    holiday['_id'] = str(result.inserted_id)
-    holiday['organization_id'] = str(holiday['organization_id'])
-    if 'created_by' in holiday:
-        holiday['created_by'] = str(holiday['created_by'])
     
+    # Import auth utilities
+    from app.utils.auth import get_current_user_info
+    user_info = get_current_user_info()
+    
+    if not user_info:
+        return jsonify({'error': 'Authentication required'}), 401
         
-    if 'updated_by' in holiday:
-        holiday['updated_by'] = str(holiday['updated_by'])
+    organization_id = user_info.get('organization_id')
+    current_user_id = user_info.get('user_id')
 
-    flash('Holiday created successfully', 'success')
-
-    return jsonify({'holiday': holiday, 'success': True, 'message': 'Holiday created successfully'}), 201    
+    print(organization_id)
+    print(current_user_id)
     
+    if not organization_id:
+        return jsonify({'error': 'User must be associated with an organization'}), 400
+    
+    # Use the new holiday service to create custom holiday
+    from app.services.holiday_service import HolidayService
+    result = HolidayService.create_custom_holiday(
+        organization_id=organization_id,
+        name=data['name'],
+        date_observed=data['date_observed'],
+        description=data.get('description'),
+        affects_scheduling=data.get('affects_scheduling', True),
+        created_by=current_user_id
+    )
+
+    print(result)
+
+    result['master_holiday']['_id'] = str(result['master_holiday']['_id'])
+    if result['org_holiday']:
+
+        result['org_holiday']['_id'] = str(result['org_holiday']['_id'])
+        if result['org_holiday']:
+            if 'holiday_id' in result['org_holiday']:
+                result['org_holiday']['holiday_id'] = str(result['org_holiday']['holiday_id'])
+        if 'organization_id' in result['org_holiday']:
+            result['org_holiday']['organization_id'] = str(result['org_holiday']['organization_id'])
+        if 'created_by' in result['org_holiday']:
+            result['org_holiday']['created_by'] = str(result['org_holiday']['created_by'])
+        if 'updated_by' in result['org_holiday']:
+            result['org_holiday']['updated_by'] = str(result['org_holiday']['updated_by'])
+        if 'holiday_id' in result['org_holiday']:
+            result['org_holiday']['holiday_id'] = str(result['org_holiday']['holiday_id'])
+        if 'holiday_name' in result['org_holiday']:
+            result['org_holiday']['holiday_name'] = str(result['org_holiday']['holiday_name'])
+    
+    if result['success']:
+        return jsonify({
+            'success': True,
+            'message': 'Holiday created successfully',
+            'holiday': result['master_holiday'],
+            'org_holiday': result['org_holiday']
+        }), 201
+    else:
+        return jsonify({'error': result['error']}), 400
+
+
+@web_bp.route('/signup-classes/<link_token>')
+def signup_classes(link_token):
+    try:
+        # Get the activity link from the database
+        sign_up_link = mongo.db.activity_links.find_one({'link_token': link_token})
+        if not sign_up_link:
+            flash('Invalid or expired link', 'error')
+            return redirect(url_for('web.classes'))
+        
+        # Get the class IDs from the activity link (stored as list of ObjectIds)
+        schedule_item_ids = sign_up_link.get('schedule_item_ids', [])
+        if not schedule_item_ids:
+            flash('No classes found in this link', 'error')
+            return redirect(url_for('web.classes'))
+        
+        # Convert ObjectIds to strings and get class info
+        classes = []
+        class_id_strings = []
+        
+        for schedule_item_id in schedule_item_ids:
+            class_id_str = str(schedule_item_id)
+            class_id_strings.append(class_id_str)
+            class_info = get_class_info(class_id_str)
+            if class_info:
+                classes.append(class_info)
+        
+        if not classes:
+            flash('No valid classes found', 'error')
+            return redirect(url_for('web.classes'))
+        
+        # Convert list to comma-separated string for form submission
+        class_ids = ','.join(class_id_strings)
+        print(f"DEBUG: Passing class_ids to template: {class_ids}")
+        
+        return render_template('signup_classes.html', 
+                             classes=classes,
+                             class_ids=class_ids,
+                             link_token=link_token)
+    
+    except Exception as e:
+        flash('Error loading class information', 'error')
+        return redirect(url_for('web.classes'))
+
+@web_bp.route('/signup-classes/<link_token>/submit', methods=['POST'])
+def signup_classes_submit(link_token):
+    try:
+        # Get form data
+        name = request.form.get('name', '').strip()
+        phone = request.form.get('phone', '').strip()
+        email = request.form.get('email', '').strip()
+        class_ids = request.form.get('class_ids')
+        
+        print(f"DEBUG: Received form data - name: {name}, phone: {phone}, class_ids: {class_ids}")
+        
+        # Validate class_ids
+        if not class_ids:
+            flash('No classes selected', 'error')
+            return redirect(url_for('web.classes'))
+        
+        # Validate the link token
+        sign_up_link = mongo.db.activity_links.find_one({'link_token': link_token})
+        if not sign_up_link:
+            flash('Invalid or expired link', 'error')
+            return redirect(url_for('web.classes'))
+        
+        # Validate required fields
+        if not name or not phone:
+            flash('Name and phone number are required', 'error')
+            return redirect(url_for('web.signup_classes', link_token=link_token))
+        
+        import re
+        # Validate phone number (10 digits)
+        phone = re.sub(r'\D', '', phone)  # Remove non-digits
+        if not re.match(r'^\d{10}$', phone):
+            flash('Phone number must be 10 digits', 'error')
+            return redirect(url_for('web.signup_classes', link_token=link_token))
+        
+        # Validate email format if provided
+        if email and not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            flash('Invalid email format', 'error')
+            return redirect(url_for('web.signup_classes', link_token=link_token))
+        
+        # Check if user already exists by phone number
+        existing_user = mongo.db.users.find_one({'phone_number': phone})
+        
+        if existing_user:
+            # User exists, use existing account
+            user = existing_user
+            print(user)
+            user_id = user['_id']
+            
+            # Update name and email if provided and different
+            update_fields = {}
+            if name and user.get('name') != name:
+                update_fields['name'] = name
+            if email and user.get('email') != email:
+                update_fields['email'] = email
+            
+            if update_fields:
+                mongo.db.users.update_one(
+                    {'_id': user_id},
+                    {'$set': update_fields}
+                )
+        else:
+            # Create new user
+            auth_service = AuthService()
+            # Generate a random password for the user
+            import random
+            import string
+            random_password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+            
+            
+        
+            user = auth_service.register_user(phone, name, random_password, 'student', ObjectId(sign_up_link['organization_id']), None, email)
+            
+            if not user:
+                flash('Failed to create user account', 'error')
+                return redirect(url_for('web.signup_classes', link_token=link_token))
+            
+            user = user[0]['user']
+            print(user)
+            user_id = user['_id']
+        
+        # Convert user_id to ObjectId if it's not already
+        if not isinstance(user_id, ObjectId):
+            user_id = ObjectId(user_id)
+        
+        schedule_item_ids = sign_up_link['schedule_item_ids']
+
+        schedule_item = mongo.db.schedules.find_one({'_id': ObjectId(schedule_item_ids[0])})
+        center_id = schedule_item['center_id']
+
+        center_doc = mongo.db.centers.find_one({'_id': ObjectId(center_id)})
+
+        # Add user to classes
+        class_id_list = class_ids.split(',')
+        enrolled_count = 0
+
+        class_names = ''
+        
+        for class_id in class_id_list:
+            try:
+                class_doc = mongo.db.schedules.find_one({'_id': ObjectId(class_id)})
+                print('class_doc1', class_doc)
+                if not class_doc:
+                    continue
+
+                activity_id = class_doc.get('activity_id')
+                activity_doc = mongo.db.activities.find_one({'_id': activity_id})
+                activity_name = activity_doc.get('name')
+                
+                # Check if user is already enrolled
+                if user_id in class_doc.get('assigned_students', []):
+                    enrolled_count += 1
+                    continue
+                
+                # Check class capacity
+                current_students = len(class_doc.get('assigned_students', []))
+                max_students = class_doc.get('max_participants')
+                if max_students and current_students >= max_students:
+                    
+                    flash(f'Class {activity_name} is full', 'warning')
+                    continue
+                
+                # Add user to organization if not already a member
+                if 'organization_id' in class_doc:
+                    org_id = class_doc['organization_id']
+                    org = mongo.db.organizations.find_one({'_id': org_id})
+                    if org and str(user_id) not in [str(uid) for uid in org.get('members', [])]:
+                        mongo.db.organizations.update_one(
+                            {'_id': org_id},
+                            {'$addToSet': {'members': user_id}}
+                        )
+                
+                # Add user to class
+                mongo.db.schedules.update_one(
+                    {'_id': ObjectId(class_id)},
+                    {'$addToSet': {'assigned_students': user_id}}
+                )
+                print('class_doc', class_doc)
+                class_names += activity_name + ', '
+                enrolled_count += 1
+
+    
+                
+            except Exception as e:
+                traceback.print_exc()
+                print(f'Error enrolling in class {class_id}: {str(e)}')
+                return redirect(url_for('web.signup_classes', link_token=link_token))
+
+        class_names = class_names[:-2]
+
+        # enhanced_whatsapp_service = EnhancedWhatsAppService()
+        # try:
+        #     enhanced_whatsapp_service.send_added_to_class_message(phone, name, class_names, center_doc['name'])
+        # except Exception as e:
+        #     print(f'Error sending added to class message: {str(e)}')
+        
+        # Redirect to download app page
+        return redirect(url_for('web.download_app', phone=phone))
+        
+    except Exception as e:
+        traceback.print_exc()
+        flash('Error processing registration: ' + str(e), 'error')
+        return redirect(url_for('web.signup_classes', link_token=link_token))
+
+@web_bp.route('/download-app')
+def download_app():
+    """Display download app page after successful registration"""
+    phone = request.args.get('phone', '')
+    return render_template('download_app.html', user_phone=phone)
+    
+@web_bp.route('/generate-activity-link', methods=['POST'])
+@login_required
+def generate_activity_link():
+    try:
+        schedule_item_ids = request.json.get('schedule_item_ids', [])
+        if not schedule_item_ids:
+            return jsonify({'error': 'No schedule items selected'}), 400
+
+        # Get current user and organization
+        user_info = get_user_info_from_session_or_claims()
+        if not user_info:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        organization_id = user_info.get('organization_id')
+        if not organization_id:
+            return jsonify({'error': 'User must be associated with an organization'}), 400
+
+        # Generate unique token
+        link_token = secrets.token_urlsafe(16)
+
+        schedule_item_object_ids = []
+        for schedule_item_id in schedule_item_ids:
+            schedule_item_object_ids.append(ObjectId(schedule_item_id))
+        
+        # Create activity link
+        activity_link = ActivityLink(
+            _id=ObjectId(),
+            schedule_item_ids=schedule_item_object_ids,
+            organization_id=ObjectId(organization_id),
+            created_by=ObjectId(user_info['user_id']),
+            link_token=link_token,
+            status='active'
+        )
+        
+        # Save to database
+        mongo.db.activity_links.insert_one(activity_link.to_dict())
+        
+        # Generate full URL
+        signup_url = f"{request.host_url.rstrip('/')}/signup-activities/{link_token}"
+        
+        return jsonify({
+            'link': signup_url,
+            'link_token': link_token
+        }), 201
+        
+    except Exception as e:
+        print(e)
+        return jsonify({'error': 'Failed to generate link'}), 500
+
+@web_bp.route('/signup-activities/<link_token>', methods=['GET'])
+def signup_activities(link_token):
+    activity_link = mongo.db.activity_links.find_one({'link_token': link_token})
+    if not activity_link:
+        return jsonify({'error': 'Invalid link'}), 400
+
+    schedule_items = mongo.db.schedules.find({'_id': {'$in': activity_link['schedule_item_ids']}})
+    classes = []
+    for schedule_item in schedule_items:
+        schedule_item['activity'] = mongo.db.activities.find_one({'_id': schedule_item['activity_id']}) 
+        classes.append(schedule_item)
+
+    class_ids = [str(class_id) for class_id in activity_link['schedule_item_ids']]
+    class_ids = ','.join(class_ids)
+    
+   
+    return render_template('signup_classes.html', activity_link=activity_link, classes=classes, class_ids=class_ids, link_token=link_token)

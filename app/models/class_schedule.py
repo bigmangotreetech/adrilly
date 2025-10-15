@@ -6,7 +6,8 @@ class Class:
     
     def __init__(self, title, organization_id, coach_id, scheduled_at, 
                  duration_minutes=60, location=None, group_ids=None, 
-                 student_ids=None, sport=None, level=None, notes=None):
+                 student_ids=None, sport=None, level=None, notes=None,
+                 schedule_item_id=None, price=0):
         self.title = title
         self.organization_id = ObjectId(organization_id) if organization_id else None
         self.coach_id = ObjectId(coach_id) if coach_id else None
@@ -24,7 +25,8 @@ class Class:
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
         self.recurring = None  # For future: recurring class settings
-        
+        self.schedule_item_id = ObjectId(schedule_item_id) if schedule_item_id else None  # ID of the schedule item that created this class
+        self.price = price
         # Enhanced cancellation fields
         self.cancellation_reason = None  # Reason for cancellation
         self.cancelled_by = None  # User ID who cancelled the class
@@ -55,6 +57,8 @@ class Class:
             'created_at': self.created_at,
             'updated_at': self.updated_at,
             'recurring': self.recurring,
+            'schedule_item_id': str(self.schedule_item_id) if self.schedule_item_id else None,
+            'price': self.price,
             'cancellation_reason': self.cancellation_reason,
             'cancelled_by': str(self.cancelled_by) if self.cancelled_by else None,
             'cancelled_at': self.cancelled_at,
@@ -62,7 +66,7 @@ class Class:
             'replacement_class_id': str(self.replacement_class_id) if self.replacement_class_id else None,
             'notification_sent': self.notification_sent,
             'refund_required': self.refund_required,
-            'refund_processed': self.refund_processed
+            'refund_processed': self.refund_processed,
         }
         
         # Only include _id if it exists and is not None
@@ -85,7 +89,9 @@ class Class:
             student_ids=data.get('student_ids', []),
             sport=data.get('sport'),
             level=data.get('level'),
-            notes=data.get('notes')
+            notes=data.get('notes'),
+            schedule_item_id=data.get('schedule_item_id'),
+            price=data.get('price', 0)
         )
         
         # Set additional attributes
@@ -120,8 +126,7 @@ class Class:
         if 'refund_required' in data:
             class_obj.refund_required = data['refund_required']
         if 'refund_processed' in data:
-            class_obj.refund_processed = data['refund_processed']
-        
+            class_obj.refund_processed = data['refund_processed']           
         return class_obj
     
     def get_all_student_ids(self):

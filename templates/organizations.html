@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Organizations - Adrilly Sports Coaching{% endblock %}
+{% block title %}Organizations - botle Sports Coaching{% endblock %}
 
 {% block content %}
 <div class="organizations-page">
@@ -45,7 +45,7 @@
                 
                 <div class="filter-controls">
                     <div class="filter-dropdown">
-                        <select name="status" class="filter-select" id="statusFilter">
+                        <select name="status" class="filter-select select2" id="statusFilter" data-placeholder="Filter by status">
                         <option value="">All Status</option>
                         <option value="active" {{ 'selected' if request.args.get('status') == 'active' }}>Active</option>
                         <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' }}>Inactive</option>
@@ -55,7 +55,7 @@
                 </div>
                     
                     <div class="filter-dropdown">
-                        <select name="activity" class="filter-select" id="activityFilter">
+                        <select name="activity" class="filter-select select2" id="activityFilter" data-placeholder="Filter by activity">
                             <option value="">All Activities</option>
                             <option value="football" {{ 'selected' if request.args.get('activity') == 'football' }}>Football</option>
                             <option value="basketball" {{ 'selected' if request.args.get('activity') == 'basketball' }}>Basketball</option>
@@ -366,88 +366,82 @@
 </div>
 
 <!-- Create Organization Modal -->
-<div id="createOrgModal" class="modal-overlay-modern" style="display: none;">
-    <div class="modal-modern">
-        <div class="modal-header-modern">
-            <div class="modal-title-section">
-                <h3 class="modal-title-modern">Create New Organization</h3>
-                <p class="modal-subtitle-modern">Set up a new organization to manage sports coaching activities</p>
+<div class="modal fade" id="createOrgModal" tabindex="-1" aria-labelledby="createOrgModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createOrgModalLabel">Create New Organization</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button class="modal-close-modern" onclick="closeCreateOrgModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
         <form id="createOrgForm" method="POST" action="{{ url_for('web.create_organization_submit') }}">
-            <div class="modal-body-modern">
+            <div class="modal-body">
                 <!-- Organization Details -->
-                <h4 class="section-title-modern">Organization Information</h4>
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="org_name" class="form-label-modern">
-                            <span class="label-text">Organization Name</span>
-                            <span class="label-required">*</span>
+                <h5 class="section-title mb-3">Organization Information</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="org_name" class="form-label">
+                            <span>Organization Name</span>
+                            <span class="text-danger">*</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="org_name" name="org_name" required
+                        <input type="text" class="form-control" id="org_name" name="org_name" required
                                minlength="2" maxlength="100"
                                pattern="^[a-zA-Z0-9\s.'-]+$"
                                placeholder="Enter organization name"
                                title="Organization name should contain only letters, numbers, spaces, periods, apostrophes, and hyphens">
-                        <div id="org-name-feedback" class="form-feedback-modern"></div>
+                        <div id="org-name-feedback" class="invalid-feedback"></div>
                     </div>
                     
-                    <div class="form-field-modern">
-                        <label for="whatsapp_number" class="form-label-modern">
-                            <span class="label-text">WhatsApp Number</span>
+                    <div class="col-md-6 mb-3">
+                        <label for="whatsapp_number" class="form-label">
+                            <span>WhatsApp Number</span>
                         </label>
-                        <input type="tel" class="form-input-modern" id="whatsapp_number" name="whatsapp_number"
+                        <input type="tel" class="form-control" id="whatsapp_number" name="whatsapp_number"
                                pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$"
                                placeholder="+91-9876543210"
                                title="Enter a valid phone number">
-                        <div id="whatsapp-feedback" class="form-feedback-modern"></div>
+                        <div id="whatsapp-feedback" class="invalid-feedback"></div>
                     </div>
                 </div>
                 
-                <div class="form-field-modern">
-                    <label for="description" class="form-label-modern">
-                        <span class="label-text">Description</span>
+                <div class="mb-3">
+                    <label for="description" class="form-label">
+                        <span>Description</span>
                     </label>
-                    <textarea class="form-input-modern" id="description" name="description" rows="3"
+                    <textarea class="form-control" id="description" name="description" rows="3"
                               placeholder="Brief description of the organization"></textarea>
                 </div>
                 
                 <!-- Address -->
-                <h4 class="section-title-modern">Address Information</h4>
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="street" class="form-label-modern">
-                            <span class="label-text">Street Address</span>
+                <h5 class="section-title mb-3">Address Information</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="street" class="form-label">
+                            <span>Street Address</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="street" name="street"
+                        <input type="text" class="form-control" id="street" name="street"
                                placeholder="Enter street address">
                     </div>
-                    <div class="form-field-modern">
-                        <label for="city" class="form-label-modern">
-                            <span class="label-text">City</span>
+                    <div class="col-md-6 mb-3">
+                        <label for="city" class="form-label">
+                            <span>City</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="city" name="city"
+                        <input type="text" class="form-control" id="city" name="city"
                                placeholder="Enter city">
                     </div>
                 </div>
-                <div class="form-grid-modern">
-                    <div class="form-field-modern">
-                        <label for="state" class="form-label-modern">
-                            <span class="label-text">State</span>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="state" class="form-label">
+                            <span>State</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="state" name="state"
+                        <input type="text" class="form-control" id="state" name="state"
                                placeholder="Enter state">
                     </div>
-                    <div class="form-field-modern">
-                        <label for="zipcode" class="form-label-modern">
-                            <span class="label-text">ZIP Code</span>
+                    <div class="col-md-6 mb-3">
+                        <label for="zipcode" class="form-label">
+                            <span>ZIP Code</span>
                         </label>
-                        <input type="text" class="form-input-modern" id="zipcode" name="zipcode"
+                        <input type="text" class="form-control" id="zipcode" name="zipcode"
                                placeholder="Enter ZIP code">
                     </div>
                 </div>
@@ -536,35 +530,28 @@
                     <div id="activities-feedback" class="form-feedback-modern"></div>
                         </div>
                     </div>
-            <div class="modal-footer-modern">
-                <button type="button" class="btn-secondary-modern" onclick="closeCreateOrgModal()">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     Cancel
                 </button>
-                <button type="submit" class="btn-primary-modern">
-                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>
                     Create Organization
                 </button>
-                </div>
-        </form>
             </div>
+        </form>
+        </div>
+    </div>
 </div>
 
 <!-- Edit Organization Modal -->
-<div id="editOrgModal" class="modal-overlay-modern" style="display: none;">
-    <div class="modal-modern">
-        <div class="modal-header-modern">
-            <div class="modal-title-section">
-                <h3 class="modal-title-modern">Edit Organization</h3>
-                <p class="modal-subtitle-modern">Update organization information and settings</p>
+<div class="modal fade" id="editOrgModal" tabindex="-1" aria-labelledby="editOrgModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editOrgModalLabel">Edit Organization</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button class="modal-close-modern" onclick="closeEditOrgModal()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
         <form id="editOrgForm" method="POST">
             <div class="modal-body-modern">
                 <!-- Organization Details -->
@@ -644,7 +631,7 @@
                         <span class="label-text">Status</span>
                         <span class="label-required">*</span>
                     </label>
-                    <select class="form-select-modern" id="edit_status" name="is_active">
+                    <select class="form-select-modern select2" id="edit_status" name="is_active" data-placeholder="Select status">
                         <option value="true">Active</option>
                         <option value="false">Inactive</option>
                     </select>
@@ -1792,6 +1779,17 @@
 
 {% block scripts %}
 <script>
+// ObjectId class for MongoDB IDs
+class ObjectId {
+    constructor(id) {
+        this.id = id;
+    }
+    
+    toString() {
+        return this.id;
+    }
+}
+
 // Enhanced Organization Management JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     initializeFilters();
@@ -2030,18 +2028,22 @@ function toggleActionDropdown(button) {
 
 // Modal functions
 function openCreateOrgModal() {
-    const modal = document.getElementById('createOrgModal');
-    if (modal) {
-        modal.style.display = 'flex';
+    const modalElement = document.getElementById('createOrgModal');
+    if (modalElement) {
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
         // Add event listeners for real-time validation
         setupFormValidation();
     }
 }
 
 function closeCreateOrgModal() {
-    const modal = document.getElementById('createOrgModal');
-    if (modal) {
-        modal.style.display = 'none';
+    const modalElement = document.getElementById('createOrgModal');
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
     }
     const form = document.getElementById('createOrgForm');
     if (form) {
@@ -2051,14 +2053,15 @@ function closeCreateOrgModal() {
 }
 
 function openEditOrgModal(orgId) {
-    // Show loading state
-    const modal = document.getElementById('editOrgModal');
-    if (!modal) {
+    // Show Bootstrap modal
+    const modalElement = document.getElementById('editOrgModal');
+    if (!modalElement) {
         console.error('Edit organization modal not found');
         alert('Error: Modal not properly loaded. Please refresh the page.');
         return;
     }
-    modal.style.display = 'flex';
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
     
     // Add loading indicator
     const modalBody = modal.querySelector('.modal-body-modern');
@@ -2073,7 +2076,7 @@ function openEditOrgModal(orgId) {
     `;
     
     // Fetch organization data and populate the modal
-    fetch(`/api/organizations/${orgId}`)
+    fetch(`/api/organizations/${new ObjectId(orgId)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Failed to fetch organization data');
@@ -2140,9 +2143,12 @@ function openEditOrgModal(orgId) {
 }
 
 function closeEditOrgModal() {
-    const modal = document.getElementById('editOrgModal');
-    if (modal) {
-        modal.style.display = 'none';
+    const modalElement = document.getElementById('editOrgModal');
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
+        }
     }
     const form = document.getElementById('editOrgForm');
     if (form) {
@@ -2510,7 +2516,7 @@ function suspendOrganization(orgId) {
 
 function deleteOrganization(orgId, orgName) {
     if (confirm(`Are you sure you want to delete "${orgName}"? This action cannot be undone and will delete all associated data.`)) {
-        fetch(`/api/organizations/${orgId}`, {
+        fetch(`/api/organizations/${new ObjectId(orgId)}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -2533,7 +2539,7 @@ function deleteOrganization(orgId, orgName) {
 }
 
 function updateOrganizationStatus(orgId, status) {
-    fetch(`/api/organizations/${orgId}/status`, {
+    fetch(`/api/organizations/${new ObjectId(orgId)}/status`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -2581,7 +2587,7 @@ function viewOrganization(orgId) {
     `;
     
     // Fetch organization details
-    fetch(`/api/organizations/${orgId}`)
+    fetch(`/api/organizations/${new ObjectId(orgId)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');

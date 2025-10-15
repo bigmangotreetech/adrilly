@@ -15,13 +15,31 @@ class User:
         'student': 4         # Student
     }
     
-    def __init__(self, phone_number, name, role='student', password=None, 
-                 organization_id=None, groups=None, profile_data=None, created_by=None):
+    def __init__(self, phone_number, name, email=None, role='student', password=None, 
+                 organization_id=None, organization_ids=None, groups=None, profile_data=None, created_by=None, billing_start_date=None,
+                 subscription_ids=None, parent_id=None, age=None, gender=None):
         self.phone_number = self._normalize_phone_number(phone_number) if phone_number else ''
         self.name = name
+        self.email = email
         self.role = role
         self.password_hash = generate_password_hash(password) if password else None
-        self.organization_id = ObjectId(organization_id) if organization_id else None
+        
+        # Support both single organization_id (backward compatibility) and multiple organization_ids
+        if organization_ids is not None:
+            # If organization_ids is provided, use it
+            if isinstance(organization_ids, list):
+                self.organization_ids = [ObjectId(oid) if oid and not isinstance(oid, ObjectId) else oid for oid in organization_ids if oid]
+            else:
+                self.organization_ids = [ObjectId(organization_ids)] if organization_ids else []
+        elif organization_id is not None:
+            # If only organization_id provided, create list with single org
+            self.organization_ids = [ObjectId(organization_id)] if organization_id else []
+        else:
+            self.organization_ids = []
+        
+        # Keep organization_id for backward compatibility (points to first/primary org)
+        self.organization_id = self.organization_ids[0] if self.organization_ids else None
+        
         self.groups = groups or []  # Group IDs for students
         self.profile_data = profile_data or {}
         self.is_active = True
@@ -34,15 +52,21 @@ class User:
         self.created_by = ObjectId(created_by) if created_by else None
         
         # Email support
-        self.email = None
         self.first_name = ''
         self.last_name = ''
+
+        self.subscription_ids = [ObjectId(sid) for sid in subscription_ids] if subscription_ids else []
         
         # Profile picture
         self.profile_picture_url = None
         
         # Billing information
-        self.billing_start_date = None
+        self.billing_start_date = billing_start_date
+        
+        # Child profile fields
+        self.parent_id = ObjectId(parent_id) if parent_id else None
+        self.age = age
+        self.gender = gender
         
         # Multi-tenant specific fields
         self.can_create_organizations = (role in ['super_admin'])
@@ -55,8 +79,12 @@ class User:
     
     def _normalize_phone_number(self, phone_number):
         """Normalize phone number format for consistency"""
-        # Remove all non-digit characters except +
+        # Remove all non-digit characters including + and -
+        print(phone_number)
         cleaned = re.sub(r'[^\d\+]', '', phone_number)
+        cleaned = cleaned.replace('+91', '')
+        cleaned = cleaned.replace('+1', '')
+        cleaned = cleaned.replace('+', '')
         
         return cleaned
     
@@ -106,10 +134,12 @@ class User:
         if self.role == 'super_admin':
             return True
         
-        if not self.organization_id:
+        if not self.organization_ids:
             return False
-            
-        return str(self.organization_id) == str(target_org_id)
+        
+        # Check if target_org_id is in user's organization_ids
+        target_org_str = str(target_org_id) if target_org_id else None
+        return any(str(org_id) == target_org_str for org_id in self.organization_ids)
     
     def can_manage_user(self, target_user):
         """Check if user can manage another user"""
@@ -131,10 +161,45 @@ class User:
         """Get list of organization IDs this user can access"""
         if self.role == 'super_admin':
             return 'all'  # Special indicator for all organizations
-        elif self.organization_id:
-            return [str(self.organization_id)]
+        elif self.organization_ids:
+            return [str(org_id) for org_id in self.organization_ids]
         else:
             return []
+    
+    def add_organization(self, organization_id):
+        """Add user to an organization"""
+        org_id = ObjectId(organization_id) if organization_id and not isinstance(organization_id, ObjectId) else organization_id
+        if org_id and org_id not in self.organization_ids:
+            self.organization_ids.append(org_id)
+            # Update primary organization_id if this is the first one
+            if not self.organization_id:
+                self.organization_id = org_id
+            self.updated_at = datetime.utcnow()
+            return True
+        return False
+    
+    def remove_organization(self, organization_id):
+        """Remove user from an organization"""
+        org_id = ObjectId(organization_id) if organization_id and not isinstance(organization_id, ObjectId) else organization_id
+        if org_id in self.organization_ids:
+            self.organization_ids.remove(org_id)
+            # Update primary organization_id if it was removed
+            if self.organization_id == org_id:
+                self.organization_id = self.organization_ids[0] if self.organization_ids else None
+            self.updated_at = datetime.utcnow()
+            return True
+        return False
+    
+    def set_primary_organization(self, organization_id):
+        """Set the primary organization for the user"""
+        org_id = ObjectId(organization_id) if organization_id and not isinstance(organization_id, ObjectId) else organization_id
+        if org_id in self.organization_ids:
+            # Move it to the front of the list
+            self.organization_ids = [org_id] + [oid for oid in self.organization_ids if oid != org_id]
+            self.organization_id = org_id
+            self.updated_at = datetime.utcnow()
+            return True
+        return False
     
     def to_dict(self, include_sensitive=False):
         """Convert user to dictionary"""
@@ -146,7 +211,8 @@ class User:
             'last_name': self.last_name,
             'profile_picture_url': self.profile_picture_url,
             'role': self.role,
-            'organization_id': str(self.organization_id) if self.organization_id else None,
+            'organization_id': self.organization_id if self.organization_id else None,  # Backward compatibility
+            'organization_ids': [str(org_id) for org_id in self.organization_ids] if self.organization_ids else [],  # New field
             'groups': [str(group_id) for group_id in self.groups],
             'profile_data': self.profile_data,
             'is_active': self.is_active,
@@ -160,7 +226,11 @@ class User:
             'can_manage_organization': self.can_manage_organization,
             'can_manage_coaches': self.can_manage_coaches,
             'can_manage_students': self.can_manage_students,
-            'billing_start_date': self.billing_start_date
+            'billing_start_date': self.billing_start_date,
+            'subscription_ids': [str(sid) for sid in self.subscription_ids] if self.subscription_ids else [],
+            'parent_id': str(self.parent_id) if self.parent_id else None,
+            'age': self.age,
+            'gender': self.gender
         }
         
         # Only include _id if it exists and is not None
@@ -179,14 +249,23 @@ class User:
     @classmethod
     def from_dict(cls, data):
         """Create user from dictionary"""
+        # Handle both organization_ids (new) and organization_id (backward compatibility)
+        org_ids = data.get('organization_ids')
+        org_id = data.get('organization_id')
+        
         user = cls(
             phone_number=data['phone_number'],
             name=data['name'],
             role=data.get('role', 'student'),
-            organization_id=data.get('organization_id'),
+            organization_ids=org_ids,  # Use organization_ids if available
+            organization_id=org_id if not org_ids else None,  # Fallback to organization_id
             groups=data.get('groups', []),
             profile_data=data.get('profile_data', {}),
-            created_by=data.get('created_by')
+            created_by=data.get('created_by'),
+            subscription_ids=data.get('subscription_ids', []),
+            parent_id=data.get('parent_id'),
+            age=data.get('age'),
+            gender=data.get('gender')
         )
         
         # Set additional attributes
@@ -226,6 +305,14 @@ class User:
             user.can_manage_students = data['can_manage_students']
         if 'billing_start_date' in data:
             user.billing_start_date = data['billing_start_date']
+        if 'profile_picture_url' in data:
+            user.profile_picture_url = data['profile_picture_url']
+        if 'parent_id' in data and data['parent_id']:
+            user.parent_id = ObjectId(data['parent_id']) if isinstance(data['parent_id'], str) else data['parent_id']
+        if 'age' in data:
+            user.age = data['age']
+        if 'gender' in data:
+            user.gender = data['gender']
         
         return user
     

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>botle - Where Learning Meets Opportunity</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#a1de56',
+                            dark: '#8bc34a',
+                            light: '#c8e6c9'
+                        },
+                        secondary: {
+                            DEFAULT: '#2196f3',
+                            dark: '#1976d2',
+                            light: '#bbdefb'
+                        },
+                        accent: {
+                            primary: '#ff9800',
+                            secondary: '#e91e63'
+                        },
+                        status: {
+                            success: '#4caf50',
+                            warning: '#ff9800',
+                            error: '#f44336',
+                            info: '#2196f3'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-black text-white">
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-[#121212]/80 backdrop-blur-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <a href="#" class="text-2xl font-bold text-primary">botle</a>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#features" class="hover:text-primary transition-colors">Features</a>
+                    <a href="#why" class="hover:text-primary transition-colors">Why botle</a>
+                    <a href="#showcase" class="hover:text-primary transition-colors">Showcase</a>
+                    <a href="#testimonials" class="hover:text-primary transition-colors">Testimonials</a>
+                </div>
+                <div class="hidden md:flex space-x-4">
+                    <a href="{{ url_for('web.login') }}" class="px-4 py-2 rounded-lg hover:bg-[#1e1e1e] transition-colors">Login</a>
+                    <button class="px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary-dark transition-colors">Sign Up</button>
+                </div>
+                <button class="md:hidden text-2xl">☰</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="min-h-screen pt-20 bg-black">
+        <div class="container mx-auto px-4 py-20">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="space-y-8 animate-fade-in">
+                    <h1 class="text-4xl md:text-6xl font-bold leading-tight">
+                        Streamline Your Coaching Center. 
+                        <span class="text-primary">Discover New Learning Experiences.</span>
+                    </h1>
+                    <p class="text-lg text-gray-300">
+                        botle helps coaching centers manage schedules, track attendance, and grow revenue. 
+                        Students can explore new centers and book one-time experiences.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <button class="px-8 py-4 bg-primary text-bg-secondary rounded-lg hover:scale-105 transition-transform">
+                            Get Started
+                        </button>
+                        <button class="px-8 py-4 border-2 border-primary text-primary rounded-lg hover:scale-105 transition-transform">
+                            Explore Experiences
+                        </button>
+                    </div>
+                </div>
+                <div class="relative h-[600px]">
+                    <!-- Placeholder for 3D mockup -->
+                    <div class="absolute inset-0 bg-gradient-to-tr from-primary/20 to-secondary/20 rounded-2xl">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-gray-500">3D Mockup Placeholder</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-[#121212]">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl md:text-5xl font-bold text-center mb-16">
+                All-in-one Platform for Centers and Students
+            </h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Feature cards will be dynamically generated -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Value Proposition Section -->
+    <section id="why" class="py-20 bg-black">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="space-y-8 animate-on-scroll">
+                    <h2 class="text-3xl md:text-5xl font-bold mb-8">Why botle?</h2>
+                    <div class="space-y-6">
+                        <p class="text-xl animated-underline">Centers fill empty slots, reduce no-shows, and generate new revenue streams.</p>
+                        <p class="text-xl animated-underline">Students gain access to new learning opportunities outside their regular centers.</p>
+                    </div>
+                </div>
+                <div class="relative h-[400px]">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-secondary/20 to-primary/20 rounded-2xl">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-gray-500">Network Visualization Placeholder</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Showcase Section -->
+    <section id="showcase" class="py-20 bg-[#121212] overflow-hidden">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl md:text-5xl font-bold text-center mb-16">See botle in Action</h2>
+            <div class="showcase-carousel relative">
+                <div class="flex space-x-8 showcase-slides animate-on-scroll">
+                    <!-- Carousel items will be dynamically generated -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-20 bg-black">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl md:text-5xl font-bold text-center mb-16">Trusted by Coaches and Loved by Students</h2>
+            <div class="testimonials-container overflow-x-auto pb-8">
+                <div class="flex space-x-6 animate-on-scroll">
+                    <!-- Testimonial cards will be dynamically generated -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Insights Section -->
+    <section id="insights" class="py-20 bg-[#121212]">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl md:text-5xl font-bold text-center mb-16">Growth Backed by Data</h2>
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="space-y-6 animate-on-scroll">
+                    <p class="text-2xl">Centers report <span class="text-primary">30% fewer no-shows</span> and <span class="text-secondary">20% higher slot utilization</span> after adopting botle.</p>
+                    <div class="stats-container h-[300px] relative">
+                        <!-- Stats bars will be dynamically generated -->
+                    </div>
+                </div>
+                <div class="relative h-[400px]">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-accent-primary/20 to-accent-secondary/20 rounded-2xl">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-gray-500">Analytics Chart Placeholder</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action Section -->
+    <section id="cta" class="py-20 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-tr from-bg-accent via-bg-primary to-bg-secondary opacity-50"></div>
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="text-center space-y-8 max-w-3xl mx-auto animate-on-scroll">
+                <h2 class="text-4xl md:text-6xl font-bold">Start with botle Today</h2>
+                <p class="text-xl text-gray-300">Whether you're a center or a student, unlock the future of learning.</p>
+                <div class="flex flex-wrap justify-center gap-6">
+                    <button class="px-8 py-4 bg-primary text-bg-secondary rounded-lg hover:scale-105 transition-transform">
+                        Sign Up as Center
+                    </button>
+                    <button class="px-8 py-4 border-2 border-white rounded-lg hover:scale-105 transition-transform">
+                        Explore Experiences
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#121212] py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div class="space-y-4">
+                    <h3 class="text-2xl font-bold text-primary">botle</h3>
+                    <p class="text-gray-400">Where Learning Meets Opportunity</p>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="font-bold text-lg">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-gray-400 hover:text-primary transition-colors">Features</a></li>
+                        <li><a href="#why" class="text-gray-400 hover:text-primary transition-colors">Why botle</a></li>
+                        <li><a href="#showcase" class="text-gray-400 hover:text-primary transition-colors">Showcase</a></li>
+                    </ul>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="font-bold text-lg">Resources</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Blog</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Help Center</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="font-bold text-lg">Connect</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-primary transition-colors text-2xl">
+                            <span class="sr-only">Twitter</span>
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-primary transition-colors text-2xl">
+                            <span class="sr-only">LinkedIn</span>
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-primary transition-colors text-2xl">
+                            <span class="sr-only">Instagram</span>
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-bg-tertiary pt-8 text-center text-gray-400">
+                <p>&copy; 2025 botle. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="index.js"></script>
+</body>
+</html>

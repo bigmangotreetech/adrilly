@@ -7,6 +7,8 @@ from typing import Dict, Optional, Tuple
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
 from flask import current_app
+from app.services.enhanced_whatsapp_service import EnhancedWhatsAppService
+
 
 class EmailVerificationService:
     """Service for sending verification codes via email or saving to tmp files"""
@@ -72,6 +74,8 @@ class EmailVerificationService:
             
             if self.verification_method == 'email':
                 success, message = self._send_email(email, verification_code, user_name)
+            # elif self.verification_method == 'whatsapp':
+            #     success, message = self._send_whatsapp(phone_number, verification_code)
             else:
                 success, message = self._save_to_tmp(phone_number, verification_code, email, expires_at)
             
@@ -91,7 +95,7 @@ class EmailVerificationService:
                 return False, "Email service not configured"
             
             # Prepare email content
-            subject = "Your Adrilly Verification Code"
+            subject = "Your botle Verification Code"
             
             # HTML email template
             html_body = f"""
@@ -180,7 +184,7 @@ class EmailVerificationService:
                 <div class="container">
                     <div class="card">
                         <div class="logo">
-                            <h1>Adrilly</h1>
+                            <h1>botle</h1>
                         </div>
                         
                         <p class="message">
@@ -188,7 +192,7 @@ class EmailVerificationService:
                         </p>
                         
                         <p class="message">
-                            You requested to log in to your Adrilly Sports Coaching account. 
+                            You requested to log in to your botle Sports Coaching account. 
                             Use the verification code below to complete your login:
                         </p>
                         
@@ -207,7 +211,7 @@ class EmailVerificationService:
                         
                         <div class="footer">
                             <p>
-                                This is an automated message from Adrilly Sports Coaching Management.<br>
+                                This is an automated message from botle Sports Coaching Management.<br>
                                 If you have any questions, please contact our support team.
                             </p>
                         </div>
@@ -221,7 +225,7 @@ class EmailVerificationService:
             text_body = f"""
             Hello{f" {user_name}" if user_name else ""},
             
-            You requested to log in to your Adrilly Sports Coaching account.
+            You requested to log in to your botle Sports Coaching account.
             
             Your verification code is: {verification_code}
             
@@ -230,7 +234,7 @@ class EmailVerificationService:
             If you didn't request this code, please ignore this email.
             
             ---
-            Adrilly Sports Coaching Management
+            botle Sports Coaching Management
             """
             
             # Send email
@@ -264,6 +268,16 @@ class EmailVerificationService:
         except Exception as e:
             current_app.logger.error(f"Unexpected error sending email: {str(e)}")
             return False, f"Failed to send email: {str(e)}"
+    
+    def _send_whatsapp(self, phone_number: str, verification_code: str) -> Tuple[bool, str]:
+        """Send verification code via WhatsApp"""
+        try:
+            enhanced_whatsapp_service = EnhancedWhatsAppService()
+            enhanced_whatsapp_service.send_otp_to_logged_in_user(phone_number, verification_code)
+            return True, "Verification code sent to WhatsApp"
+        except Exception as e:
+            current_app.logger.error(f"Error sending verification code via WhatsApp: {str(e)}")
+            return False, f"Failed to send verification code via WhatsApp: {str(e)}"
     
     def _save_to_tmp(self, phone_number: str, verification_code: str, email: str, expires_at: datetime) -> Tuple[bool, str]:
         """Save verification code to tmp file for development/testing"""

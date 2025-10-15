@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Payments - botle Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Payment Management</h1>
+    <p class="page-subtitle">Manage student payments and billing</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <!-- Navigation tabs -->
+        <ul class="nav nav-tabs card-header-tabs mb-2">
+            <li class="nav-item">
+                <a class="nav-link active" id="students-tab" data-bs-toggle="tab" href="#students" role="tab">Students</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="subscriptions-tab" data-bs-toggle="tab" href="#subscriptions" role="tab">Subscriptions</a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="tab-content">
+        <!-- Students Tab -->
+        <div class="tab-pane fade show active" id="students" role="tabpanel">
+            <div class="card-header d-flex justify-content-between align-items-center border-0">
+                <h3 class="card-title">Students with Billing</h3>
+                <div class="btn-group">
+                    <a href="{{ url_for('web.create_payment') }}" class="btn btn-primary">Record New Payment</a>
+                </div>
+            </div>
+    <div class="card-body">
+        <!-- Search -->
+        <form method="GET" class="mb-3">
+            <div class="form-row">
+                <div class="form-group">
+                    <input type="text" name="search" class="form-control" placeholder="Search students by name, email, or phone..." 
+                           value="{{ search or '' }}">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-outline">Search</button>
+                    {% if search %}
+                    <a href="{{ url_for('web.payments') }}" class="btn btn-secondary">Clear</a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+
+        <!-- Students List -->
+        {% if users %}
+        <div class="">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Billing Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.name }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.phone_number }}</td>
+                <td>{{ user.billing_start_date }}</td>
+                <td>
+                    <a href="{{ url_for('web.user_payments', user_id=user._id) }}" class="btn btn-sm btn-outline-primary">View Payments</a>
+                    <a href="{{ url_for('web.create_payment', user_id=user._id) }}" class="btn btn-sm btn-primary">Add Payment</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+            
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <p class="text-muted">
+                {% if search %}
+                No students found matching "{{ search }}".
+                {% else %}
+                No students with billing dates found.
+                {% endif %}
+            </p>
+            <a href="{{ url_for('web.users') }}" class="btn btn-outline">Manage Students</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+        <!-- Subscriptions Tab -->
+        <div class="tab-pane fade" id="subscriptions" role="tabpanel">
+            <div class="card-header d-flex justify-content-between align-items-center border-0">
+                <h3 class="card-title">Subscription Plans</h3>
+                <div class="btn-group">
+                    {% if session.user_role in ['org_admin', 'coach_admin'] %}
+                    <button class="btn btn-primary" onclick="openCreateSubscriptionModal()">Add Subscription Plan</button>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                {% if subscriptions %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Price (₹/month)</th>
+                                <th>Created On</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for subscription in subscriptions %}
+                            <tr>
+                                <td>
+                                    <strong>{{ subscription.name }}</strong>
+                                    {% if subscription.description %}
+                                    <br><small class="text-muted">{{ subscription.description }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>₹{{ subscription.price_per_month }}</td>
+                                <td>{{ subscription.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if subscription.is_active else 'secondary' }}">
+                                        {{ 'Active' if subscription.is_active else 'Inactive' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                onclick="editSubscription('{{ subscription._id }}')">Edit</button>
+                                        {% set status_class = 'btn-outline-danger' if subscription.is_active else 'btn-outline-success' %}
+                                        {% set action_text = 'Deactivate' if subscription.is_active else 'Activate' %}
+                                        <button class="btn btn-sm {{ status_class }}" 
+                                                onclick="handleSubscriptionToggle(this, '{{ subscription._id }}')">
+                                            {{ action_text }}
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted">No subscription plans found.</p>
+                    
+                    {% if session.role in ['org_admin', 'coach_admin'] %}
+                    <button class="btn btn-primary" onclick="openCreateSubscriptionModal()">Create Your First Subscription Plan</button>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Subscription Modal -->
+<div class="modal fade" id="createSubscriptionModal" tabindex="-1" aria-labelledby="createSubscriptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createSubscriptionForm" method="POST" action="{{ url_for('web.create_subscription') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createSubscriptionModalLabel">Create New Subscription Plan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="subscription_name" class="form-label">Plan Name</label>
+                        <input type="text" class="form-control" id="subscription_name" name="name" 
+                               placeholder="e.g. Basic Monthly, Premium Plan" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="price" class="form-label">Price (₹)</label>
+                        <input type="number" class="form-control" id="price" name="price" 
+                               min="0" step="1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"
+                                  placeholder="Describe the features and benefits of this subscription plan"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="cycle_type" class="form-label">Cycle Type</label>
+                        <select class="form-control" id="cycle_type" name="cycle_type">
+                            <option value="monthly">Monthly</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="quarterly">Quarterly</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Subscription Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize subscription modal
+let subscriptionModal;
+document.addEventListener('DOMContentLoaded', function() {
+    subscriptionModal = new bootstrap.Modal(document.getElementById('createSubscriptionModal'));
+    
+    // Reset form when modal is hidden
+    document.getElementById('createSubscriptionModal').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('createSubscriptionForm').reset();
+    });
+});
+
+function openCreateSubscriptionModal() {
+    subscriptionModal.show();
+}
+
+function editSubscription(subscriptionId) {
+    // TODO: Implement subscription editing
+    console.log('Edit subscription:', subscriptionId);
+}
+
+async function handleSubscriptionToggle(button, subscriptionId) {
+    try {
+        const isActive = button.innerText === 'Deactivate';
+        const action = isActive ? 'deactivate' : 'activate';
+        
+        const response = await fetch(`/api/subscriptions/${subscriptionId}/${action}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to update subscription status');
+        }
+        
+        // Update button without page reload
+        button.innerText = isActive ? 'Activate' : 'Deactivate';
+        button.classList.remove(isActive ? 'btn-outline-danger' : 'btn-outline-success');
+        button.classList.add(isActive ? 'btn-outline-success' : 'btn-outline-danger');
+        
+        // Update status badge
+        const statusBadge = button.closest('tr').querySelector('.badge');
+        statusBadge.innerText = isActive ? 'Inactive' : 'Active';
+        statusBadge.classList.remove(isActive ? 'bg-success' : 'bg-secondary');
+        statusBadge.classList.add(isActive ? 'bg-secondary' : 'bg-success');
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to update subscription status');
+    }
+}
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+
+
+
+.payment-summary {
+    margin-bottom: 1rem;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.summary-row.pending .summary-value {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.summary-row.overdue .summary-value {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.summary-label {
+    color: var(--text-muted);
+}
+
+.summary-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.next-billing {
+    margin-bottom: 1rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-light);
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.card-actions .btn {
+    flex: 1;
+    text-align: center;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .student-card {
+        background: var(--card-bg-dark);
+        border-color: var(--border-color-dark);
+    }
+    
+    .student-card:hover {
+        border-color: var(--accent-primary);
+    }
+    
+    .billing-day {
+        background: var(--bg-secondary-dark);
+    }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .students-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .student-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .card-actions {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}

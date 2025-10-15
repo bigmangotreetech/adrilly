@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Payment - {{ subscription.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4">
+                    <!-- Header -->
+                    <div class="text-center mb-4">
+                        <h2 class="display-6 fw-bold text-primary">Subscription Payment</h2>
+                        <p class="text-muted">Complete your payment to activate your subscription</p>
+                    </div>
+
+                    <!-- Subscription Details -->
+                    <div class="subscription-details mb-4">
+                        <h5 class="card-title text-primary mb-3">Plan Details</h5>
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item bg-transparent px-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">{{ subscription.name }}</h6>
+                                        <p class="text-muted mb-0">{{ subscription.description }}</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <h5 class="mb-0 fw-bold">₹{{ subscription.price }}</h5>
+                                        <small class="text-muted">per {{ subscription.cycle_type }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Summary -->
+                    <div class="payment-summary py-3 rounded-3 mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subscription Fee</span>
+                            <span>₹{{ subscription.price }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tax</span>
+                            <span>₹0</span>
+                        </div>
+                        <div class="d-flex justify-content-between fw-bold">
+                            <span>Total</span>
+                            <span>₹{{ subscription.price }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Razorpay Payment Button -->
+                    <button id="razorpay-button" class="btn btn-primary btn-lg w-100">
+                        Pay ₹{{ subscription.price }}
+                    </button>
+
+                    <!-- Security Info -->
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-shield-lock me-1"></i>
+                            Secure payment powered by Razorpay
+                        </small>
+                    </div>
+
+                    <!-- Payment Form (Hidden) -->
+                    <form name="razorpayForm" id="razorpayForm" action="{{ url_for('web.verify_payment') }}" method="POST">
+                        <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+                        <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+                        <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+                    </form>
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="text-center mt-4">
+                <p class="text-muted mb-0">
+                    <small>
+                        Having trouble? <a href="#" class="text-decoration-none">Contact Support</a>
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Razorpay SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+document.getElementById('razorpay-button').addEventListener('click', function(e) {
+    e.preventDefault();
+    
+    const options = {
+        key: '{{ razorpay_key }}',
+        amount: '{{ razorpay_order.amount }}',
+        currency: '{{ razorpay_order.currency }}',
+        name: '{{ subscription.name }}',
+        description: '{{ subscription.description or "Subscription Payment" }}',
+        order_id: '{{ razorpay_order.id }}',
+        prefill: {
+            name: '{{ user.name }}',
+            email: '{{ user.email }}',
+            contact: '{{ user.phone_number }}'
+        },
+        theme: {
+            color: '#76b627'  // Match your accent color
+        },
+        modal: {
+            ondismiss: function() {
+                console.log('Payment modal closed');
+            }
+        },
+        handler: function(response) {
+            // Set form values
+            document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+            document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+            document.getElementById('razorpay_signature').value = response.razorpay_signature;
+            
+            // Submit form
+            const form = document.getElementById('razorpayForm');
+            form.submit();
+        }
+    };
+    
+    const rzp = new Razorpay(options);
+    rzp.open();
+});
+</script>
+{% endblock %}

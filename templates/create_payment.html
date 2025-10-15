@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Create Payment - botle Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Record New Payment</h1>
+    <p class="page-subtitle">Create a payment record for a student</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8 col-lg-6 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Payment Details</h3>
+            </div>
+            <form method="POST" action="{{ url_for('web.create_payment') }}">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="student_id" class="form-label">Student *</label>
+                        <select class="form-control form-select select2" id="student_id" name="student_id" required>
+                            <option value="">Select a student</option>
+                            {% for student in students %}
+                            <option value="{{ student._id }}" {% if selected_user_id == student._id %}selected{% endif %}>
+                                {{ student.name }}
+                                {% if student.email %} - {{ student.email }}{% endif %}
+                                {% if student.phone_number %} - {{ student.phone_number }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if students|length == 0 %}
+                        <div class="alert alert-warning mt-2">
+                            <small>No students found in your organization. Please add students first.</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-row mx-0 mt-4">
+                        <div class="form-group">
+                            <label for="amount" class="form-label">Amount (₹) *</label>
+                            <input type="number" class="form-control" id="amount" name="amount" 
+                                   step="1" min="0" required placeholder="0">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="due_date" class="form-label">Due Date *</label>
+                            <input type="date" class="form-control" id="due_date" name="due_date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description" class="form-label">Description *</label>
+                        <input type="text" class="form-control" id="description" name="description" 
+                               placeholder="e.g. Monthly Training Fee - March 2025" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="payment_type" class="form-label">Payment Type *</label>
+                        <select class="form-control form-select select2" id="payment_type" name="payment_type" required data-placeholder="Select payment type">
+                            <option value="">Select payment type</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="annual">Annual</option>
+                            <option value="one_time">One Time</option>
+                            <option value="registration">Registration</option>
+                            <option value="equipment">Equipment</option>
+                            <option value="late_fee">Late Fee</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Any additional notes about this payment..."></textarea>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="btn-group w-100">
+                        <a href="{{ url_for('web.payments') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Create Payment</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Card -->
+<div class="row mt-3">
+    <div class="col-md-8 col-lg-6 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">💡 Quick Tips</h5>
+                <ul class="mb-0">
+                    <li>Use descriptive payment descriptions to make tracking easier</li>
+                    <li>Set due dates based on your billing cycle</li>
+                    <li>Monthly payments are typically due on the same day each month</li>
+                    <li>You can mark payments as paid later from the student's payment history</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Set default due date to next month on the same day
+document.addEventListener('DOMContentLoaded', function() {
+    // Debug: Check if students are loaded
+    const studentSelect = document.getElementById('student_id');
+    console.log('Student select options:', studentSelect.options.length);
+    
+    // Debug: Check if Select2 is initialized
+    if (window.jQuery && jQuery.fn.select2) {
+        console.log('Select2 is available');
+        // Ensure Select2 is properly initialized for student selection
+        $('#student_id').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            allowClear: true,
+            minimumInputLength: 0,
+            dropdownAutoWidth: true
+        });
+    } else {
+        console.error('Select2 is not available');
+    }
+    
+    const dueDateInput = document.getElementById('due_date');
+    const today = new Date();
+    
+    // Set to next month, same day
+    const nextMonth = new Date(today);
+    nextMonth.setMonth(today.getMonth() + 1);
+    
+    // Format as YYYY-MM-DD
+    const year = nextMonth.getFullYear();
+    const month = String(nextMonth.getMonth() + 1).padStart(2, '0');
+    const day = String(nextMonth.getDate()).padStart(2, '0');
+    
+    dueDateInput.value = `${year}-${month}-${day}`;
+});
+
+// Auto-generate description based on payment type
+function updatePaymentDescription() {
+    const descriptionInput = document.getElementById('description');
+    const studentSelect = document.getElementById('student_id');
+    const paymentTypeSelect = document.getElementById('payment_type');
+    
+    if (!descriptionInput.value && paymentTypeSelect.value && studentSelect.value) {
+        const studentName = studentSelect.options[studentSelect.selectedIndex].text.split(' (')[0];
+        const paymentType = paymentTypeSelect.value;
+        const currentDate = new Date();
+        const monthName = currentDate.toLocaleString('default', { month: 'long' });
+        const year = currentDate.getFullYear();
+        
+        let description = '';
+        switch(paymentType) {
+            case 'monthly':
+                description = `Monthly Training Fee - ${monthName} ${year}`;
+                break;
+            case 'quarterly':
+                description = `Quarterly Training Fee - Q${Math.ceil((currentDate.getMonth() + 1) / 3)} ${year}`;
+                break;
+            case 'annual':
+                description = `Annual Training Fee - ${year}`;
+                break;
+            case 'registration':
+                description = `Registration Fee`;
+                break;
+            case 'equipment':
+                description = `Equipment Fee`;
+                break;
+            case 'late_fee':
+                description = `Late Payment Fee`;
+                break;
+            default:
+                description = `${paymentType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Fee`;
+        }
+        
+        descriptionInput.value = description;
+    }
+}
+
+// Listen for both regular change events and Select2 events
+document.getElementById('payment_type').addEventListener('change', updatePaymentDescription);
+$(document).ready(function() {
+    $('#payment_type').on('select2:select', updatePaymentDescription);
+});
+
+// Update description when student changes (if payment type is selected)
+document.getElementById('student_id').addEventListener('change', function() {
+    const paymentTypeSelect = document.getElementById('payment_type');
+    if (paymentTypeSelect.value) {
+        updatePaymentDescription();
+    }
+});
+
+// Also listen for Select2 events on student select
+$(document).ready(function() {
+    $('#student_id').on('select2:select', function() {
+        const paymentTypeSelect = document.getElementById('payment_type');
+        if (paymentTypeSelect.value) {
+            updatePaymentDescription();
+        }
+    });
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const amount = parseFloat(document.getElementById('amount').value);
+    const studentId = document.getElementById('student_id').value;
+    const description = document.getElementById('description').value.trim();
+    const dueDate = document.getElementById('due_date').value;
+    const paymentType = document.getElementById('payment_type').value;
+    
+    if (!studentId) {
+        alert('Please select a student.');
+        e.preventDefault();
+        return;
+    }
+    
+    if (!amount || amount <= 0) {
+        alert('Please enter a valid amount greater than 0.');
+        e.preventDefault();
+        return;
+    }
+    
+    if (!description) {
+        alert('Please enter a description for this payment.');
+        e.preventDefault();
+        return;
+    }
+    
+    if (!dueDate) {
+        alert('Please select a due date.');
+        e.preventDefault();
+        return;
+    }
+    
+    if (!paymentType) {
+        alert('Please select a payment type.');
+        e.preventDefault();
+        return;
+    }
+});
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.form-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.btn-group.w-100 {
+    display: flex;
+}
+
+.btn-group.w-100 .btn {
+    flex: 1;
+}
+
+.card.bg-light {
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border-light);
+}
+
+.card.bg-light .card-title {
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.card.bg-light ul {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.card.bg-light ul li {
+    margin-bottom: 0.25rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .col-md-8.col-lg-6.mx-auto {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        max-width: 100% !important;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .card.bg-light {
+        background-color: var(--bg-secondary-dark, #2d3748) !important;
+        border-color: var(--border-color-dark, #4a5568);
+        color: var(--text-primary-dark, #e2e8f0) !important;
+    }
+    
+    .card.bg-light .card-title {
+        color: var(--text-primary-dark, #e2e8f0) !important;
+    }
+    
+    .card.bg-light ul {
+        color: var(--text-muted-dark, #a0aec0) !important;
+    }
+}
+</style>
+{% endblock %}

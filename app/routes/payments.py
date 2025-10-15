@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.extensions import mongo
-from app.models.payment import Payment, PaymentPlan
+from app.models.payments import Payment
 from app.routes.auth import require_role
 from marshmallow import Schema, fields, ValidationError
 from datetime import datetime, date

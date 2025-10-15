@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, date
 from typing import Dict, List, Optional, Tuple
 from app.extensions import mongo
-from app.models.payment import Payment, PaymentPlan
+from app.models.payments import Payment, PaymentPlan
 from app.models.user import User
 from app.models.organization import Organization
 from bson import ObjectId
@@ -32,7 +32,7 @@ class EnhancedPaymentService:
             stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
             self.stripe = stripe
     
-    def create_payment_with_gateway(self, student_id: str, organization_id: str, amount: float,
+    def create_payment_with_gateway(self, student_id: ObjectId, organization_id: ObjectId, amount: float,
                                    description: str, due_date: date, payment_type: str = 'monthly',
                                    gateway: str = 'razorpay', **kwargs) -> Tuple[bool, str, Optional[Payment]]:
         """Create payment record with gateway integration"""
@@ -52,8 +52,11 @@ class EnhancedPaymentService:
             payment.tax_amount = kwargs.get('tax_amount', 0.0)
             payment.payment_instructions = kwargs.get('payment_instructions')
             
+            # Convert organization_id to ObjectId if it's a string
+            org_id_obj = ObjectId(organization_id) if isinstance(organization_id, str) else organization_id
+            
             # Generate invoice number
-            org_data = mongo.db.organizations.find_one({'_id': ObjectId(organization_id)})
+            org_data = mongo.db.organizations.find_one({'_id': org_id_obj})
             org_prefix = org_data.get('invoice_prefix', 'INV') if org_data else 'INV'
             payment.generate_invoice_number(org_prefix)
             

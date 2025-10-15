@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block login_content %}
+<style>
+   .sidebar {
+       display: none;
+   }
+   :root {
+       --bs-primary: var(--accent-primary);
+       --bs-primary-rgb: 118, 182, 39;
+       --bs-primary-bg-subtle: var(--accent-bg);
+       --bs-primary-border-subtle: var(--accent-primary);
+   }
+   
+   .class-card {
+       transition: all 0.3s ease;
+       border-left: 4px solid var(--accent-primary);
+   }
+   
+   .form-control:focus {
+       border-color: var(--accent-primary);
+       box-shadow: 0 0 0 0.2rem rgba(118, 182, 39, 0.25);
+   }
+   
+   .registration-header {
+       background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%);
+       color: white;
+       padding: 2rem;
+       border-radius: 1rem;
+       margin-bottom: 2rem;
+   }
+</style>
+
+<div class="container py-4 main-content d-none" >
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <!-- Header Section -->
+            <div class="shadow-sm">
+                <h4 class=" fw-bold mb-2">Class Registration</h4>
+                <p class="lead mb-4">You're one step away from joining your classes!</p>
+            </div>
+
+            <!-- Selected Classes Card -->
+            <div class="card shadow-sm mb-4 border-0 rounded-3">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-primary mb-4">
+                        <i class="bi bi-calendar-check me-2"></i>Selected Classes
+                    </h5>
+                    <div class="row g-3">
+                        {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
+                        {% for class_info in classes %}
+                        <div class="col-12">
+                            <div class="class-card p-3 rounded-3 mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">{{ class_info.activity.name }}</h6>
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar3 me-1"></i>{{ days[class_info.day_of_week] }}
+                                            {% if class_info.start_time %}
+                                            <i class="bi bi-clock ms-2 me-1"></i>{{ class_info.start_time }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <div class="text-success">
+                                        <i class="bi bi-check-circle-fill fs-4"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registration Form Card -->
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-primary mb-4">
+                        <i class="bi bi-person-fill me-2"></i>Your Information
+                    </h5>
+                    
+                    <form id="signupForm" action="/signup-classes/{{ link_token }}/submit" method="POST" class="needs-validation" novalidate>
+                        <input type="hidden" name="class_ids" value="{{ class_ids }}">
+                        
+                        <div class="mb-4">
+                            <label for="name" class="form-label fw-semibold">
+                                Full Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="name" 
+                                   name="name" 
+                                   placeholder="Enter your full name" 
+                                   required>
+                            <div class="invalid-feedback">Please enter your full name</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="phone" class="form-label fw-semibold">
+                                Phone Number <span class="text-danger">*</span>
+                            </label>
+                            <input type="tel" 
+                                   class="form-control form-control-lg" 
+                                   id="phone" 
+                                   name="phone" 
+                                   placeholder="10-digit mobile number" 
+                                   required 
+                                   pattern="[0-9]{10}"
+                                   maxlength="10">
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-1"></i>We'll use this for class updates and login
+                            </div>
+                            <div class="invalid-feedback">Please enter a valid 10-digit phone number</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="email" class="form-label fw-semibold">
+                                Email <span class="text-muted small">(Optional)</span>
+                            </label>
+                            <input type="email" 
+                                   class="form-control form-control-lg" 
+                                   id="email" 
+                                   name="email" 
+                                   placeholder="your.email@example.com">
+                            <div class="invalid-feedback">Please enter a valid email address</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-3 py-3 fw-semibold" id="submitBtn">
+                                <i class="bi bi-check-circle me-2"></i>Complete Registration
+                            </button>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-shield-check me-1"></i>
+                                By registering, you agree to receive class updates via SMS
+                            </small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set theme to dark
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        document.querySelector('html').setAttribute('data-theme', 'dark');
+        document.querySelector('.main-content').classList.remove('d-none');
+    }, 1000);
+});
+// Form validation
+(() => {
+    'use strict'
+    const form = document.getElementById('signupForm');
+    const phoneInput = document.getElementById('phone');
+    // Phone number validation - only allow numbers
+    phoneInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+    });
+    
+    form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        } else {
+            // Show loading state
+            // const submitBtn = document.getElementById('submitBtn');
+            // submitBtn.disabled = true;
+            // submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+        }
+        form.classList.add('was-validated');
+    }, false);
+})();
+</script>
+
+{% endblock %}

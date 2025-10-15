@@ -6,7 +6,7 @@ from app.extensions import mongo
 from app.models.class_schedule import Class
 from app.models.attendance import Attendance
 from app.models.user import User
-from app.models.payment import Payment
+from app.models.payments import Payment
 from flask import current_app
 import re
 from typing import Dict, List, Tuple, Optional
@@ -34,14 +34,14 @@ class EnhancedWhatsAppService:
             self.interakt_base_url = os.getenv('INTERAKT_BASE_URL', 'https://api.interakt.ai')
         
         # Message templates for different scenarios
-        self.message_templates = {
-            'class_reminder': self._create_class_reminder_template,
-            'payment_reminder': self._create_payment_reminder_template,
-            'class_cancelled': self._create_cancellation_template,
-            'welcome_message': self._create_welcome_template,
-            'achievement_notification': self._create_achievement_template,
-            'feed_notification': self._create_feed_notification_template
-        }
+        # self.message_templates = {
+        #     'class_reminder': self._create_class_reminder_template,
+        #     'payment_reminder': self._create_payment_reminder_template,
+        #     'class_cancelled': self._create_cancellation_template,
+        #     'welcome_message': self._create_welcome_template,
+        #     'achievement_notification': self._create_achievement_template,
+        #     'feed_notification': self._create_feed_notification_template
+        # }
         
         # RSVP response patterns
         self.rsvp_patterns = {
@@ -65,6 +65,10 @@ class EnhancedWhatsAppService:
                 'body': message,
                 'to': f'whatsapp:{to_number}'
             }
+
+            print(message_data)
+
+
             
             if media_url:
                 message_data['media_url'] = [media_url]
@@ -415,7 +419,7 @@ class EnhancedWhatsAppService:
         # Add + if missing
         if not cleaned.startswith('+'):
             if len(cleaned) == 10:  # US format
-                cleaned = '+1' + cleaned
+                cleaned = '+91' + cleaned
             elif len(cleaned) == 11 and cleaned.startswith('1'):  # US with country code
                 cleaned = '+' + cleaned
             else:
@@ -696,6 +700,73 @@ That's it! We'll confirm your response right away. 😊
         except Exception as e:
             current_app.logger.error(f"Error getting messaging analytics: {str(e)}")
             return {}
+
+    def build_auth_template_content(self, template_name: str, language: str, code: str):
+        """
+        Build the Twilio WhatsApp template payload for OTP messages.
+        Accepts only one dynamic variable (the code).
+        """
+        return {    
+            "type": "template",
+            "template": {
+                "name": template_name,
+                "language": {"code": language},
+                "components": [
+                    {
+                        "type": "body",
+                        "parameters": [
+                            {"type": "text", "text": str(code)}
+                        ]
+                    }
+                ]
+            }
+        }
+
+    def send_template_message(self, phone_number: str, content_sid: str, content_variables: dict):
+        """Send template message"""
+        if os.getenv('ENVIRONMENT') == 'dev':
+            phone_number = 'whatsapp:+919945613932'
+
+        print(f"Sending template message to {phone_number} with content sid {content_sid} and content variables {content_variables}")
+
+        message = self.twilio_client.messages.create(
+            from_=os.getenv('TWILIO_WHATSAPP_FROM'),
+            to=phone_number,
+            content_sid=content_sid,
+            content_variables=content_variables
+        )
+
+    def send_added_to_class_message(self, phone_number: str, user_name: str, class_name: str, center_name: str):
+        """Send added to class message"""
+        content_variables = json.dumps({"1": user_name, "2": class_name, "3": center_name})
+        self.send_template_message(phone_number, 'HXe6f7a14eaf5de5c8738de5d1bd22e29e', content_variables)
+
+    def send_signup_link(self, phone_number: str, signup_link: str):
+        """Send signup link"""
+        content_variables = json.dumps({"1": signup_link})
+        self.send_template_message(phone_number, 'HX906f75def9bc048aad302af3c71691e7', content_variables)
+
+    def send_otp_to_logged_in_user(self, phone_number: str, otp: str):
+        """Send OTP to logged in user"""
+
+        if not phone_number.startswith("+91"): 
+            phone_number = '+91' + phone_number
+
+        if phone_number.startswith("+1"): 
+            phone_number = '+91' + phone_number.replace("+1", "")
+
+        # Normalize phone number
+        if not phone_number.startswith("whatsapp:"):
+            phone_number = f"whatsapp:{phone_number}"
+
+        print(phone_number)
+        
+        # Build template content
+        template_content = json.dumps({"1": otp})
+
+        self.send_template_message(phone_number, 'HX906f75def9bc048aad302af3c71691e7', template_content)
+
+        return True, ''
     
     # Legacy method compatibility
     def send_message(self, phone_number: str, message: str) -> Tuple[bool, str]:
