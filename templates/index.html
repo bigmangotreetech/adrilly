@@ -6,6 +6,7 @@
     <title>botle - Where Learning Meets Opportunity</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="/static/images/logo.png">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -37,22 +38,87 @@
             }
         }
     </script>
+    <style>
+        .slideshow-container {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: transform 0.8s ease-in-out, opacity 0.8s ease-in-out;
+        }
+        
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+            z-index: 2;
+        }
+        
+        .slide.prev {
+            opacity: 1;
+            transform: translateX(0);
+            z-index: 1;
+        }
+        
+        .slide.next-enter {
+            transform: translateX(100%);
+            opacity: 1;
+        }
+        
+        .dot {
+            cursor: pointer;
+            height: 12px;
+            width: 12px;
+            margin: 0 4px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            display: inline-block;
+            transition: background-color 0.3s ease;
+        }
+        
+        .dot.active,
+        .dot:hover {
+            background-color: #a1de56;
+        }
+        
+        .view-content {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </head>
 <body class="bg-black text-white">
     <!-- Navigation -->
     <nav class="fixed w-full z-50 bg-[#121212]/80 backdrop-blur-sm">
         <div class="container mx-auto px-4 py-4">
             <div class="flex justify-between items-center">
-                <a href="#" class="text-2xl font-bold text-primary">botle</a>
+                <a href="#" class="text-2xl font-bold text-primary">
+                    <img src="/static/images/logo.png" width="90" alt="">
+                </a>
                 <div class="hidden md:flex space-x-8">
-                    <a href="#features" class="hover:text-primary transition-colors">Features</a>
                     <a href="#why" class="hover:text-primary transition-colors">Why botle</a>
-                    <a href="#showcase" class="hover:text-primary transition-colors">Showcase</a>
-                    <a href="#testimonials" class="hover:text-primary transition-colors">Testimonials</a>
+                    <a href="#contact" class="hover:text-primary transition-colors">Contact</a>
                 </div>
                 <div class="hidden md:flex space-x-4">
-                    <a href="{{ url_for('web.login') }}" class="px-4 py-2 rounded-lg hover:bg-[#1e1e1e] transition-colors">Login</a>
-                    <button class="px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary-dark transition-colors">Sign Up</button>
+                    <a href="{{ url_for('web.login') }}" class="px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary-dark transition-colors">Login</a>
+                    <!-- <button class="px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary-dark transition-colors">Sign Up</button> -->
                 </div>
                 <button class="md:hidden text-2xl">☰</button>
             </div>
@@ -65,27 +131,130 @@
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div class="space-y-8 animate-fade-in">
                     <h1 class="text-4xl md:text-6xl font-bold leading-tight">
-                        Streamline Your Coaching Center. 
-                        <span class="text-primary">Discover New Learning Experiences.</span>
+                        Learning and Coaching Center marketplace. 
+                        <span class="text-primary">Book, Train, Learn</span>
                     </h1>
                     <p class="text-lg text-gray-300">
-                        botle helps coaching centers manage schedules, track attendance, and grow revenue. 
-                        Students can explore new centers and book one-time experiences.
+                        On botle, anyone can <span class="text-primary">B</span>ook <span class="text-primary">O</span>ne <span class="text-primary">T</span>ime <span class="text-primary">L</span>earning <span class="text-primary">E</span>xperiences.
+                        botle helps coaching centers manage schedules, track attendance, and grow revenue 
                     </p>
                     <div class="flex flex-wrap gap-4">
-                        <button class="px-8 py-4 bg-primary text-bg-secondary rounded-lg hover:scale-105 transition-transform">
+                        <!-- <button class="px-8 py-4 bg-primary text-bg-secondary rounded-lg hover:scale-105 transition-transform">
                             Get Started
-                        </button>
-                        <button class="px-8 py-4 border-2 border-primary text-primary rounded-lg hover:scale-105 transition-transform">
-                            Explore Experiences
-                        </button>
+                        </button> -->
+                        <a href="#contact" class="px-8 py-4 border-2 border-primary text-primary rounded-lg hover:scale-105 transition-transform">
+                            Get started
+                        </a>
                     </div>
                 </div>
-                <div class="relative h-[600px]">
-                    <!-- Placeholder for 3D mockup -->
-                    <div class="absolute inset-0 bg-gradient-to-tr from-primary/20 to-secondary/20 rounded-2xl">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="text-gray-500">3D Mockup Placeholder</span>
+                
+                <div class="relative h-[600px] overflow-hidden rounded-2xl">
+                    <!-- Hero Image Slideshow -->
+                    <div class="slideshow-container absolute inset-0">
+                        <div class="slide active">
+                            <img src="/static/images/hero-1.png" alt="Hero 1" class="w-full h-full object-cover">
+                        </div>
+                        <div class="slide">
+                            <img src="/static/images/hero-2.png" alt="Hero 2" class="w-full h-full object-cover">
+                        </div>
+                        <div class="slide">
+                            <img src="/static/images/hero-3.png" alt="Hero 3" class="w-full h-full object-cover">
+                        </div>
+                        <div class="slide">
+                            <img src="/static/images/hero-4.png" alt="Hero 4" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                    
+                    <!-- Navigation Dots -->
+                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-10">
+                        <span class="dot active" onclick="currentSlide(1)"></span>
+                        <span class="dot" onclick="currentSlide(2)"></span>
+                        <span class="dot" onclick="currentSlide(3)"></span>
+                        <span class="dot" onclick="currentSlide(4)"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- botle For You / For Centers Section -->
+    <section id="botle-features" class="py-20 bg-[#121212]">
+        <div class="container mx-auto px-4">
+            <!-- Toggle Buttons -->
+            <div class="flex justify-center gap-4 flex-wrap mb-12">
+                <button id="btnForYou" onclick="toggleView('forYou')" class="px-8 py-3 bg-primary text-black rounded-lg font-semibold transition-all hover:scale-105">
+                    botle for You
+                </button>
+                <button id="btnForCenters" onclick="toggleView('forCenters')" class="px-8 py-3 border-2 border-primary text-primary rounded-lg font-semibold transition-all hover:scale-105">
+                    botle for Centers
+                </button>
+            </div>
+            
+            <!-- Content for "botle for You" -->
+            <div id="contentForYou" class="max-w-6xl mx-auto view-content">
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="bg-[#1e1e1e] p-6 rounded-lg border-l-4 border-primary transform transition-all hover:scale-105">
+                        <div class="flex flex-col items-center text-center gap-4">
+                            <div class="text-5xl">🎯</div>
+                            <div>
+                                <h3 class="text-xl font-bold mb-3 text-primary">Book Any Class You Want</h3>
+                                <p class="text-gray-300">Easily book any class that you always wanted to go to with no commitment. Try new experiences without long-term obligations.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-[#1e1e1e] p-6 rounded-lg border-l-4 border-secondary transform transition-all hover:scale-105">
+                        <div class="flex flex-col items-center text-center gap-4">
+                            <div class="text-5xl">⭐</div>
+                            <div>
+                                <h3 class="text-xl font-bold mb-3 text-secondary">Rate Classes & Check Your Feedback</h3>
+                                <p class="text-gray-300">Share your experience by rating classes and see feedback from coaches. Build your learning profile and help others make informed choices.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-[#1e1e1e] p-6 rounded-lg border-l-4 border-accent-primary transform transition-all hover:scale-105">
+                        <div class="flex flex-col items-center text-center gap-4">
+                            <div class="text-5xl">👥</div>
+                            <div>
+                                <h3 class="text-xl font-bold mb-3 text-accent-primary">Take a Friend Option</h3>
+                                <p class="text-gray-300">Learn with your people who are not enrolled with our easy "Take a Friend" option. Share experiences and learn together!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content for "botle for Centers" -->
+            <div id="contentForCenters" class="max-w-6xl mx-auto view-content hidden">
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="bg-[#1e1e1e] p-6 rounded-lg border-l-4 border-primary transform transition-all hover:scale-105">
+                        <div class="flex flex-col items-center text-center gap-4">
+                            <div class="text-5xl">📅</div>
+                            <div>
+                                <h3 class="text-xl font-bold mb-3 text-primary">Smart Scheduling & Attendance</h3>
+                                <p class="text-gray-300">Manage schedules effortlessly and track attendance in real-time. Reduce no-shows and optimize your class capacity.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-[#1e1e1e] p-6 rounded-lg border-l-4 border-secondary transform transition-all hover:scale-105">
+                        <div class="flex flex-col items-center text-center gap-4">
+                            <div class="text-5xl">💰</div>
+                            <div>
+                                <h3 class="text-xl font-bold mb-3 text-secondary">Fill Empty Slots & Grow Revenue</h3>
+                                <p class="text-gray-300">Open your empty slots to one-time learners and generate new revenue streams. Turn unused capacity into profit.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-[#1e1e1e] p-6 rounded-lg border-l-4 border-accent-primary transform transition-all hover:scale-105">
+                        <div class="flex flex-col items-center text-center gap-4">
+                            <div class="text-5xl">📊</div>
+                            <div>
+                                <h3 class="text-xl font-bold mb-3 text-accent-primary">Analytics & Insights</h3>
+                                <p class="text-gray-300">Get detailed analytics on your center's performance, student engagement, and revenue trends to make data-driven decisions.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -97,7 +266,7 @@
     <section id="features" class="py-20 bg-[#121212]">
         <div class="container mx-auto px-4">
             <h2 class="text-3xl md:text-5xl font-bold text-center mb-16">
-                All-in-one Platform for Centers and Students
+                All-in-one Platform for Learning and Coaching Centers
             </h2>
             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <!-- Feature cards will be dynamically generated -->
@@ -108,50 +277,47 @@
     <!-- Value Proposition Section -->
     <section id="why" class="py-20 bg-black">
         <div class="container mx-auto px-4">
-            <div class="grid md:grid-cols-2 gap-12 items-center">
-                <div class="space-y-8 animate-on-scroll">
-                    <h2 class="text-3xl md:text-5xl font-bold mb-8">Why botle?</h2>
-                    <div class="space-y-6">
-                        <p class="text-xl animated-underline">Centers fill empty slots, reduce no-shows, and generate new revenue streams.</p>
-                        <p class="text-xl animated-underline">Students gain access to new learning opportunities outside their regular centers.</p>
-                    </div>
-                </div>
-                <div class="relative h-[400px]">
-                    <div class="absolute inset-0 bg-gradient-to-tr from-secondary/20 to-primary/20 rounded-2xl">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="text-gray-500">Network Visualization Placeholder</span>
-                        </div>
-                    </div>
+            <h2 class="text-3xl md:text-5xl font-bold mb-8 text-center">Why botle?</h2>
+            <div class="w-full md:max-w-[50%] mx-auto space-y-8 animate-on-scroll">
+                <div class="space-y-6">
+                    <p class="text-xl animated-underline">
+                       - Centers can fill empty slots and reduce no-shows</p>
+                    <p class="text-xl animated-underline">
+                        - Grow and  generate new revenue streams with existing resources. No extra cost
+                    </p>
+                    <p class="text-xl animated-underline">
+                        - Expose your center to a new marketplace of like minded people
+                    </p>
+                    <p class="text-xl animated-underline">
+                        - Data-driven insights to improve overall class experience
+                    </p>
+            
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Showcase Section -->
+    <!---
     <section id="showcase" class="py-20 bg-[#121212] overflow-hidden">
         <div class="container mx-auto px-4">
             <h2 class="text-3xl md:text-5xl font-bold text-center mb-16">See botle in Action</h2>
             <div class="showcase-carousel relative">
                 <div class="flex space-x-8 showcase-slides animate-on-scroll">
-                    <!-- Carousel items will be dynamically generated -->
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Testimonials Section -->
     <section id="testimonials" class="py-20 bg-black">
         <div class="container mx-auto px-4">
-            <h2 class="text-3xl md:text-5xl font-bold text-center mb-16">Trusted by Coaches and Loved by Students</h2>
+            <h2 class="text-3xl md:text-5xl font-bold text-center mb-16">Trusted by Coaches and Loved by People</h2>
             <div class="testimonials-container overflow-x-auto pb-8">
                 <div class="flex space-x-6 animate-on-scroll">
-                    <!-- Testimonial cards will be dynamically generated -->
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Insights Section -->
     <section id="insights" class="py-20 bg-[#121212]">
         <div class="container mx-auto px-4">
             <h2 class="text-3xl md:text-5xl font-bold text-center mb-16">Growth Backed by Data</h2>
@@ -159,7 +325,6 @@
                 <div class="space-y-6 animate-on-scroll">
                     <p class="text-2xl">Centers report <span class="text-primary">30% fewer no-shows</span> and <span class="text-secondary">20% higher slot utilization</span> after adopting botle.</p>
                     <div class="stats-container h-[300px] relative">
-                        <!-- Stats bars will be dynamically generated -->
                     </div>
                 </div>
                 <div class="relative h-[400px]">
@@ -172,6 +337,7 @@
             </div>
         </div>
     </section>
+    ---->
 
     <!-- Call to Action Section -->
     <section id="cta" class="py-20 relative overflow-hidden">
@@ -181,21 +347,159 @@
                 <h2 class="text-4xl md:text-6xl font-bold">Start with botle Today</h2>
                 <p class="text-xl text-gray-300">Whether you're a center or a student, unlock the future of learning.</p>
                 <div class="flex flex-wrap justify-center gap-6">
-                    <button class="px-8 py-4 bg-primary text-bg-secondary rounded-lg hover:scale-105 transition-transform">
+                    <!-- <button class="px-8 py-4 bg-primary text-bg-secondary rounded-lg hover:scale-105 transition-transform">
                         Sign Up as Center
-                    </button>
-                    <button class="px-8 py-4 border-2 border-white rounded-lg hover:scale-105 transition-transform">
-                        Explore Experiences
-                    </button>
+                    </button> -->
+                    <a href="#contact" class="px-8 py-4 border-2 border-primary text-primary rounded-lg hover:scale-105 transition-transform">
+                        Get started
+                    </a>
                 </div>
             </div>
         </div>
     </section>
 
+
+    <!-- Contact Form Section -->
+    <section id="contact" class="py-20 bg-[#121212]">
+        <div class="container mx-auto px-4">
+            <div class="max-w-3xl mx-auto">
+                <h2 class="text-3xl md:text-5xl font-bold text-center mb-4">Get in Touch</h2>
+                <p class="text-center text-gray-300 mb-12">Interested in bringing your center to botle? Fill out the form below and we'll get back to you shortly.</p>
+                
+                <!-- Success Message -->
+                <div id="successMessage" class="hidden mb-8 p-6 bg-green-500/20 border-2 border-green-500 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <div>
+                            <h3 class="text-lg font-semibold text-green-500">Thank you for your interest!</h3>
+                            <p class="text-gray-300">We will get back to you shortly.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="hidden mb-8 p-6 bg-red-500/20 border-2 border-red-500 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <div>
+                            <h3 class="text-lg font-semibold text-red-500">Oops! Something went wrong</h3>
+                            <p id="errorMessageText" class="text-gray-300"></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contact Form -->
+                <form id="contactForm" class="bg-[#1e1e1e] p-8 rounded-lg space-y-6">
+                    <!-- Name Field -->
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-300 mb-2">Name *</label>
+                        <input 
+                            type="text" 
+                            id="name" 
+                            name="name" 
+                            required
+                            class="w-full px-4 py-3 bg-[#121212] border border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-white transition-all"
+                            placeholder="e.g., John Smith"
+                        >
+                        <span class="text-red-500 text-sm mt-1 hidden" id="nameError"></span>
+                    </div>
+
+                    <!-- Email Field -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            required
+                            class="w-full px-4 py-3 bg-[#121212] border border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-white transition-all"
+                            placeholder="e.g., john@example.com"
+                        >
+                        <span class="text-red-500 text-sm mt-1 hidden" id="emailError"></span>
+                    </div>
+
+                    <!-- Phone Field -->
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-300 mb-2">Phone Number *</label>
+                        <input 
+                            type="tel" 
+                            id="phone" 
+                            name="phone" 
+                            required
+                            class="w-full px-4 py-3 bg-[#121212] border border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-white transition-all"
+                            placeholder="e.g., +91 98765 43210 or 9876543210"
+                        >
+                        <span class="text-red-500 text-sm mt-1 hidden" id="phoneError"></span>
+                    </div>
+
+                    <!-- Center Name Field -->
+                    <div>
+                        <label for="centerName" class="block text-sm font-medium text-gray-300 mb-2">Center Name *</label>
+                        <input 
+                            type="text" 
+                            id="centerName" 
+                            name="center_name" 
+                            required
+                            class="w-full px-4 py-3 bg-[#121212] border border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-white transition-all"
+                            placeholder="e.g., Elite Sports Academy"
+                        >
+                        <span class="text-red-500 text-sm mt-1 hidden" id="centerNameError"></span>
+                    </div>
+
+                    <!-- City Field -->
+                    <div>
+                        <label for="city" class="block text-sm font-medium text-gray-300 mb-2">City *</label>
+                        <input 
+                            type="text" 
+                            id="city" 
+                            name="city" 
+                            required
+                            class="w-full px-4 py-3 bg-[#121212] border border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-white transition-all"
+                            placeholder="e.g., Mumbai"
+                        >
+                        <span class="text-red-500 text-sm mt-1 hidden" id="cityError"></span>
+                    </div>
+
+                    <!-- Notes Field (Optional) -->
+                    <div>
+                        <label for="notes" class="block text-sm font-medium text-gray-300 mb-2">Additional Notes (Optional)</label>
+                        <textarea 
+                            id="notes" 
+                            name="notes" 
+                            rows="4"
+                            class="w-full px-4 py-3 bg-[#121212] border border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-white transition-all resize-none"
+                            placeholder="Tell us more about your center..."
+                        ></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button 
+                        type="submit" 
+                        id="submitBtn"
+                        class="w-full px-8 py-4 bg-primary text-black rounded-lg font-semibold hover:bg-primary-dark transition-all hover:scale-105 flex items-center justify-center gap-2"
+                    >
+                        <span id="submitBtnText">Submit</span>
+                        <svg id="submitSpinner" class="hidden animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+
+                    <p class="text-sm text-gray-400 text-center">* Required fields</p>
+                </form>
+            </div>
+        </div>
+    </section>
+    
+    
     <!-- Footer -->
     <footer class="bg-[#121212] py-12">
         <div class="container mx-auto px-4">
-            <div class="grid md:grid-cols-4 gap-8 mb-8">
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
                 <div class="space-y-4">
                     <h3 class="text-2xl font-bold text-primary">botle</h3>
                     <p class="text-gray-400">Where Learning Meets Opportunity</p>
@@ -203,12 +507,12 @@
                 <div class="space-y-4">
                     <h4 class="font-bold text-lg">Quick Links</h4>
                     <ul class="space-y-2">
-                        <li><a href="#features" class="text-gray-400 hover:text-primary transition-colors">Features</a></li>
-                        <li><a href="#why" class="text-gray-400 hover:text-primary transition-colors">Why botle</a></li>
-                        <li><a href="#showcase" class="text-gray-400 hover:text-primary transition-colors">Showcase</a></li>
+                        <li><a href="https://bigmangotreetech.in/privacy" target="_blank" class="text-gray-400 hover:text-primary transition-colors">Privacy</a></li>
+                        <!-- <li><a href="#why" class="text-gray-400 hover:text-primary transition-colors">Why botle</a></li>
+                        <li><a href="#showcase" class="text-gray-400 hover:text-primary transition-colors">Showcase</a></li> -->
                     </ul>
                 </div>
-                <div class="space-y-4">
+                <!-- <div class="space-y-4">
                     <h4 class="font-bold text-lg">Resources</h4>
                     <ul class="space-y-2">
                         <li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Blog</a></li>
@@ -233,15 +537,466 @@
                         </a>
                     </div>
                 </div>
-            </div>
-            <div class="border-t border-bg-tertiary pt-8 text-center text-gray-400">
-                <p>&copy; 2025 botle. All rights reserved.</p>
-            </div>
+            </div> -->
+            
+        </div>
+        <div class="border-t border-bg-tertiary pt-8 text-center text-gray-400">
+            <p>&copy; 2025 botle. All rights reserved.</p>
         </div>
     </footer>
 
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script>
+        // Toggle between "botle for You" and "botle for Centers"
+        function toggleView(view) {
+            const contentForYou = document.getElementById('contentForYou');
+            const contentForCenters = document.getElementById('contentForCenters');
+            const btnForYou = document.getElementById('btnForYou');
+            const btnForCenters = document.getElementById('btnForCenters');
+            
+            if (view === 'forYou') {
+                contentForYou.classList.remove('hidden');
+                contentForCenters.classList.add('hidden');
+                btnForYou.classList.remove('border-2', 'border-primary', 'text-primary');
+                btnForYou.classList.add('bg-primary', 'text-black');
+                btnForCenters.classList.remove('bg-primary', 'text-black');
+                btnForCenters.classList.add('border-2', 'border-primary', 'text-primary');
+            } else {
+                contentForCenters.classList.remove('hidden');
+                contentForYou.classList.add('hidden');
+                btnForCenters.classList.remove('border-2', 'border-primary', 'text-primary');
+                btnForCenters.classList.add('bg-primary', 'text-black');
+                btnForYou.classList.remove('bg-primary', 'text-black');
+                btnForYou.classList.add('border-2', 'border-primary', 'text-primary');
+            }
+        }
+        
+        let slideIndex = 0;
+        let slideInterval;
+        let isTransitioning = false;
+
+        function showSlides() {
+            if (isTransitioning) return;
+            isTransitioning = true;
+            
+            let slides = document.getElementsByClassName("slide");
+            let dots = document.getElementsByClassName("dot");
+            
+            // Get current active slide
+            let currentSlide = slideIndex;
+            
+            // Increment slide index
+            slideIndex++;
+            if (slideIndex >= slides.length) {
+                slideIndex = 0;
+            }
+            
+            // Mark current slide as previous
+            if (slides[currentSlide]) {
+                slides[currentSlide].classList.remove("active");
+                slides[currentSlide].classList.add("prev");
+            }
+            
+            // Remove all other classes
+            for (let i = 0; i < slides.length; i++) {
+                if (i !== currentSlide && i !== slideIndex) {
+                    slides[i].classList.remove("active", "prev", "next-enter");
+                }
+            }
+            
+            // Setup next slide for entering
+            slides[slideIndex].classList.add("next-enter");
+            
+            // Trigger reflow to ensure transition works
+            void slides[slideIndex].offsetWidth;
+            
+            // Activate next slide (this triggers the slide-in animation)
+            setTimeout(() => {
+                slides[slideIndex].classList.remove("next-enter");
+                slides[slideIndex].classList.add("active");
+                
+                // After transition completes, clean up previous slide
+                setTimeout(() => {
+                    if (slides[currentSlide]) {
+                        slides[currentSlide].classList.remove("prev");
+                    }
+                    isTransitioning = false;
+                }, 800);
+            }, 10);
+            
+            // Update dots
+            for (let i = 0; i < dots.length; i++) {
+                dots[i].classList.remove("active");
+            }
+            dots[slideIndex].classList.add("active");
+        }
+
+        function currentSlide(n) {
+            if (isTransitioning) return;
+            
+            let slides = document.getElementsByClassName("slide");
+            let dots = document.getElementsByClassName("dot");
+            
+            // Get current active slide
+            let currentSlide = slideIndex;
+            
+            // Set new slide index
+            slideIndex = n - 1;
+            
+            if (currentSlide === slideIndex) return;
+            
+            clearInterval(slideInterval);
+            isTransitioning = true;
+            
+            // Mark current slide as previous
+            slides[currentSlide].classList.remove("active");
+            slides[currentSlide].classList.add("prev");
+            
+            // Remove all other classes
+            for (let i = 0; i < slides.length; i++) {
+                if (i !== currentSlide && i !== slideIndex) {
+                    slides[i].classList.remove("active", "prev", "next-enter");
+                }
+            }
+            
+            // Setup next slide for entering
+            slides[slideIndex].classList.add("next-enter");
+            
+            // Trigger reflow
+            void slides[slideIndex].offsetWidth;
+            
+            // Activate next slide
+            setTimeout(() => {
+                slides[slideIndex].classList.remove("next-enter");
+                slides[slideIndex].classList.add("active");
+                
+                setTimeout(() => {
+                    slides[currentSlide].classList.remove("prev");
+                    isTransitioning = false;
+                }, 800);
+            }, 10);
+            
+            // Update dots
+            for (let i = 0; i < dots.length; i++) {
+                dots[i].classList.remove("active");
+            }
+            dots[slideIndex].classList.add("active");
+            
+            // Restart interval
+            slideInterval = setInterval(showSlides, 4000);
+        }
+
+        // Initialize slideshow
+        document.addEventListener('DOMContentLoaded', function() {
+            let slides = document.getElementsByClassName("slide");
+            let dots = document.getElementsByClassName("dot");
+            
+            // Show first slide
+            if (slides.length > 0) {
+                slides[0].classList.add("active");
+                dots[0].classList.add("active");
+            }
+            
+            // Start auto-advance
+            slideInterval = setInterval(showSlides, 4000); // Change image every 4 seconds
+        });
+
+        // Contact Form Validation and Submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const contactForm = document.getElementById('contactForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const submitBtnText = document.getElementById('submitBtnText');
+            const submitSpinner = document.getElementById('submitSpinner');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorMessageText = document.getElementById('errorMessageText');
+
+            // Validation functions
+            function validateName(name) {
+                if (!name || name.trim().length === 0) {
+                    return 'Name is required';
+                }
+                const trimmedName = name.trim();
+                if (trimmedName.length < 2) {
+                    return 'Name must be at least 2 characters long';
+                }
+                if (trimmedName.length > 100) {
+                    return 'Name is too long (max 100 characters)';
+                }
+                // Only allow letters, spaces, hyphens, apostrophes, and periods
+                const namePattern = /^[a-zA-Z\s\-'.]+$/;
+                if (!namePattern.test(trimmedName)) {
+                    return 'Name can only contain letters, spaces, hyphens, apostrophes, and periods';
+                }
+                return null;
+            }
+
+            function validateEmail(email) {
+                if (!email || email.trim().length === 0) {
+                    return 'Email is required';
+                }
+                const trimmedEmail = email.trim();
+                // More comprehensive email pattern
+                const emailPattern = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+                if (!emailPattern.test(trimmedEmail)) {
+                    return 'Please enter a valid email address (e.g., name@example.com)';
+                }
+                if (trimmedEmail.length > 254) {
+                    return 'Email address is too long';
+                }
+                return null;
+            }
+
+            function validatePhone(phone) {
+                if (!phone || phone.trim().length === 0) {
+                    return 'Phone number is required';
+                }
+                // Remove all non-digit characters
+                const cleaned = phone.replace(/\D/g, '');
+                if (cleaned.length === 0) {
+                    return 'Phone number must contain digits';
+                }
+                if (cleaned.length < 10) {
+                    return 'Phone number must be at least 10 digits';
+                }
+                if (cleaned.length > 15) {
+                    return 'Phone number is too long (max 15 digits)';
+                }
+                // Check if the input contains only valid phone characters (digits, spaces, hyphens, parentheses, plus)
+                const phonePattern = /^[\d\s\-\+\(\)]+$/;
+                if (!phonePattern.test(phone.trim())) {
+                    return 'Phone number can only contain digits, spaces, hyphens, parentheses, and plus sign';
+                }
+                return null;
+            }
+
+            function validateCenterName(centerName) {
+                if (!centerName || centerName.trim().length === 0) {
+                    return 'Center name is required';
+                }
+                const trimmedName = centerName.trim();
+                if (trimmedName.length < 2) {
+                    return 'Center name must be at least 2 characters long';
+                }
+                if (trimmedName.length > 200) {
+                    return 'Center name is too long (max 200 characters)';
+                }
+                // Allow letters, numbers, spaces, and common punctuation
+                const centerPattern = /^[a-zA-Z0-9\s\-'.&,()]+$/;
+                if (!centerPattern.test(trimmedName)) {
+                    return 'Center name can only contain letters, numbers, spaces, and common punctuation';
+                }
+                return null;
+            }
+
+            function validateCity(city) {
+                if (!city || city.trim().length === 0) {
+                    return 'City is required';
+                }
+                const trimmedCity = city.trim();
+                if (trimmedCity.length < 2) {
+                    return 'City must be at least 2 characters long';
+                }
+                if (trimmedCity.length > 100) {
+                    return 'City name is too long (max 100 characters)';
+                }
+                // Only allow letters, spaces, hyphens, apostrophes, and periods (no numbers)
+                const cityPattern = /^[a-zA-Z\s\-'.]+$/;
+                if (!cityPattern.test(trimmedCity)) {
+                    return 'City name can only contain letters, spaces, hyphens, apostrophes, and periods';
+                }
+                return null;
+            }
+
+            function showError(fieldId, message) {
+                const errorElement = document.getElementById(fieldId + 'Error');
+                if (errorElement) {
+                    errorElement.textContent = message;
+                    errorElement.classList.remove('hidden');
+                }
+                const inputElement = document.getElementById(fieldId);
+                if (inputElement) {
+                    inputElement.classList.add('border-red-500');
+                }
+            }
+
+            function clearError(fieldId) {
+                const errorElement = document.getElementById(fieldId + 'Error');
+                if (errorElement) {
+                    errorElement.classList.add('hidden');
+                }
+                const inputElement = document.getElementById(fieldId);
+                if (inputElement) {
+                    inputElement.classList.remove('border-red-500');
+                }
+            }
+
+            function clearAllErrors() {
+                ['name', 'email', 'phone', 'centerName', 'city'].forEach(clearError);
+            }
+
+            function showSuccessMessage() {
+                successMessage.classList.remove('hidden');
+                errorMessage.classList.add('hidden');
+                // Scroll to success message
+                successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function showErrorMessage(message) {
+                errorMessageText.textContent = message;
+                errorMessage.classList.remove('hidden');
+                successMessage.classList.add('hidden');
+                // Scroll to error message
+                errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function hideMessages() {
+                successMessage.classList.add('hidden');
+                errorMessage.classList.add('hidden');
+            }
+
+            // Real-time validation
+            document.getElementById('name').addEventListener('blur', function() {
+                const error = validateName(this.value);
+                if (error) {
+                    showError('name', error);
+                } else {
+                    clearError('name');
+                }
+            });
+
+            document.getElementById('email').addEventListener('blur', function() {
+                const error = validateEmail(this.value);
+                if (error) {
+                    showError('email', error);
+                } else {
+                    clearError('email');
+                }
+            });
+
+            document.getElementById('phone').addEventListener('blur', function() {
+                const error = validatePhone(this.value);
+                if (error) {
+                    showError('phone', error);
+                } else {
+                    clearError('phone');
+                }
+            });
+
+            document.getElementById('centerName').addEventListener('blur', function() {
+                const error = validateCenterName(this.value);
+                if (error) {
+                    showError('centerName', error);
+                } else {
+                    clearError('centerName');
+                }
+            });
+
+            document.getElementById('city').addEventListener('blur', function() {
+                const error = validateCity(this.value);
+                if (error) {
+                    showError('city', error);
+                } else {
+                    clearError('city');
+                }
+            });
+
+            // Form submission
+            contactForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Hide previous messages
+                hideMessages();
+                clearAllErrors();
+
+                // Get form data
+                const formData = {
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    center_name: document.getElementById('centerName').value,
+                    city: document.getElementById('city').value,
+                    notes: document.getElementById('notes').value
+                };
+
+                // Validate all fields
+                let hasError = false;
+                const nameError = validateName(formData.name);
+                if (nameError) {
+                    showError('name', nameError);
+                    hasError = true;
+                }
+
+                const emailError = validateEmail(formData.email);
+                if (emailError) {
+                    showError('email', emailError);
+                    hasError = true;
+                }
+
+                const phoneError = validatePhone(formData.phone);
+                if (phoneError) {
+                    showError('phone', phoneError);
+                    hasError = true;
+                }
+
+                const centerNameError = validateCenterName(formData.center_name);
+                if (centerNameError) {
+                    showError('centerName', centerNameError);
+                    hasError = true;
+                }
+
+                const cityError = validateCity(formData.city);
+                if (cityError) {
+                    showError('city', cityError);
+                    hasError = true;
+                }
+
+                if (hasError) {
+                    showErrorMessage('Please fix the errors above and try again.');
+                    return;
+                }
+
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtnText.textContent = 'Submitting...';
+                submitSpinner.classList.remove('hidden');
+
+                try {
+                    // Submit form data
+                    const response = await fetch('/api/leads/submit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        // Success! Show success message
+                        showSuccessMessage();
+                        // Reset form
+                        contactForm.reset();
+                    } else {
+                        // Error from server
+                        showErrorMessage(data.error || 'An error occurred. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Error submitting form:', error);
+                    showErrorMessage('Network error. Please check your connection and try again.');
+                } finally {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtnText.textContent = 'Submit';
+                    submitSpinner.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+    
     <script src="index.js"></script>
 </body>
 </html>

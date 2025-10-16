@@ -80,6 +80,7 @@ def register_blueprints(app):
     from app.routes.security_monitoring import register_security_blueprints
     from app.routes.mobile_api import mobile_api_bp
     from app.routes.payment_api import payment_api_bp
+    from app.routes.leads import leads_bp
     
     # Register API blueprints (they already have /api prefix in their definitions)
     app.register_blueprint(auth_bp)
@@ -91,6 +92,7 @@ def register_blueprints(app):
     app.register_blueprint(users_bp)
     app.register_blueprint(equipment_bp)
     app.register_blueprint(uploads_bp)
+    app.register_blueprint(leads_bp)
     
     # Register web blueprint without prefix (for the UI)
     app.register_blueprint(web_bp)
