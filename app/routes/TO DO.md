@@ -55,3 +55,9 @@ Whatsapp number 15558309085
 - Create app documentation
 - publish apps
 - Figure out push notification workflow
+
+
+
+15th Oct
+
+- Signle sign on with google

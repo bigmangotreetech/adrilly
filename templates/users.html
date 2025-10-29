@@ -508,7 +508,7 @@
                 <h5 class="modal-title" id="createUserModalLabel">Add New User</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="createUserForm" method="POST" action="{{ url_for('web.create_user') }}">
+            <form id="createUserForm" method="POST" action="{{ url_for('web.create_user') }}" enctype="multipart/form-data">
                 <div class="modal-body-modern">
                     <div class="form-group">
                         <div class="form-group mt-4">
@@ -640,6 +640,28 @@
                                 <div id="experience-feedback" class="form-feedback-modern"></div>
                             </div>
                         </div>
+
+                        <div class="form-group mt-4">
+                            <label for="achievements" class="form-label-modern">
+                                <span class="label-text">Achievements</span>
+                            </label>
+                            <textarea class="form-control" id="achievements" name="achievements" rows="3"
+                                placeholder="Enter achievements, certifications, awards (one per line)"></textarea>
+                            <div class="form-text">
+                                List achievements such as certifications, awards, or special accomplishments
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label for="new_profile_picture" class="form-label-modern">
+                                <span class="label-text">Profile Picture</span>
+                            </label>
+                            <input type="file" class="form-control" id="new_profile_picture" name="profile_picture"
+                                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                            <div class="form-text">
+                                Upload a profile picture (JPG, PNG, GIF, WebP - Max 10MB)
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -667,7 +689,7 @@
                 <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="editUserForm" method="POST">
+            <form id="editUserForm" method="POST" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6 mb-4">
@@ -766,7 +788,7 @@
                                 {% endfor %}
                             </select>
                             <div class="form-text">
-                                Optional: Assign a subscription plan to this user
+                                Optional: Assign a subscription plan to this user. Billing will be processed automatically based on the billing cycle.
                             </div>
                             <div class="mt-2">
                                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="generatePaymentLink()">
@@ -820,6 +842,29 @@
                                     name="experience_years" min="0" max="50" placeholder="Years of experience"
                                     title="Experience should be between 0 and 50 years">
                                 <div id="edit-experience-feedback" class="form-feedback-modern"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label for="edit_achievements" class="form-label-modern">
+                                <span class="label-text">Achievements</span>
+                            </label>
+                            <textarea class="form-control" id="edit_achievements" name="achievements" rows="3"
+                                placeholder="Enter achievements, certifications, awards (one per line)"></textarea>
+                            <div class="form-text">
+                                List achievements such as certifications, awards, or special accomplishments
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-4">
+                            <label for="edit_profile_picture" class="form-label-modern">
+                                <span class="label-text">Profile Picture</span>
+                            </label>
+                            <div id="currentProfilePicture" class="mb-2"></div>
+                            <input type="file" class="form-control" id="edit_profile_picture" name="profile_picture"
+                                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+                            <div class="form-text">
+                                Upload a new profile picture (JPG, PNG, GIF, WebP - Max 10MB)
                             </div>
                         </div>
                     </div>
@@ -1221,6 +1266,27 @@
                 document.getElementById('edit_emergency_contact').value = profileData.emergency_contact || '';
                 document.getElementById('edit_specialization').value = profileData.specialization || '';
                 document.getElementById('edit_experience_years').value = profileData.experience_years || '';
+                
+                // Populate achievements (from array to textarea)
+                const achievements = user.achievements || [];
+                document.getElementById('edit_achievements').value = achievements.join('\n');
+                
+                // Show current profile picture if exists
+                const currentPictureDiv = document.getElementById('currentProfilePicture');
+                if (user.profile_picture_url) {
+                    currentPictureDiv.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--surface-secondary); border-radius: 8px;">
+                            <img src="${user.profile_picture_url}" alt="Current profile picture" 
+                                style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-primary);">
+                            <div>
+                                <small style="color: var(--text-muted); display: block;">Current Picture</small>
+                                <small style="color: var(--text-tertiary); font-size: 0.75rem;">Upload a new file to replace</small>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    currentPictureDiv.innerHTML = '<small class="text-muted">No profile picture uploaded</small>';
+                }
 
                 // Show/hide role-specific fields based on role
                 updateEditRoleFields(user.role);
@@ -1256,7 +1322,7 @@
         // Show appropriate fields based on role
         if (role === 'student') {
             studentFields.classList.remove('hidden');
-        } else if (role === 'coach' || role === 'center_admin') {
+        } else if (role === 'coach' || role === 'coach_admin' || role === 'center_admin') {
             coachFields.classList.remove('hidden');
         }
     }
@@ -1655,6 +1721,9 @@
             loadingBtn.innerHTML = originalBtnHtml;
         }
     }
+
+    // Recurring payment link generation removed
+    // Subscription billing is now processed automatically via scheduled jobs
 
     function copyPaymentLink() {
         const linkInput = document.getElementById('paymentLinkInput');

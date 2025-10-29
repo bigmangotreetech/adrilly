@@ -280,3 +280,37 @@ class FileUploadService:
         except Exception as e:
             current_app.logger.error(f"Error listing files: {str(e)}")
             return []
+    
+    def upload_profile_picture(self, file, user_id: str):
+        """
+        Upload user profile picture
+        
+        Args:
+            file: File object from request
+            user_id: User ID
+            
+        Returns:
+            dict with 'success', 'url', and optional 'error' keys
+        """
+        # Use a default organization_id for profile pictures
+        # In a multi-tenant system, you might want to get this from the user
+        organization_id = user_id  # Use user_id as organization_id for now
+        
+        success, message, file_url = self.upload_file(
+            file=file,
+            upload_type='profile',
+            organization_id=organization_id,
+            user_id=user_id
+        )
+        
+        if success:
+            return {
+                'success': True,
+                'url': file_url,
+                'message': message
+            }
+        else:
+            return {
+                'success': False,
+                'error': message
+            }

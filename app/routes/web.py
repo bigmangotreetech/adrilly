@@ -296,9 +296,10 @@ def logout():
 @web_bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Dashboard for all user roles"""
-    try:
+    # """Dashboard for all user roles"""
+    # try:
         user_role = session.get('role')
+        print(user_role)
         user_name = session.get('first_name', 'User')
         current_user = mongo.db.users.find_one({'_id': ObjectId(session.get('user_id'))})
         org_id = ObjectId(session.get('organization_id'))
@@ -316,6 +317,7 @@ def dashboard():
         updates = []
         attendance_data = []
         revenue_data = []
+        next_class = None
 
         if user_role == 'super_admin':
             # Super admin stats
@@ -334,6 +336,7 @@ def dashboard():
             updates = list(mongo.db.announcements.find().sort('created_at', -1).limit(5))
         
         elif user_role in ['org_admin', 'coach_admin']:
+            next_class = None
             # Get today's classes
             todays_classes = list(mongo.db.classes.find({
                 'organization_id': org_id,
@@ -375,8 +378,6 @@ def dashboard():
                     'coach_name': coach_name,
                     'center': center_name
                 }
-            else:
-                next_class = None
             
             # Calculate attendance rate
             total_attendance = mongo.db.attendance.count_documents({'organization_id': org_id})
@@ -600,9 +601,9 @@ def dashboard():
         )
 
        
-    except Exception as e:
-        current_app.logger.error(f"Dashboard error: {str(e)}")
-        return render_template('dashboard.html', stats={})
+    # except Exception as e:
+    #     current_app.logger.error(f"Dashboard error: {str(e)}")
+    #     return render_template('dashboard.html', stats={})
 
 def _get_pagination_range(current_page, total_pages, window=5):
     """Generate a smart pagination range with ellipsis support"""
@@ -794,6 +795,12 @@ def user_detail(user_id):
         user['_id'] = str(user['_id'])
         if user.get('organization_id'):
             user['organization_id'] = str(user['organization_id'])
+
+        if user.get('subscription_ids'):
+            user['subscription_ids'] = [str(subscription_id) for subscription_id in user['subscription_ids']]
+
+        if user.get('organization_ids'):
+            user['organization_ids'] = [str(organization_id) for organization_id in user['organization_ids']]
         
         return render_template('user_detail.html', user=user)
     
@@ -1284,6 +1291,77 @@ def generate_payment_link():
     except Exception as e:
         current_app.logger.error(f"Error generating payment link: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
+
+# Recurring payment link generation has been removed
+# Now using scheduled billing cycle approach
+
+def _calculate_next_billing_date(current_date, cycle_type):
+    """
+    Calculate next billing date based on cycle type
+    Handles edge cases for dates 29, 30, 31
+    """
+    from dateutil.relativedelta import relativedelta
+    from calendar import monthrange
+    
+    try:
+        # Convert to date if datetime
+        if isinstance(current_date, datetime):
+            current_date = current_date.date()
+        
+        billing_day = current_date.day
+        
+        if cycle_type == 'weekly':
+            return current_date + timedelta(weeks=1)
+        elif cycle_type == 'monthly':
+            # Add one month
+            next_date = current_date + relativedelta(months=1)
+            # Handle edge cases for day 29, 30, 31
+            last_day_of_month = monthrange(next_date.year, next_date.month)[1]
+            if billing_day > last_day_of_month:
+                # If billing day doesn't exist in next month, use last day of month
+                next_date = next_date.replace(day=last_day_of_month)
+            else:
+                next_date = next_date.replace(day=billing_day)
+            return next_date
+        elif cycle_type == 'quarterly':
+            # Add three months
+            next_date = current_date + relativedelta(months=3)
+            # Handle edge cases
+            last_day_of_month = monthrange(next_date.year, next_date.month)[1]
+            if billing_day > last_day_of_month:
+                next_date = next_date.replace(day=last_day_of_month)
+            else:
+                next_date = next_date.replace(day=billing_day)
+            return next_date
+        elif cycle_type == 'yearly':
+            # Add one year
+            next_date = current_date + relativedelta(years=1)
+            # Handle leap year edge case
+            try:
+                next_date = next_date.replace(day=billing_day)
+            except ValueError:
+                # Feb 29 in non-leap year -> Feb 28
+                next_date = next_date.replace(day=28)
+            return next_date
+        else:
+            # Default to monthly
+            next_date = current_date + relativedelta(months=1)
+            last_day_of_month = monthrange(next_date.year, next_date.month)[1]
+            if billing_day > last_day_of_month:
+                next_date = next_date.replace(day=last_day_of_month)
+            else:
+                next_date = next_date.replace(day=billing_day)
+            return next_date
+    except Exception as e:
+        # Fallback to simple date addition
+        if cycle_type == 'weekly':
+            return current_date + timedelta(weeks=1)
+        elif cycle_type == 'quarterly':
+            return current_date + timedelta(days=90)
+        elif cycle_type == 'yearly':
+            return current_date + timedelta(days=365)
+        else:  # monthly
+            return current_date + timedelta(days=30)
 
 @web_bp.route('/api/users/<user_id>/subscription', methods=['POST'])
 @login_required
@@ -2856,7 +2934,6 @@ def api_get_user(user_id):
     """API endpoint to get user data for editing"""
     try:
         user = mongo.db.users.find_one({'_id': ObjectId(user_id)})
-        print(user)
         if not user:
             return jsonify({'error': 'User not found'}), 404
         
@@ -2881,6 +2958,10 @@ def api_get_user(user_id):
         if user.get('subscription_ids'):
             user['subscription_ids'] = [str(subscription_id) for subscription_id in user['subscription_ids']]
         
+        if user.get('organization_ids'):
+            user['organization_ids'] = [str(organization_id) for organization_id in user['organization_ids']]
+        
+        print(user)
         return jsonify(user), 200
     
     except Exception as e:
@@ -2907,6 +2988,8 @@ def edit_user(user_id):
         emergency_contact = request.form.get('emergency_contact', '').strip()
         specialization = request.form.get('specialization', '').strip()
         experience_years = request.form.get('experience_years')
+        achievements_text = request.form.get('achievements', '').strip()
+        profile_picture = request.files.get('profile_picture')
         billing_start_date = request.form.get('billing_start_date')
         
         # Basic validation
@@ -2976,7 +3059,7 @@ def edit_user(user_id):
                 profile_data['age'] = int(age)
             if emergency_contact:
                 profile_data['emergency_contact'] = emergency_contact
-        elif role in ['coach', 'coach_admin']:
+        elif role in ['coach', 'coach_admin', 'center_admin']:
             if specialization:
                 profile_data['specialization'] = specialization
             if experience_years and experience_years.isdigit():
@@ -2984,6 +3067,25 @@ def edit_user(user_id):
         
         update_data['profile_data'] = profile_data
 
+        # Handle achievements (convert textarea to list)
+        if achievements_text and role in ['coach', 'coach_admin', 'center_admin']:
+            achievements_list = [ach.strip() for ach in achievements_text.split('\n') if ach.strip()]
+            update_data['achievements'] = achievements_list
+        
+        # Handle profile picture upload
+        if profile_picture and profile_picture.filename:
+            try:
+                file_service = FileUploadService()
+                upload_result = file_service.upload_profile_picture(profile_picture, user_id)
+                if upload_result.get('success'):
+                    update_data['profile_picture_url'] = upload_result['url']
+                    current_app.logger.info(f"Profile picture updated for user {user_id}: {upload_result['url']}")
+                else:
+                    current_app.logger.error(f"Failed to upload profile picture: {upload_result.get('error')}")
+                    flash(f'Warning: Profile picture upload failed - {upload_result.get("error")}', 'warning')
+            except Exception as e:
+                current_app.logger.error(f"Error uploading profile picture: {str(e)}")
+                flash('Warning: Profile picture upload failed', 'warning')
         
         # Handle billing start date
         if billing_start_date:
@@ -2994,6 +3096,45 @@ def edit_user(user_id):
                 # Invalid date format, skip
                 print(f"Invalid date format: {billing_start_date}")
                 pass
+        
+        # Handle subscription assignment
+        subscription_id = request.form.get('subscription_id', '').strip()
+        if subscription_id:
+            try:
+                subscription = mongo.db.subscriptions.find_one({'_id': ObjectId(subscription_id)})
+                if subscription:
+                    # Store subscription info with billing cycle details
+                    update_data['subscription_ids'] = [ObjectId(subscription_id)]
+                    update_data['subscription_cycle_type'] = subscription.get('cycle_type', 'monthly')
+                    update_data['subscription_amount'] = subscription.get('price', 0)
+                    
+                    # If billing start date is set, calculate next billing date
+                    if billing_start_date:
+                        billing_date = datetime.strptime(billing_start_date, '%Y-%m-%d')
+                        next_billing = _calculate_next_billing_date(
+                            billing_date, 
+                            subscription.get('cycle_type', 'monthly')
+                        )
+                        update_data['next_billing_date'] = next_billing
+                    elif not current_user.get('next_billing_date'):
+                        # If no next billing date exists, set it based on current date
+                        next_billing = _calculate_next_billing_date(
+                            update_data.get('billing_start_date') or datetime.utcnow(), 
+                            subscription.get('cycle_type', 'monthly')
+                        )
+                        update_data['next_billing_date'] = next_billing
+                    
+                    update_data['payment_status'] = 'active'  # Initially active
+                else:
+                    current_app.logger.warning(f"Subscription {subscription_id} not found")
+            except Exception as e:
+                current_app.logger.error(f"Error processing subscription assignment: {str(e)}")
+        elif subscription_id == '':
+            # Clear subscription if empty value is passed
+            update_data['subscription_ids'] = []
+            update_data['subscription_cycle_type'] = None
+            update_data['subscription_amount'] = None
+            update_data['next_billing_date'] = None
         
         # Update user
         result = mongo.db.users.update_one(
@@ -3082,6 +3223,8 @@ def create_user():
         # Coach-specific fields
         specialization = request.form.get('specialization', '').strip()
         experience_years = request.form.get('experience_years')
+        achievements_text = request.form.get('achievements', '').strip()
+        profile_picture = request.files.get('profile_picture')
         
         # Billing date
         billing_start_date = request.form.get('billing_start_date')
@@ -3141,7 +3284,7 @@ def create_user():
                 if emergency_contact:
                     profile_data['emergency_contact'] = emergency_contact
             
-            elif role in ['coach', 'coach_admin']:
+            elif role in ['coach', 'coach_admin', 'center_admin']:
                 if specialization:
                     profile_data['specialization'] = specialization
                 if experience_years and experience_years.isdigit():
@@ -3153,6 +3296,24 @@ def create_user():
             # Add profile data if any
             if profile_data:
                 update_data['profile_data'] = profile_data
+            
+            # Handle achievements (convert textarea to list)
+            if achievements_text and role in ['coach', 'coach_admin', 'center_admin']:
+                achievements_list = [ach.strip() for ach in achievements_text.split('\n') if ach.strip()]
+                update_data['achievements'] = achievements_list
+            
+            # Handle profile picture upload
+            if profile_picture and profile_picture.filename:
+                try:
+                    file_service = FileUploadService()
+                    upload_result = file_service.upload_profile_picture(profile_picture, user_id)
+                    if upload_result.get('success'):
+                        update_data['profile_picture_url'] = upload_result['url']
+                        current_app.logger.info(f"Profile picture uploaded for user {user_id}: {upload_result['url']}")
+                    else:
+                        current_app.logger.error(f"Failed to upload profile picture: {upload_result.get('error')}")
+                except Exception as e:
+                    current_app.logger.error(f"Error uploading profile picture: {str(e)}")
             
             # Add billing start date if provided
             if billing_start_date:
@@ -3289,6 +3450,9 @@ def center_schedule(center_id):
                 item['coach_id'] = str(item['coach_id'])
             if item.get('time_slot_id'):
                 item['time_slot_id'] = str(item['time_slot_id'])
+            for key, value in item.items():
+                if '_id' in key and '_ids' not in key:
+                    item[key] = str(value)
         
         for activity in activities:
             activity['_id'] = str(activity['_id'])
@@ -3304,7 +3468,11 @@ def center_schedule(center_id):
                 coach['organization_id'] = str(coach['organization_id'])
             if 'organization_ids' in coach:
                 coach['organization_ids'] = [str(org_id) for org_id in coach['organization_ids']]
-
+            for key, value in coach.items():
+                if '_id' in key and '_ids' not in key:
+                    coach[key] = str(value)
+                if '_ids' in key:
+                    coach[key] = [str(org_id) for org_id in value]
 
         if 'created_by' in center:
             center['created_by'] = str(center['created_by'])
@@ -3317,8 +3485,8 @@ def center_schedule(center_id):
                     student[key] = str(value)
             if student.get('subscription_ids'):
                 student['subscription_ids'] = [str(sid) for sid in student['subscription_ids']]
-            print(student)
-            print('--------')
+
+        
             
         current_app.logger.info(f"Successfully loaded schedule page data for center: {center['name']}")
         

@@ -3,6 +3,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app.extensions import mongo
 from app.services.auth_service import AuthService
 from app.services.file_upload_service import FileUploadService
+from app.services.coin_service import CoinService
+from app.models.coin_transaction import CoinTransaction
 from app.routes.auth import require_role
 from marshmallow import Schema, fields, ValidationError
 from datetime import datetime, timedelta, date
@@ -321,6 +323,10 @@ def get_profile():
         if user.get('subscription_ids'):
             user['subscription_ids'] = [str(sid) for sid in user['subscription_ids']]
         
+        # Ensure botle_coins field exists (default to 0 for existing users)
+        if 'botle_coins' not in user:
+            user['botle_coins'] = 0
+        
         # Check for child profiles
         children_cursor = mongo.db.users.find({
             'parent_id': ObjectId(current_user_id),
@@ -336,10 +342,17 @@ def get_profile():
                 child_data['parent_id'] = str(child_data['parent_id'])
             if 'password' in child_data:
                 del child_data['password']
+            # Ensure botle_coins for children too
+            if 'botle_coins' not in child_data:
+                child_data['botle_coins'] = 0
             children.append(child_data)
         
         user['children'] = children
         user['has_children'] = len(children) > 0
+
+        if user.get('organization_ids'):
+            user['organization_ids'] = [str(oid) for oid in user['organization_ids']]
+            
         
         return jsonify({'user': user}), 200
     
@@ -387,6 +400,8 @@ def update_profile():
             user['organization_id'] = str(user['organization_id'])
         if user.get('subscription_ids'):
             user['subscription_ids'] = [str(sid) for sid in user['subscription_ids']]
+        if user.get('organization_ids'):    
+            user['organization_ids'] = [str(oid) for oid in user['organization_ids']]
         return jsonify({
             'user': user,
             'message': 'Profile updated successfully'
@@ -2039,12 +2054,35 @@ def mark_attendance_from_qr():
         result = mongo.db.attendance.insert_one(attendance_record)
         
         if result.inserted_id:
-            return jsonify({
+            # Check for weekly attendance reward (4 classes in a week)
+            weekly_reward_earned = False
+            coins_earned = 0
+            reward_message = ''
+            
+            try:
+                awarded, message, coins = CoinService.check_weekly_attendance_reward(current_user_id)
+                if awarded:
+                    weekly_reward_earned = True
+                    coins_earned = coins
+                    reward_message = message
+                    current_app.logger.info(f"User {current_user_id} earned weekly attendance bonus: {coins} coins")
+            except Exception as e:
+                current_app.logger.error(f"Error checking weekly attendance reward: {str(e)}")
+                # Don't fail the attendance marking if coin reward fails
+            
+            response_data = {
                 'success': True,
                 'classId': str(class_doc['_id']),
                 'className': class_doc.get('title', 'Unknown'),
                 'message': 'Attendance marked successfully'
-            }), 200
+            }
+            
+            # Add coin reward info if earned
+            if weekly_reward_earned:
+                response_data['coinsEarned'] = coins_earned
+                response_data['coinMessage'] = reward_message
+            
+            return jsonify(response_data), 200
         else:
             return jsonify({'error': 'Failed to mark attendance'}), 500
     
@@ -2513,6 +2551,56 @@ def get_explore_organizations():
         current_app.logger.error(f"Get explore organizations error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
+@mobile_api_bp.route('/explore/organizations/<org_id>/coaches', methods=['GET'])
+@jwt_required()
+def get_organization_coaches(org_id):
+    """Get coaches for an organization with their details"""
+    try:
+        # Validate organization exists
+        org = mongo.db.organizations.find_one({'_id': ObjectId(org_id)})
+        if not org:
+            return jsonify({'error': 'Organization not found'}), 404
+        
+        # Get all coaches for this organization
+        coaches = list(mongo.db.users.find({
+            'organization_id': ObjectId(org_id),
+            'role': 'coach',
+        }))
+        
+        formatted_coaches = []
+        for coach in coaches:
+            # Get profile data
+            profile_data = coach.get('profile_data', {})
+            
+            # Get count of classes taught (lifetime)
+            classes_taught = mongo.db.classes.count_documents({
+                'coach_id': coach['_id'],
+                'status': {'$in': ['completed', 'scheduled', 'ongoing']}
+            })
+            
+            formatted_coach = {
+                'id': str(coach['_id']),
+                'name': coach.get('name', 'Unknown'),
+                'profile_picture_url': coach.get('profile_picture_url', ''),
+                'specialization': profile_data.get('specialization', 'General Coaching'),
+                'years_of_experience': profile_data.get('years_of_experience', 0),
+                'achievements': coach.get('achievements', []),
+                'bio': profile_data.get('bio', ''),
+                'classes_taught': classes_taught,
+                'phone_number': coach.get('phone_number', ''),
+                'email': coach.get('email', ''),
+            }
+            formatted_coaches.append(formatted_coach)
+        
+        return jsonify({
+            'coaches': formatted_coaches,
+            'count': len(formatted_coaches)
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get organization coaches error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @mobile_api_bp.route('/explore/organizations/<org_id>/classes', methods=['GET'])
 @jwt_required()
 def get_organization_classes(org_id):
@@ -2656,7 +2744,32 @@ def book_class(class_id):
             'status': 'confirmed',
             'booked_by': booked_by
         }
-        mongo.db.bookings.insert_one(booking_data)
+        booking_result = mongo.db.bookings.insert_one(booking_data)
+
+        # Award Botle Coins for booking
+        booking_for_friend = 'friend_id' in data
+        if booking_for_friend:
+            # Booking for someone else: +15 coins
+            CoinService.award_coins(
+                user_id=booked_by,
+                amount=15,
+                reason=CoinTransaction.REASON_OTHER_BOOKING,
+                description=f"Booked a class for a friend",
+                reference_id=class_id,
+                reference_type='class'
+            )
+            current_app.logger.info(f"Awarded 15 coins to user {booked_by} for booking class for friend")
+        else:
+            # Booking for self: +5 coins
+            CoinService.award_coins(
+                user_id=booked_by,
+                amount=5,
+                reason=CoinTransaction.REASON_SELF_BOOKING,
+                description=f"Booked a class",
+                reference_id=class_id,
+                reference_type='class'
+            )
+            current_app.logger.info(f"Awarded 5 coins to user {booked_by} for booking class")
 
         # Get updated class
         updated_class = mongo.db.classes.find_one({'_id': ObjectId(class_id)})
@@ -3152,6 +3265,71 @@ def mobile_get_latest_announcement():
         print(f"Error in get_latest_announcement: {str(e)}")
         return jsonify({'success': False, 'message': 'Failed to fetch latest announcement'}), 500
 
+@mobile_api_bp.route('/announcements', methods=['POST'])
+@jwt_required()
+@require_role(['org_admin', 'coach_admin', 'super_admin'])
+def create_announcement():
+    """Create an announcement with optional images (uses FileUploadService like picture upload)"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        current_org_id = claims.get('organization_id')
+
+        title = request.form.get('title', '').strip()
+        content = request.form.get('content', '').strip()
+        status = request.form.get('status', 'published').strip()
+
+        if not title:
+            return jsonify({'success': False, 'message': 'title is required'}), 400
+        if not content:
+            return jsonify({'success': False, 'message': 'content is required'}), 400
+
+        media_urls = []
+        failed_uploads = []
+
+        if 'pictures' in request.files:
+            files = request.files.getlist('pictures')
+            upload_service = FileUploadService()
+            for file in files:
+                if file and file.filename:
+                    success, message, file_url = upload_service.upload_file(
+                        file=file,
+                        upload_type='post_image',
+                        organization_id=current_org_id,
+                        user_id=current_user_id
+                    )
+                    if success and file_url:
+                        media_urls.append(file_url)
+                    else:
+                        failed_uploads.append({'filename': secure_filename(file.filename), 'error': message})
+
+        post_doc = {
+            'title': title,
+            'content': content,
+            'post_type': 'announcement',
+            'status': status,
+            'organization_id': ObjectId(current_org_id) if current_org_id else None,
+            'author_id': ObjectId(current_user_id),
+            'media_urls': media_urls,
+            'created_at': datetime.utcnow(),
+            'updated_at': datetime.utcnow()
+        }
+
+        result = mongo.db.posts.insert_one(post_doc)
+
+        response = {
+            'success': True,
+            'message': 'Announcement created successfully',
+            'id': str(result.inserted_id),
+            'failed_uploads': failed_uploads
+        }
+        return jsonify(response), 201
+    except Exception as e:
+        current_app.logger.error(f"Create announcement error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
 @mobile_api_bp.route('/posts', methods=['GET'])
 @jwt_required()
 def get_posts():
@@ -3580,3 +3758,136 @@ def submit_student_feedback(class_id):
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+
+# Botle Coins Endpoints
+@mobile_api_bp.route('/coins/transactions', methods=['GET'])
+@jwt_required()
+def get_coin_transactions():
+    """Get coin transaction history for the current user"""
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # Get pagination parameters
+        page = request.args.get('page', 1, type=int)
+        limit = request.args.get('limit', 50, type=int)
+        
+        # Calculate skip
+        skip = (page - 1) * limit
+        
+        # Get transactions
+        transactions = CoinService.get_user_transactions(
+            user_id=current_user_id,
+            limit=limit,
+            skip=skip
+        )
+        
+        # Get current balance
+        current_balance = CoinService.get_user_balance(current_user_id)
+        
+        # Get total count for pagination
+        total_count = mongo.db.coin_transactions.count_documents({
+            'user_id': ObjectId(current_user_id)
+        })
+        
+        return jsonify({
+            'success': True,
+            'transactions': transactions,
+            'currentBalance': current_balance,
+            'pagination': {
+                'page': page,
+                'limit': limit,
+                'total': total_count,
+                'hasMore': (skip + len(transactions)) < total_count
+            }
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get coin transactions error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+@mobile_api_bp.route('/coins/balance', methods=['GET'])
+@jwt_required()
+def get_coin_balance():
+    """Get current coin balance for the user"""
+    try:
+        current_user_id = get_jwt_identity()
+        balance = CoinService.get_user_balance(current_user_id)
+        
+        return jsonify({
+            'success': True,
+            'balance': balance
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get coin balance error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+# Profile Picture Upload
+@mobile_api_bp.route('/auth/profile-picture', methods=['POST'])
+@jwt_required()
+def upload_profile_picture():
+    """Upload or update user profile picture"""
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # Check if file is in request
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Upload file using FileUploadService
+        file_service = FileUploadService()
+        result = file_service.upload_profile_picture(file, current_user_id)
+        
+        if result['success']:
+            # Update user's profile_picture_url in database
+            mongo.db.users.update_one(
+                {'_id': ObjectId(current_user_id)},
+                {
+                    '$set': {
+                        'profile_picture_url': result['url'],
+                        'updated_at': datetime.utcnow()
+                    }
+                }
+            )
+            
+            # Get updated user
+            updated_user = mongo.db.users.find_one({'_id': ObjectId(current_user_id)})
+            updated_user['_id'] = str(updated_user['_id'])
+            if 'password' in updated_user:
+                del updated_user['password']
+            if updated_user.get('organization_id'):
+                updated_user['organization_id'] = str(updated_user['organization_id'])
+            if updated_user.get('organization_ids'):
+                updated_user['organization_ids'] = [str(oid) for oid in updated_user['organization_ids']]
+            if updated_user.get('subscription_ids'):
+                updated_user['subscription_ids'] = [str(sid) for sid in updated_user['subscription_ids']]
+            
+            # Ensure botle_coins field exists
+            if 'botle_coins' not in updated_user:
+                updated_user['botle_coins'] = 0
+            
+            return jsonify({
+                'success': True,
+                'message': 'Profile picture uploaded successfully',
+                'url': result['url'],
+                'user': updated_user
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Upload failed')
+            }), 400
+    
+    except Exception as e:
+        current_app.logger.error(f"Upload profile picture error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Internal server error'}), 500

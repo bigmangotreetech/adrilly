@@ -68,6 +68,12 @@ class User:
         self.age = age
         self.gender = gender
         
+        # Botle Coins (1 coin = 1 rupee) - rewards/points system
+        self.botle_coins = 0
+        
+        # Achievements (for coaches and admins)
+        self.achievements = []
+        
         # Multi-tenant specific fields
         self.can_create_organizations = (role in ['super_admin'])
         self.can_manage_organization = (role in ['super_admin', 'org_admin'])
@@ -230,7 +236,9 @@ class User:
             'subscription_ids': [str(sid) for sid in self.subscription_ids] if self.subscription_ids else [],
             'parent_id': str(self.parent_id) if self.parent_id else None,
             'age': self.age,
-            'gender': self.gender
+            'gender': self.gender,
+            'botle_coins': self.botle_coins,
+            'achievements': self.achievements
         }
         
         # Only include _id if it exists and is not None
@@ -313,6 +321,15 @@ class User:
             user.age = data['age']
         if 'gender' in data:
             user.gender = data['gender']
+        if 'botle_coins' in data:
+            user.botle_coins = data['botle_coins']
+        else:
+            # Default to 0 for existing users without botle_coins
+            user.botle_coins = 0
+        if 'achievements' in data:
+            user.achievements = data['achievements']
+        else:
+            user.achievements = []
         
         return user
     

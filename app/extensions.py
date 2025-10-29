@@ -14,7 +14,14 @@ def make_celery(app):
     celery = Celery(
         app.import_name,
         backend=app.config['CELERY_RESULT_BACKEND'],
-        broker=app.config['CELERY_BROKER_URL']
+        broker=app.config['CELERY_BROKER_URL'],
+        include=[
+            'tasks.reminder_tasks',
+            'tasks.enhanced_reminder_tasks',
+            'tasks.class_creation_tasks'
+            'tasks.holiday_tasks'
+            'tasks.billing_cycle_tasks',
+        ]
     )
     celery.conf.update(app.config)
 
@@ -35,3 +42,5 @@ def init_extensions(app):
     mongo.init_app(app)
     jwt.init_app(app)
     cors.init_app(app)
+
+celery = make_celery(app)
