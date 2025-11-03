@@ -59,7 +59,7 @@ class Organization:
         self.center_code = self._generate_center_code()
         self.updated_at = datetime.utcnow()
     
-    def get_signup_url(self, base_url="https://adrilly.com"):
+    def get_signup_url(self, base_url="https://botle.club"):
         """Get the complete signup URL for this organization"""
         return f"{base_url}/signup/{self.signup_slug}?token={self.signup_token}"
     

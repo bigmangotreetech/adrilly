@@ -18,9 +18,11 @@ class User:
     def __init__(self, phone_number, name, email=None, role='student', password=None, 
                  organization_id=None, organization_ids=None, groups=None, profile_data=None, created_by=None, billing_start_date=None,
                  subscription_ids=None, parent_id=None, age=None, gender=None):
-        self.phone_number = self._normalize_phone_number(phone_number) if phone_number else ''
+        # Normalize phone_number if provided, otherwise set to None (not empty string) for sparse index
+        self.phone_number = self._normalize_phone_number(phone_number) if phone_number else None
         self.name = name
-        self.email = email
+        # Ensure email is None (not empty string) if not provided for sparse index
+        self.email = email if email else None
         self.role = role
         self.password_hash = generate_password_hash(password) if password else None
         
@@ -210,9 +212,8 @@ class User:
     def to_dict(self, include_sensitive=False):
         """Convert user to dictionary"""
         user_dict = {
-            'phone_number': self.phone_number,
+            # For sparse indexes, omit fields that are None/empty instead of including them as None
             'name': self.name,
-            'email': self.email,
             'first_name': self.first_name,
             'last_name': self.last_name,
             'profile_picture_url': self.profile_picture_url,
@@ -241,6 +242,12 @@ class User:
             'achievements': self.achievements
         }
         
+        # Only include email and phone_number if they have values (omit None/empty for sparse indexes)
+        if self.email:
+            user_dict['email'] = self.email
+        if self.phone_number:
+            user_dict['phone_number'] = self.phone_number
+        
         # Only include _id if it exists and is not None
         if hasattr(self, '_id') and self._id is not None:
             user_dict['_id'] = str(self._id)
@@ -262,8 +269,9 @@ class User:
         org_id = data.get('organization_id')
         
         user = cls(
-            phone_number=data['phone_number'],
+            phone_number=data.get('phone_number') or None,  # Handle None/empty for sparse index
             name=data['name'],
+            email=data.get('email'),  # Will be set to None if not present
             role=data.get('role', 'student'),
             organization_ids=org_ids,  # Use organization_ids if available
             organization_id=org_id if not org_ids else None,  # Fallback to organization_id

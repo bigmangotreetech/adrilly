@@ -61,7 +61,7 @@
                             <button class="btn btn-sm btn-outline-secondary" 
                                     onclick="copyToClipboard('centerCodeText')"
                                     title="Copy center code">
-                                <i class="icon-copy"></i>
+                                <span>Copy</span>
                             </button>
                         </div>
                         <input type="hidden" id="centerCodeText" value="{{ organization.center_code }}">
@@ -82,6 +82,10 @@
                             Use this if you suspect the link has been compromised or want to change the center code.
                         </div>
                     </div>
+
+                    OR 
+
+                    <br><br>
 
                     <div class="qr-code-section">
                         <h4>QR Code</h4>

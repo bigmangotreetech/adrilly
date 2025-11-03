@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up Links{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Sign Up Links</h1>
+    <p class="page-subtitle">View all sign up links created for classes from the schedule page</p>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">All Sign Up Links</h3>
+        <div class="btn-group">
+            <a onclick="window.history.back()" class="btn btn-outline">Back to Schedule</a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if activity_links %}
+        <div class="table-container-modern">
+            <table class="table-modern" id="signupLinksTable">
+                <thead class="table-header-sticky">
+                    <tr>
+                        <th class="sortable" data-sort="link">
+                            <div class="th-content">
+                                <span>Link</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="sortable" data-sort="access_code">
+                            <div class="th-content">
+                                <span>Access Code</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <span>Enrolled Users</span>
+                            </div>
+                        </th>
+                        <th class="sortable d-none d-md-table-cell" data-sort="created_at">
+                            <div class="th-content">
+                                <span>Created At</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="sortable" data-sort="status">
+                            <div class="th-content">
+                                <span>Status</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="actions-column">
+                            <div class="th-content">
+                                <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
+                                    </path>
+                                </svg>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for link in activity_links %}
+                    <tr class="table-row-modern">
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <code class="text-primary" style="font-size: 0.875rem; background: var(--surface-secondary); padding: 0.375rem 0.5rem; border-radius: var(--radius-sm);">/signup-activities/{{ link.signup_url.split('/')[-1] }}</code>
+                            </div>
+                            <div class="mobile-info d-md-none mt-2">
+                                <div class="mobile-detail">
+                                    <strong>Created:</strong> 
+                                    {% if link.created_at %}
+                                    {{ link.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="role-pill role-student" style="font-size: 0.875rem; font-weight: 500;">{{ link.access_code }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column gap-2">
+                                <span class="badge badge-success" style="align-self: flex-start;">{{ link.enrolled_count }} enrolled</span>
+                                {% if link.enrolled_users %}
+                                <button class="btn btn-sm btn-outline-primary" type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#users-{{ loop.index }}" 
+                                        aria-expanded="false"
+                                        style="align-self: flex-start;">
+                                    View Users
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                            <span class="date-text">
+                                {% if link.created_at %}
+                                {{ link.created_at.strftime('%b %d, %Y %H:%M') }}
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if link.status == 'active' %}
+                            <span class="status-pill status-active">Active</span>
+                            {% elif link.status == 'expired' %}
+                            <span class="status-pill status-inactive">Expired</span>
+                            {% elif link.status == 'disabled' %}
+                            <span class="status-pill status-inactive">Disabled</span>
+                            {% else %}
+                            <span class="status-pill status-active">{{ link.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="actions-cell">
+                            <a class="dropdown-item d-flex align-items-center" href="{{ link.signup_url }}" target="_blank">
+                                <svg class="bi me-2" width="16" height="16" fill="currentColor">
+                                    <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
+                                    <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
+                                </svg>
+                                Open Link
+                            </a>
+                        </td>
+                    </tr>
+                    {% if link.enrolled_users %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            <div class="collapse" id="users-{{ loop.index }}">
+                                <div class="card card-body" style="background: var(--surface-secondary); margin: 0.5rem 0;">
+                                    <h6 class="mb-3" style="font-weight: 600; color: var(--text-primary);">Enrolled Users ({{ link.enrolled_count }})</h6>
+                                    <div class="table-responsive">
+                                        <table class="table-modern table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>
+                                                        <div class="th-content">
+                                                            <span>Name</span>
+                                                        </div>
+                                                    </th>
+                                                    <th>
+                                                        <div class="th-content">
+                                                            <span>Phone</span>
+                                                        </div>
+                                                    </th>
+                                                    <th>
+                                                        <div class="th-content">
+                                                            <span>Email</span>
+                                                        </div>
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for user in link.enrolled_users %}
+                                                <tr class="table-row-modern">
+                                                    <td>{{ user.name }}</td>
+                                                    <td>{{ user.phone }}</td>
+                                                    <td>{{ user.email }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1">
+                    </path>
+                </svg>
+            </div>
+            <h3 class="empty-state-title">No sign up links found</h3>
+            <p class="empty-state-description">Create a link from the schedule page to get started.</p>
+            <a onclick="window.history.back()" class="btn btn-primary-modern">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Back to Schedule
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    initializeTableSorting();
+});
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Show success message
+        alert('Link copied to clipboard!');
+    }, function(err) {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            alert('Link copied to clipboard!');
+        } catch (err) {
+            alert('Failed to copy link. Please copy manually.');
+        }
+        document.body.removeChild(textarea);
+    });
+}
+
+// Table Sorting
+function initializeTableSorting() {
+    const sortableHeaders = document.querySelectorAll('.sortable');
+    
+    sortableHeaders.forEach(header => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', function () {
+            const sortBy = this.dataset.sort;
+            const url = new URL(window.location);
+            const currentSort = url.searchParams.get('sort');
+            const currentOrder = url.searchParams.get('order');
+            
+            if (currentSort === sortBy) {
+                // Toggle order
+                url.searchParams.set('order', currentOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+                // New sort
+                url.searchParams.set('sort', sortBy);
+                url.searchParams.set('order', 'asc');
+            }
+            
+            window.location.href = url.toString();
+        });
+    });
+    
+    // Update sort indicators
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentSort = urlParams.get('sort');
+    const currentOrder = urlParams.get('order');
+    
+    if (currentSort) {
+        const header = document.querySelector(`[data-sort="${currentSort}"]`);
+        if (header) {
+            header.classList.add('sorted', currentOrder === 'desc' ? 'sorted-desc' : 'sorted-asc');
+        }
+    }
+}
+</script>
+
+{% endblock %}
+

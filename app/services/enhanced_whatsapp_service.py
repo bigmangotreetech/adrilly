@@ -768,6 +768,47 @@ That's it! We'll confirm your response right away. 😊
 
         return True, ''
     
+    def send_simple_class_reminder(self, phone_number: str, class_title: str, scheduled_at: datetime, 
+                                  location: str = None, coach_name: str = None) -> Tuple[bool, str]:
+        """Send a simple class reminder message like OTP - using template or simple text message"""
+        try:
+            # Normalize phone number
+            if not phone_number.startswith("+91"): 
+                phone_number = '+91' + phone_number
+
+            if phone_number.startswith("+1"): 
+                phone_number = '+91' + phone_number.replace("+1", "")
+
+            if not phone_number.startswith("whatsapp:"):
+                phone_number = f"whatsapp:{phone_number}"
+            
+            # Format class date and time
+            date_str = scheduled_at.strftime('%B %d, %Y')
+            time_str = scheduled_at.strftime('%I:%M %p')
+            location_str = location or 'TBD'
+            
+            # Create simple reminder message (similar to OTP style)
+            message = f"🔔 Class Reminder: {class_title} on {date_str} at {time_str}"
+            if location_str != 'TBD':
+                message += f" - Location: {location_str}"
+            if coach_name:
+                message += f" - Coach: {coach_name}"
+            
+            # Send using Twilio message API (like OTP)
+            # Remove whatsapp: prefix for send_twilio_message as it adds it itself
+            clean_phone = phone_number.replace("whatsapp:", "") if phone_number.startswith("whatsapp:") else phone_number
+            success, message_id = self.send_twilio_message(
+                to_number=clean_phone,
+                message=message,
+                message_type='class_reminder'
+            )
+            
+            return success, message_id
+            
+        except Exception as e:
+            current_app.logger.error(f"Error sending simple class reminder: {str(e)}")
+            return False, str(e)
+    
     # Legacy method compatibility
     def send_message(self, phone_number: str, message: str) -> Tuple[bool, str]:
         """Legacy compatibility method"""

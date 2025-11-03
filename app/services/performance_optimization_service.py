@@ -49,9 +49,23 @@ class PerformanceOptimizationService:
             }
             
             # Users collection indexes
+            # Drop old non-sparse indexes first
+            try:
+                mongo.db.users.drop_index("phone_number_1")
+            except Exception:
+                pass
+            try:
+                mongo.db.users.drop_index("email_1")
+            except Exception:
+                pass
+            
+            # Create sparse unique indexes for email and phone_number
+            mongo.db.users.create_index("phone_number", unique=True, sparse=True)
+            mongo.db.users.create_index("email", unique=True, sparse=True)
+            indexes_created['users'].extend(['phone_number_1', 'email_1'])
+            
+            # Other users indexes
             users_indexes = [
-                ('phone_number', 1),
-                ('email', 1),
                 ('organization_id', 1),
                 ('role', 1),
                 ('is_active', 1),

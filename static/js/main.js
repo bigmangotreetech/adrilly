@@ -327,7 +327,7 @@ function toggleTheme() {
     // Update theme toggle button
     const themeToggle = document.querySelector('.theme-toggle');
     if (themeToggle) {
-        themeToggle.textContent = newTheme === 'light' ? '☀️' : '🌙';
+        themeToggle.textContent = newTheme === 'light' ? 'Dark mode' : 'Light mode';
     }
 }
 
@@ -338,7 +338,7 @@ function initializeTheme() {
     const themeToggle = document.querySelector('.theme-toggle');
     console.log(savedTheme);
     if (themeToggle) {
-        themeToggle.textContent = savedTheme === 'light' ? '☀️' : '🌙';
+        themeToggle.textContent = savedTheme === 'light' ? 'Dark mode' : 'Light mode';
     }
     const pageLoader = document.getElementById('pageLoader');
     const appContent = document.getElementById('appContent');

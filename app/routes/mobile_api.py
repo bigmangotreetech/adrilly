@@ -1007,17 +1007,89 @@ def get_class_attended_students(class_id):
         current_app.logger.error(f"Get class attended students error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
+@mobile_api_bp.route('/classes/<class_id>/students/unmarked', methods=['GET'])
+@jwt_required()
+def get_class_unmarked_students(class_id):
+    """Get list of enrolled students whose attendance is not marked yet"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        current_role = claims.get('role', 'student')
+        current_org_id = claims.get('organization_id')
+        
+        class_doc = mongo.db.classes.find_one({'_id': ObjectId(class_id)})
+        if not class_doc:
+            return jsonify({'error': 'Class not found'}), 404
+        
+        if current_org_id and str(class_doc.get('organization_id')) != current_org_id:
+            return jsonify({'error': 'Unauthorized access'}), 403
+        
+        # Only coaches and admins can view unmarked students for attendance marking
+        if current_role == 'student':
+            return jsonify({'error': 'Unauthorized access'}), 403
+        
+        # Get student IDs from the class
+        student_ids = class_doc.get('student_ids', [])
+        
+        if not student_ids:
+            return jsonify({'students': [], 'total_count': 0}), 200
+        
+        # Get all attendance records for this class (any status)
+        attendance_records = list(mongo.db.attendance.find({
+            'class_id': ObjectId(class_id)
+        }))
+        
+        # Get student IDs that already have attendance marked
+        marked_student_ids = {record['student_id'] for record in attendance_records}
+        
+        # Filter out students who already have attendance marked
+        unmarked_student_ids = [
+            sid for sid in student_ids 
+            if sid not in marked_student_ids
+        ]
+        
+        if not unmarked_student_ids:
+            return jsonify({'students': [], 'total_count': 0}), 200
+        
+        # Fetch student details for unmarked students
+        students = list(mongo.db.users.find(
+            {'_id': {'$in': unmarked_student_ids}},
+            {'name': 1, 'phone_number': 1, 'email': 1, 'profile_picture': 1}
+        ))
+        
+        # Format student data
+        formatted_students = []
+        for student in students:
+            formatted_students.append({
+                'id': str(student['_id']),
+                '_id': str(student['_id']),  # Include _id for backward compatibility
+                'name': student.get('name', 'Unknown'),
+                'phone_number': student.get('phone_number', ''),
+                'email': student.get('email', ''),
+                'profile_picture': student.get('profile_picture', '')
+            })
+        
+        return jsonify({
+            'students': formatted_students,
+            'total_count': len(formatted_students)
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get class unmarked students error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @mobile_api_bp.route('/attendance', methods=['POST'])
 @jwt_required()
-@require_role(['coach', 'org_admin', 'coach_admin', 'super_admin'])
 def mark_attendance():
-    """Mark attendance for a student in a class"""
-    try:
+    # """Mark attendance for a student in a class"""
+    # try:
         if not request.json:
             return jsonify({'error': 'Request body is required'}), 400
         
         schema = MarkAttendanceSchema()
         data = schema.load(request.json)
+
+        current_user_id = get_jwt_identity()
         
         class_id = data['class_id']
         student_id = data['student_id']
@@ -1033,8 +1105,10 @@ def mark_attendance():
         
         if current_org_id and str(class_doc.get('organization_id')) != current_org_id:
             return jsonify({'error': 'Unauthorized access'}), 403
+
+        print(class_doc)
         
-        if ObjectId(student_id) not in class_doc.get('students', []):
+        if ObjectId(student_id) not in class_doc.get('student_ids', []):
             return jsonify({'error': 'Student not enrolled in this class'}), 400
         
         existing_attendance = mongo.db.attendance.find_one({
@@ -1047,9 +1121,9 @@ def mark_attendance():
             'student_id': ObjectId(student_id),
             'status': status,
             'notes': notes,
-            'date': class_doc['scheduled_at'].date() if isinstance(class_doc['scheduled_at'], datetime) else datetime.now().date(),
-            'marked_at': datetime.utcnow(),
-            'marked_by': ObjectId(get_jwt_identity())
+            'date': class_doc['scheduled_at'],
+            'marked_at': datetime.now(),
+            'marked_by': ObjectId(current_user_id)
         }
         
         if existing_attendance:
@@ -1073,15 +1147,14 @@ def mark_attendance():
             attendance_record['student_name'] = student.get('name', 'Unknown')
         
         return jsonify({
-            'attendance': attendance_record,
             'message': 'Attendance marked successfully'
         }), 200
     
-    except ValidationError as e:
-        return jsonify({'error': 'Validation error', 'details': e.messages}), 400
-    except Exception as e:
-        current_app.logger.error(f"Mark attendance error: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
+    # except ValidationError as e:
+    #     return jsonify({'error': 'Validation error', 'details': e.messages}), 400
+    # except Exception as e:
+    #     current_app.logger.error(f"Mark attendance error: {str(e)}")
+    #     return jsonify({'error': 'Internal server error'}), 500
 
 @mobile_api_bp.route('/attendance/student/<student_id>', methods=['GET'])
 @jwt_required()
@@ -3240,8 +3313,18 @@ def mobile_get_latest_announcement():
                         if '_id' in key2:
                             if isinstance(value2, ObjectId):
                                 associated_class[key][key2] = str(value2)
+                            else:
+                                associated_class[key][key2] = value2
+                        else:
+                            associated_class[key][key2] = value2
 
+            # Get likes and comments info
+            likes = announcement.get('likes', [])
+            comments = announcement.get('comments', [])
+            user_oid = ObjectId(current_user)
             
+            # Check if current user has liked this announcement
+            is_liked = any(str(like) == current_user or (isinstance(like, ObjectId) and like == user_oid) for like in likes)
             
         formatted_announcement = {
             'id': str(announcement['_id']),
@@ -3251,7 +3334,10 @@ def mobile_get_latest_announcement():
             'created_by': str(created_by['name']),
             'organization_id': str(announcement['organization_id']),
             'associated_class': associated_class if len(associated_class.keys()) > 0 else None,
-            'media_urls': announcement.get('media_urls', [])
+            'media_urls': announcement.get('media_urls', []),
+            'like_count': len(likes),
+            'comment_count': len(comments),
+            'is_liked': is_liked
         }
         
         
@@ -3330,6 +3416,152 @@ def create_announcement():
         traceback.print_exc()
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
 
+@mobile_api_bp.route('/announcements/<announcement_id>/like', methods=['POST'])
+@jwt_required()
+def toggle_like(announcement_id):
+    """Toggle like on an announcement (any role can like)"""
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # Verify announcement exists
+        announcement = mongo.db.posts.find_one({'_id': ObjectId(announcement_id)})
+        if not announcement:
+            return jsonify({'success': False, 'message': 'Announcement not found'}), 404
+        
+        # Initialize likes array if it doesn't exist
+        if 'likes' not in announcement:
+            announcement['likes'] = []
+        
+        likes = announcement.get('likes', [])
+        user_oid = ObjectId(current_user_id)
+        
+        # Check if user already liked
+        is_liked = any(str(like) == current_user_id or (isinstance(like, ObjectId) and like == user_oid) for like in likes)
+        
+        if is_liked:
+            # Unlike - remove user from likes
+            likes = [like for like in likes if str(like) != current_user_id and (not isinstance(like, ObjectId) or like != user_oid)]
+        else:
+            # Like - add user to likes
+            if user_oid not in likes:
+                likes.append(user_oid)
+        
+        # Update announcement
+        mongo.db.posts.update_one(
+            {'_id': ObjectId(announcement_id)},
+            {'$set': {'likes': likes, 'updated_at': datetime.utcnow()}}
+        )
+        
+        return jsonify({
+            'success': True,
+            'liked': not is_liked,
+            'like_count': len(likes)
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Toggle like error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@mobile_api_bp.route('/announcements/<announcement_id>/comments', methods=['POST'])
+@jwt_required()
+def add_comment(announcement_id):
+    """Add a comment to an announcement (any role can comment)"""
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.json
+        
+        content = data.get('content', '').strip()
+        if not content:
+            return jsonify({'success': False, 'message': 'Comment content is required'}), 400
+        
+        # Verify announcement exists
+        announcement = mongo.db.posts.find_one({'_id': ObjectId(announcement_id)})
+        if not announcement:
+            return jsonify({'success': False, 'message': 'Announcement not found'}), 404
+        
+        # Get user info
+        user = mongo.db.users.find_one({'_id': ObjectId(current_user_id)})
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+        
+        # Create comment
+        comment = {
+            '_id': ObjectId(),
+            'user_id': ObjectId(current_user_id),
+            'user_name': user.get('name', 'Unknown'),
+            'content': content,
+            'created_at': datetime.utcnow()
+        }
+        
+        # Add comment to announcement
+        mongo.db.posts.update_one(
+            {'_id': ObjectId(announcement_id)},
+            {
+                '$push': {'comments': comment},
+                '$set': {'updated_at': datetime.utcnow()}
+            }
+        )
+        
+        # Format comment for response
+        formatted_comment = {
+            'id': str(comment['_id']),
+            'user_id': str(comment['user_id']),
+            'user_name': comment['user_name'],
+            'content': comment['content'],
+            'created_at': comment['created_at'].isoformat()
+        }
+        
+        return jsonify({
+            'success': True,
+            'comment': formatted_comment,
+            'message': 'Comment added successfully'
+        }), 201
+        
+    except Exception as e:
+        current_app.logger.error(f"Add comment error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
+@mobile_api_bp.route('/announcements/<announcement_id>/comments', methods=['GET'])
+@jwt_required()
+def get_comments(announcement_id):
+    """Get comments for an announcement"""
+    try:
+        # Verify announcement exists
+        announcement = mongo.db.posts.find_one({'_id': ObjectId(announcement_id)})
+        if not announcement:
+            return jsonify({'success': False, 'message': 'Announcement not found'}), 404
+        
+        comments = announcement.get('comments', [])
+        
+        # Format comments
+        formatted_comments = []
+        for comment in comments:
+            formatted_comments.append({
+                'id': str(comment['_id']),
+                'user_id': str(comment['user_id']),
+                'user_name': comment.get('user_name', 'Unknown'),
+                'content': comment['content'],
+                'created_at': comment['created_at'].isoformat() if isinstance(comment['created_at'], datetime) else comment['created_at']
+            })
+        
+        # Sort by created_at descending (newest first)
+        formatted_comments.sort(key=lambda x: x['created_at'], reverse=True)
+        
+        return jsonify({
+            'success': True,
+            'comments': formatted_comments
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Get comments error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
 @mobile_api_bp.route('/posts', methods=['GET'])
 @jwt_required()
 def get_posts():
@@ -3387,6 +3619,13 @@ def get_posts():
 
             print("associated_class", associated_class)
                     
+            # Get likes and comments info
+            likes = announcement.get('likes', [])
+            comments = announcement.get('comments', [])
+            user_oid = ObjectId(current_user_id)
+            
+            # Check if current user has liked this announcement
+            is_liked = any(str(like) == current_user_id or (isinstance(like, ObjectId) and like == user_oid) for like in likes)
             
             formatted_announcements.append({
                 'id': str(announcement['_id']),
@@ -3396,7 +3635,10 @@ def get_posts():
                 'created_by': str(created_by['name']),
                 'organization_id': str(announcement['organization_id']),
                 'associated_class': associated_class if len(associated_class.keys()) > 0 else None,
-                'media_urls': announcement.get('media_urls', [])
+                'media_urls': announcement.get('media_urls', []),
+                'like_count': len(likes),
+                'comment_count': len(comments),
+                'is_liked': is_liked
             })
 
 

@@ -137,7 +137,7 @@
 
                     <div class="mb-3">
                         <div class="form-check">
-                            <input type="checkbox" name="refund_required" class="form-check-input" id="refund_required">
+                            <input type="checkbox" name="refund_required" class="form-check-input custom-checkbox" id="refund_required">
                             <label class="form-check-label" for="refund_required">Refund Required</label>
                         </div>
                         <div class="form-text">Check if students should receive a refund for this class.</div>
@@ -145,7 +145,7 @@
 
                     <div class="mb-3">
                         <div class="form-check">
-                            <input type="checkbox" name="send_notifications" class="form-check-input"
+                            <input type="checkbox" name="send_notifications" class="form-check-input custom-checkbox"
                                 id="send_notifications" checked>
                             <label class="form-check-label" for="send_notifications">Send Notifications</label>
                         </div>
@@ -216,100 +216,75 @@
     </div>
 </div>
 
-<!-- Bulk Cancel Confirmation Panel -->
-<div id="bulkCancelPanel" class="bulk-cancel-panel">
-    <div class="bulk-cancel-content">
-        <div class="bulk-cancel-header">
-            <div class="bulk-cancel-info">
-                <div class="bulk-cancel-icon">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                    </svg>
-                </div>
-                <div class="bulk-cancel-text">
-                    <h5 class="bulk-cancel-title">Cancel Selected Classes</h5>
-                    <div class="bulk-cancel-subtitle">
-                        <span class="selected-count-badge" id="selectedClassCount">0</span>
-                        classes selected for cancellation
+<!-- Bulk Cancel Modal -->
+<div class="modal fade" id="bulkCancelModal" tabindex="-1" aria-labelledby="bulkCancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="bulk-cancel-info">
+                    <div class="bulk-cancel-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="bulk-cancel-text">
+                        <h5 class="modal-title bulk-cancel-title" id="bulkCancelModalLabel">Cancel Selected Classes</h5>
+                        <div class="bulk-cancel-subtitle">
+                            <span class="selected-count-badge" id="selectedClassCount">0</span>
+                            classes selected for cancellation
+                        </div>
                     </div>
                 </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button type="button" class="bulk-cancel-close" onclick="closeBulkCancelPanel()">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+            <form id="bulkCancelForm" class="bulk-cancel-form">
+                <div class="modal-body">
+                    <div class="bulk-cancel-form">
+                        <div class="bulk-cancel-input-group">
+                            <label for="bulk_reason" class="bulk-cancel-label">Cancellation Reason</label>
+                            <textarea type="text" name="reason" id="bulk_reason" class="form-control bulk-cancel-input" 
+                                   placeholder="Enter reason for cancellation..." required rows="3"></textarea>  
+                        </div>
+                        
+                        <div class="bulk-cancel-options mt-4">
+                            <div class="bulk-cancel-checkbox">
+                                <input type="checkbox" name="send_notifications" class="form-check-input custom-checkbox bulk-cancel-checkbox-input" 
+                                       id="bulk_send_notifications" checked>
+                                <label class="bulk-cancel-checkbox-label" for="bulk_send_notifications">
+                                    <span class="bulk-cancel-checkbox-text">Send Notifications</span>
+                                    <small class="bulk-cancel-checkbox-desc">WhatsApp alerts to students</small>
+                                </label>
+                            </div>
+                            
+                            <div class="bulk-cancel-checkbox d-none">
+                                <input type="checkbox" name="refund_required" class="form-check-input custom-checkbox bulk-cancel-checkbox-input" 
+                                       id="bulk_refund_required">
+                                <label class="bulk-cancel-checkbox-label" for="bulk_refund_required">
+                                    <span class="bulk-cancel-checkbox-text">Refund Required</span>
+                                    <small class="bulk-cancel-checkbox-desc">Process refunds</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 0.25rem;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Cancel <span id="footerSelectedCount">0</span> Class(es)
+                    </button>
+                </div>
+            </form>
         </div>
-        
-        <form id="bulkCancelForm" class="bulk-cancel-form">
-            <div class="bulk-cancel-form-row">
-                <div class="bulk-cancel-input-group">
-                    <label for="bulk_reason" class="bulk-cancel-label">Cancellation Reason</label>
-                    <input type="text" name="reason" id="bulk_reason" class="bulk-cancel-input" 
-                           placeholder="Enter reason for cancellation..." required>
-                </div>
-                
-                <div class="bulk-cancel-options">
-                    <div class="bulk-cancel-checkbox">
-                        <input type="checkbox" name="send_notifications" class="bulk-cancel-checkbox-input" 
-                               id="bulk_send_notifications" checked>
-                        <label class="bulk-cancel-checkbox-label" for="bulk_send_notifications">
-                            <span class="bulk-cancel-checkbox-text">Send Notifications</span>
-                            <small class="bulk-cancel-checkbox-desc">WhatsApp alerts to students</small>
-                        </label>
-                    </div>
-                    
-                    <div class="bulk-cancel-checkbox">
-                        <input type="checkbox" name="refund_required" class="bulk-cancel-checkbox-input" 
-                               id="bulk_refund_required">
-                        <label class="bulk-cancel-checkbox-label" for="bulk_refund_required">
-                            <span class="bulk-cancel-checkbox-text">Refund Required</span>
-                            <small class="bulk-cancel-checkbox-desc">Process refunds</small>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="bulk-cancel-actions">
-                <button type="button" class="bulk-cancel-btn bulk-cancel-btn-secondary" onclick="closeBulkCancelPanel()">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                    Cancel
-                </button>
-                <button type="submit" class="bulk-cancel-btn bulk-cancel-btn-danger">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                    Cancel <span id="footerSelectedCount">0</span> Classes
-                </button>
-            </div>
-        </form>
     </div>
 </div>
 
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-        </div>
-        <div class="btn-group" role="group">
-            <button class="btn btn-outline-secondary" onclick="refreshClasses()">
-                <i class="bi bi-arrow-clockwise"></i>
-                Refresh
-            </button>
-            <button id="bulkSelectToggle" class="btn btn-primary" onclick="toggleBulkSelectMode()">
-                <i class="bi bi-check2-square"></i>
-                <span id="bulkSelectText">Select Classes</span>
-            </button>
-            <button id="cancelSelectedButton" class="btn btn-danger" onclick="showBulkCancelPanel()"
-                style="display: none;">
-                <i class="bi bi-x-circle"></i>
-                Cancel <span id="headerSelectedCount">0</span> Selected
-            </button>
-        </div>
-
-
-    </div>
+    
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -324,17 +299,50 @@
     {% endif %}
     {% endwith %}
 
-    <div class="">
-        <div class="card-header d-flex mb-5">
-            <h5 class="card-title">
-                <i class="bi bi-clock me-2"></i>
-                Upcoming Classes
-            </h5>
+    <div class="page-header-modern">
+        <div class="page-header-content">
+            <div class="page-title-section">
+                <h1 class="page-title-modern">Classes</h1>
+                <p class="page-subtitle-modern">Manage and monitor your class schedule</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-secondary" onclick="refreshClasses()">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Refresh
+                </button>
+                <button id="bulkSelectToggle" class="btn btn-danger" onclick="toggleBulkSelectMode()">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span id="bulkSelectText">Cancel Multiple Classes</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <small class="text-muted instructions d-none ms-4" id="instructions">Select classes you want to cancel</small>
+
+    <div class="justify-content-end p-4 cancel-submit-container">
+        <button id="cancelSelectedButton" class="btn btn-danger" onclick="showBulkCancelPanel()"
+                        style="display: none;">
+                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Cancel <span id="headerSelectedCount">0</span> Selected
+                    </button>
+    </div>
+    
+    <div class="content-card-modern">
+        <div class="filter-bar-modern">
             <!-- Create div for date range -->
             <div class="ms-auto">
                 <div class="input-group">
                     <span class="input-group-text">
-                        <i class="bi bi-calendar-range"></i>
+                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
                     </span>
                     <input type="date" id="startDate" class="form-control" value="{{ start_date }}" onchange="applyDateFilter()">
                     <span class="input-group-text">to</span>
@@ -342,7 +350,7 @@
                 </div>
             </div>
         </div>
-        <div class="card-body">
+        
             {% if classes %}
             <div class="table-container-modern">
                 <table class="table-modern" id="classesTable">
@@ -350,7 +358,7 @@
                         <tr>
                             <th class="bulk-select-column" style="display: none; width: 40px;">
                                 <div class="th-content">
-                                    <input type="checkbox" id="selectAllClasses" class="form-check-input"
+                                    <input type="checkbox" id="selectAllClasses" class="form-check-input custom-checkbox"
                                         onchange="toggleSelectAll()">
                                 </div>
                             </th>
@@ -403,7 +411,7 @@
                             <td class="bulk-select-column" style="display: none;">
                                 {% if class.status in ['scheduled', 'ongoing'] %}
                                 <div class="form-check">
-                                    <input type="checkbox" class="form-check-input class-select-checkbox"
+                                    <input type="checkbox" class="form-check-input custom-checkbox class-select-checkbox"
                                         data-class-id="{{ class._id }}" data-class-title="{{ class.title }}"
                                         onchange="updateBulkSelectCount()">
                                 </div>
@@ -416,9 +424,7 @@
                                     </div>
                                     <div class="class-details">
                                         <div class="class-name">{{ class.title }}</div>
-                                        {% if class.sport %}
-                                        <div class="class-meta">{{ class.sport }}</div>
-                                        {% endif %}
+                                        
                                     </div>
                                 </div>
                             </td>
@@ -444,16 +450,12 @@
                                     <div class="dropdown">
                                         <button class="action-item dropdown-toggle" type="button"
                                             id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <svg class="actions-dots" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
-                                                </path>
-                                            </svg>
+                                            More
                                         </button>
                                         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                            <li>
                                                 {% if class.status in ['scheduled', 'ongoing'] %}
-                                                <button class="action-item"
+                                                <li>
+                                                    <button class="action-item"
                                                     onclick="showStudentManagementModal('{{ class._id }}', '{{ class.title }}')">
                                                     <svg class="action-icon" fill="none" stroke="currentColor"
                                                         viewBox="0 0 24 24">
@@ -464,8 +466,8 @@
                                                     </svg>
                                                     Manage Students
                                                 </button>
-                                                {% endif %}
                                             </li>
+                                            {% endif %}
                                             <li>
                                                 <div class="action-divider"></div>
                                             </li>
@@ -541,7 +543,7 @@
 
     <!-- Recent Cancellations -->
     {% if cancelled_classes %}
-    <div class="card mt-4">
+    <div class="card mt-4 d-none">
         <div class="card-header">
             <h5 class="card-title mb-0">
                 <i class="bi bi-exclamation-triangle me-2"></i>
@@ -583,6 +585,15 @@
 </div>
 
 <style>
+    .cancel-submit-container {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        z-index: 1000;
+        width: calc(100vw - 220px);
+        border-top: var(--border-primary);
+        display: none;
+    }
     /* Custom Actions Dropdown (matching users.html) */
     .actions-cell {
         width: 60px;
@@ -857,73 +868,33 @@
         font-weight: 500;
     }
 
-    .status-pill {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.25rem 0.75rem;
-        border-radius: var(--radius-full);
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.025em;
-    }
-
+    
     .status-pill.status-scheduled {
         background: var(--success-100);
         color: var(--success-700);
-        border: 1px solid var(--success-200);
     }
 
     .status-pill.status-ongoing {
         background: var(--primary-100);
         color: var(--primary-700);
-        border: 1px solid var(--primary-200);
     }
 
     .status-pill.status-cancelled {
         background: var(--error-100);
         color: var(--error-700);
-        border: 1px solid var(--error-200);
     }
 
     .status-pill.status-completed {
         background: var(--secondary-100);
         color: var(--secondary-700);
-        border: 1px solid var(--secondary-200);
     }
     
-    /* Bulk Cancel Panel Styles */
-    .bulk-cancel-panel {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: var(--bg-card);
-        border-top: 1px solid var(--border-primary);
-        box-shadow: var(--shadow-xl);
-        z-index: 1050;
-        display: none;
-        transform: translateY(100%);
-        transition: transform 0.3s ease;
-    }
-
-    .bulk-cancel-content {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: var(--spacing-lg);
-    }
-
-    .bulk-cancel-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: var(--spacing-lg);
-    }
-
+    /* Bulk Cancel Modal Styles */
     .bulk-cancel-info {
         display: flex;
         align-items: center;
         gap: var(--spacing-md);
+        flex: 1;
     }
 
     .bulk-cancel-icon {
@@ -971,40 +942,17 @@
         font-weight: 600;
     }
 
-    .bulk-cancel-close {
-        width: 32px;
-        height: 32px;
-        border-radius: var(--radius-md);
-        background: none;
-        border: none;
-        color: var(--text-muted);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all var(--transition-fast);
-    }
-
-    .bulk-cancel-close:hover {
-        background: var(--bg-hover);
-        color: var(--text-primary);
-    }
-
-    .bulk-cancel-close svg {
-        width: 20px;
-        height: 20px;
-    }
 
     .bulk-cancel-form {
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-lg);
     }
 
     .bulk-cancel-form-row {
         display: flex;
         gap: var(--spacing-xl);
         align-items: flex-start;
+        flex-wrap: wrap;
     }
 
     .bulk-cancel-input-group {
@@ -1074,60 +1022,9 @@
         margin-top: 0.125rem;
     }
 
-    .bulk-cancel-actions {
-        display: flex;
-        gap: var(--spacing-md);
-        justify-content: flex-end;
-        padding-top: var(--spacing-md);
-        border-top: 1px solid var(--border-secondary);
-    }
-
-    .bulk-cancel-btn {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        padding: var(--spacing-sm) var(--spacing-lg);
-        border-radius: var(--radius-md);
-        font-size: 0.875rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all var(--transition-fast);
-        border: 1px solid transparent;
-    }
-
-    .bulk-cancel-btn svg {
-        width: 16px;
-        height: 16px;
-    }
-
-    .bulk-cancel-btn-secondary {
-        background: var(--bg-secondary);
-        color: var(--text-secondary);
-        border-color: var(--border-primary);
-    }
-
-    .bulk-cancel-btn-secondary:hover {
-        background: var(--bg-hover);
-        color: var(--text-primary);
-    }
-
-    .bulk-cancel-btn-danger {
-        background: var(--error);
-        color: white;
-        border-color: var(--error);
-    }
-
-    .bulk-cancel-btn-danger:hover {
-        background: var(--error-600);
-        border-color: var(--error-600);
-    }
 
     /* Responsive Design */
     @media (max-width: 768px) {
-        .bulk-cancel-content {
-            padding: var(--spacing-md);
-        }
-
         .bulk-cancel-form-row {
             flex-direction: column;
             gap: var(--spacing-lg);
@@ -1140,15 +1037,6 @@
         .bulk-cancel-options {
             flex-direction: column;
             gap: var(--spacing-md);
-        }
-
-        .bulk-cancel-actions {
-            flex-direction: column-reverse;
-        }
-
-        .bulk-cancel-btn {
-            width: 100%;
-            justify-content: center;
         }
     }
     
@@ -1570,16 +1458,21 @@
         if (bulkSelectMode) {
             bulkColumns.forEach(col => col.style.display = 'table-cell');
             toggleButton.classList.add('btn-success');
+            document.getElementById('instructions').classList.remove('d-none');
             toggleText.textContent = 'Cancel Selection';
         } else {
             bulkColumns.forEach(col => col.style.display = 'none');
             toggleButton.classList.remove('btn-success');
-            toggleText.textContent = 'Select Classes';
+            toggleText.textContent = 'Cancel mutliple classes';
+            document.getElementById('instructions').classList.add('d-none');
             selectedClasses = [];
             document.querySelectorAll('.class-select-checkbox').forEach(cb => cb.checked = false);
             document.getElementById('selectAllClasses').checked = false;
             const cancelButton = document.getElementById('cancelSelectedButton');
             cancelButton.style.display = 'none';
+
+            const cancelSubmitContainer = document.querySelector('.cancel-submit-container');
+            cancelSubmitContainer.style.display = 'none';
             closeBulkCancelPanel();
         }
     }
@@ -1605,11 +1498,13 @@
         const count = selectedClasses.length;
         const headerCount = document.getElementById('headerSelectedCount');
         const cancelButton = document.getElementById('cancelSelectedButton');
+        const cancelSubmitContainer = document.querySelector('.cancel-submit-container');
 
         if (headerCount) headerCount.textContent = count;
 
         if (count > 0) {
             cancelButton.style.display = 'inline-block';
+            cancelSubmitContainer.style.display = 'flex';
         } else {
             cancelButton.style.display = 'none';
             closeBulkCancelPanel();
@@ -1622,20 +1517,23 @@
     }
 
     function showBulkCancelPanel() {
-        const panel = document.getElementById('bulkCancelPanel');
-        panel.style.display = 'block';
-        setTimeout(() => {
-            panel.style.transform = 'translateY(0)';
-        }, 10);
+        const modalElement = document.getElementById('bulkCancelModal');
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            console.error('Bulk cancel modal element not found');
+        }
     }
 
     function closeBulkCancelPanel() {
-        const panel = document.getElementById('bulkCancelPanel');
-        panel.style.transform = 'translateY(100%)';
-        setTimeout(() => {
-            panel.style.display = 'none';
-            document.getElementById('bulkCancelForm').reset();
-        }, 300);
+        const modalElement = document.getElementById('bulkCancelModal');
+        if (modalElement) {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            }
+        }
     }
 
     function applyDateFilter() {
@@ -1757,6 +1655,17 @@
                         submitBtn.innerHTML = originalText;
                         submitBtn.disabled = false;
                     });
+            });
+        }
+
+        // Bulk Cancel Modal - Reset form on hide
+        const bulkCancelModal = document.getElementById('bulkCancelModal');
+        if (bulkCancelModal) {
+            bulkCancelModal.addEventListener('hidden.bs.modal', function () {
+                const form = document.getElementById('bulkCancelForm');
+                if (form) {
+                    form.reset();
+                }
             });
         }
 

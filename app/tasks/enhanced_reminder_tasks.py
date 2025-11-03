@@ -68,6 +68,144 @@ def send_automated_class_reminders():
         return f"Error: {str(e)}"
 
 @celery.task
+def send_organization_class_reminders():
+    """Send class reminders based on each organization's reminder_minutes_before setting"""
+    try:
+        now = datetime.utcnow()
+        whatsapp_service = EnhancedWhatsAppService()
+        
+        # Get all active organizations
+        organizations = mongo.db.organizations.find({'is_active': True})
+        
+        results = {
+            'organizations_processed': 0,
+            'classes_processed': 0,
+            'reminders_sent': 0,
+            'reminders_skipped': 0,
+            'errors': 0
+        }
+        
+        for org_data in organizations:
+            org_id = org_data['_id']
+            org_settings = org_data.get('settings', {})
+            
+            # Get reminder minutes setting (default to 120 minutes = 2 hours)
+            reminder_minutes = org_settings.get('reminder_minutes_before', 120)
+            
+            # Calculate the reminder time window (within 1 minute of the target time)
+            reminder_time = now + timedelta(minutes=reminder_minutes)
+            start_window = reminder_time - timedelta(minutes=1)
+            end_window = reminder_time + timedelta(minutes=1)
+            
+            # Find classes for this organization that are in the reminder window
+            classes_cursor = mongo.db.classes.find({
+                'organization_id': org_id,
+                'scheduled_at': {
+                    '$gte': start_window,
+                    '$lte': end_window
+                },
+                'status': 'scheduled'
+            })
+            
+            results['organizations_processed'] += 1
+            
+            for class_data in classes_cursor:
+                class_obj = Class.from_dict(class_data)
+                class_id = str(class_obj._id)
+                
+                # Get all enrolled students
+                enrolled_students = []
+                
+                # Direct enrollments
+                if class_obj.student_ids:
+                    direct_students = mongo.db.users.find({
+                        '_id': {'$in': class_obj.student_ids},
+                        'is_active': True
+                    })
+                    enrolled_students.extend(list(direct_students))
+                
+                # Group enrollments
+                if class_obj.group_ids:
+                    group_students = mongo.db.users.find({
+                        'groups': {'$in': [str(gid) for gid in class_obj.group_ids]},
+                        'is_active': True
+                    })
+                    enrolled_students.extend(list(group_students))
+                
+                # Remove duplicates
+                unique_students = {str(s['_id']): s for s in enrolled_students}.values()
+                
+                results['classes_processed'] += 1
+                
+                # Send reminder to each student (if not already sent)
+                for student_data in unique_students:
+                    student = User.from_dict(student_data)
+                    student_id = str(student._id)
+                    
+                    # Check if reminder already sent to this student for this class
+                    existing_reminder = mongo.db.class_reminders.find_one({
+                        'class_id': ObjectId(class_id),
+                        'student_id': ObjectId(student_id)
+                    })
+                    
+                    if existing_reminder:
+                        results['reminders_skipped'] += 1
+                        continue
+                    
+                    # Skip if no phone number
+                    if not student.phone_number:
+                        results['reminders_skipped'] += 1
+                        continue
+                    
+                    try:
+                        # Get coach name for reminder
+                        coach_name = None
+                        if class_obj.coach_id:
+                            coach_data = mongo.db.users.find_one({'_id': class_obj.coach_id})
+                            if coach_data:
+                                coach_name = coach_data.get('name')
+                        
+                        # Get location
+                        location_name = None
+                        if class_obj.location:
+                            location_name = class_obj.location.get('name')
+                        
+                        # Send simple reminder via WhatsApp (like OTP message style)
+                        success, message_id = whatsapp_service.send_simple_class_reminder(
+                            phone_number=student.phone_number,
+                            class_title=class_obj.title,
+                            scheduled_at=class_obj.scheduled_at,
+                            location=location_name,
+                            coach_name=coach_name
+                        )
+                        
+                        if success:
+                            # Track that reminder was sent to prevent duplicates
+                            mongo.db.class_reminders.insert_one({
+                                'class_id': ObjectId(class_id),
+                                'student_id': ObjectId(student_id),
+                                'organization_id': org_id,
+                                'sent_at': datetime.utcnow(),
+                                'reminder_minutes_before': reminder_minutes,
+                                'message_id': message_id
+                            })
+                            results['reminders_sent'] += 1
+                        else:
+                            results['errors'] += 1
+                            print(f"Failed to send reminder to {student.name}: {message_id}")
+                    
+                    except Exception as e:
+                        results['errors'] += 1
+                        print(f"Error sending reminder to {student.name} for class {class_obj.title}: {str(e)}")
+        
+        print(f"Organization-based reminders summary: {results}")
+        return f"Processed {results['organizations_processed']} orgs, {results['classes_processed']} classes, sent {results['reminders_sent']} reminders"
+        
+    except Exception as e:
+        print(f"Error in send_organization_class_reminders: {str(e)}")
+        return f"Error: {str(e)}"
+
+@celery.task
 def send_payment_reminders():
     """Send payment reminders for overdue and upcoming payments"""
     try:
@@ -390,7 +528,14 @@ from celery.schedules import crontab
 def setup_periodic_tasks(sender, **kwargs):
     """Setup all periodic tasks for the application"""
     
-    # Send class reminders every 30 minutes
+    # Send class reminders every minute based on organization settings
+    sender.add_periodic_task(
+        60.0,  # 1 minute
+        send_organization_class_reminders.s(),
+        name='send organization-based class reminders'
+    )
+    
+    # Send class reminders every 30 minutes (legacy - keeping for backward compatibility)
     sender.add_periodic_task(
         1800.0,  # 30 minutes
         send_automated_class_reminders.s(),

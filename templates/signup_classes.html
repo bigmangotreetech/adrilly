@@ -13,6 +13,7 @@
    
    .class-card {
        transition: all 0.3s ease;
+       font-size: 12px;
        border-left: 4px solid var(--accent-primary);
    }
    
@@ -28,15 +29,111 @@
        border-radius: 1rem;
        margin-bottom: 2rem;
    }
+
+   /* Micro animations for form fields */
+
+   .form-group:nth-child(1), .mb-4:nth-child(1) {
+       animation-delay: 0.1s;
+   }
+
+   .form-group:nth-child(2), .mb-4:nth-child(2) {
+       animation-delay: 0.2s;
+   }
+
+   .form-group:nth-child(3), .mb-4:nth-child(3) {
+       animation-delay: 0.3s;
+   }
+
+   .form-group:nth-child(4), .mb-4:nth-child(4) {
+       animation-delay: 0.4s;
+   }
+
+   .form-group:nth-child(5), .mb-4:nth-child(5) {
+       animation-delay: 0.5s;
+   }
+
+   @keyframes slideDown {
+       from {
+           opacity: 0;
+           transform: translateY(-20px);
+       }
+       to {
+           opacity: 1;
+           transform: translateY(0);
+       }
+   }
+
+   /* Animate form container */
+   .signup-card {
+       animation: fadeInUp 0.6s ease-out;
+   }
+
+   @keyframes fadeInUp {
+       from {
+           opacity: 0;
+           transform: translateY(30px);
+       }
+       to {
+           opacity: 1;
+           transform: translateY(0);
+       }
+   }
+
+   /* Organization header animation */
+   .org-header {
+       animation: scaleIn 0.5s ease-out;
+   }
+
+   @keyframes scaleIn {
+       from {
+           opacity: 0;
+           transform: scale(0.9);
+       }
+       to {
+           opacity: 1;
+           transform: scale(1);
+       }
+   }
+
+   .org-logo {
+       width: 80px;
+       height: 80px;
+       border-radius: 12px;
+       object-fit: cover;
+       border: 2px solid rgba(255, 255, 255, 0.2);
+   }
+
+   .access-code-input {
+       font-size: 1.5rem;
+       font-weight: bold;
+       letter-spacing: 0.5rem;
+       text-align: center;
+       font-family: 'Courier New', monospace;
+   }
 </style>
 
 <div class="container py-4 main-content d-none" >
     <div class="row justify-content-center">
         <div class="col-12 col-md-10 col-lg-8">
+            <!-- Organization Header -->
+            {% if organization %}
+            <div class="org-header text-center mb-4">
+                {% if organization.logo_url %}
+                <img src="{{ organization.logo_url }}" alt="{{ organization.name }}" class="org-logo mb-3">
+                {% else %}
+                <div class="org-logo mx-auto mb-3 bg-primary d-flex align-items-center justify-content-center text-white fw-bold" style="font-size: 2rem;">
+                    {{ organization.name[0] if organization.name else 'O' }}
+                </div>
+                {% endif %}
+                <h3 class="fw-bold mb-2">{{ organization.name }}</h3>
+                
+            </div>
+            {% endif %}
+
             <!-- Header Section -->
-            <div class="shadow-sm">
-                <h4 class=" fw-bold mb-2">Class Registration</h4>
-                <p class="lead mb-4">You're one step away from joining your classes!</p>
+            <div class="shadow-sm mb-4">
+                <h4 class="fw-bold mb-2">Class Registration</h4>
+                <p class="lead mb-4">You're one step away from joining</p>
             </div>
 
             <!-- Selected Classes Card -->
@@ -45,24 +142,14 @@
                     <h5 class="card-title text-primary mb-4">
                         <i class="bi bi-calendar-check me-2"></i>Selected Classes
                     </h5>
-                    <div class="row g-3">
+                    <div class="d-flex flex-wrap gap-3">
                         {% set days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}
                         {% for class_info in classes %}
-                        <div class="col-12">
-                            <div class="class-card p-3 rounded-3 mb-2">
+                        <div class="">
+                            <div class="class-card px-3 py-2 rounded-3 mb-2 w-auto border">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="mb-1 fw-bold">{{ class_info.activity.name }}</h6>
-                                        <small class="text-muted">
-                                            <i class="bi bi-calendar3 me-1"></i>{{ days[class_info.day_of_week] }}
-                                            {% if class_info.start_time %}
-                                            <i class="bi bi-clock ms-2 me-1"></i>{{ class_info.start_time }}
-                                            {% endif %}
-                                        </small>
-                                    </div>
-                                    <div class="text-success">
-                                        <i class="bi bi-check-circle-fill fs-4"></i>
-                                    </div>
+                                            {{ class_info.activity.name }}
+                                            ({{ days[class_info.day_of_week] }}, {{class_info.start_time}})
                                 </div>
                             </div>
                         </div>
@@ -72,7 +159,7 @@
             </div>
 
             <!-- Registration Form Card -->
-            <div class="card shadow-sm border-0 rounded-3">
+            <div class="card shadow-sm border-0 rounded-3 signup-card">
                 <div class="card-body p-4">
                     <h5 class="card-title text-primary mb-4">
                         <i class="bi bi-person-fill me-2"></i>Your Information
@@ -81,12 +168,14 @@
                     <form id="signupForm" action="/signup-classes/{{ link_token }}/submit" method="POST" class="needs-validation" novalidate>
                         <input type="hidden" name="class_ids" value="{{ class_ids }}">
                         
+                        
+                        
                         <div class="mb-4">
                             <label for="name" class="form-label fw-semibold">
                                 Full Name <span class="text-danger">*</span>
                             </label>
                             <input type="text" 
-                                   class="form-control form-control-lg" 
+                                   class="form-control form-control" 
                                    id="name" 
                                    name="name" 
                                    placeholder="Enter your full name" 
@@ -99,7 +188,7 @@
                                 Phone Number <span class="text-danger">*</span>
                             </label>
                             <input type="tel" 
-                                   class="form-control form-control-lg" 
+                                   class="form-control form-control" 
                                    id="phone" 
                                    name="phone" 
                                    placeholder="10-digit mobile number" 
@@ -117,11 +206,31 @@
                                 Email <span class="text-muted small">(Optional)</span>
                             </label>
                             <input type="email" 
-                                   class="form-control form-control-lg" 
+                                   class="form-control form-control" 
                                    id="email" 
                                    name="email" 
                                    placeholder="your.email@example.com">
                             <div class="invalid-feedback">Please enter a valid email address</div>
+                        </div>
+
+                        <!-- Access Code Field -->
+                        <div class="mb-4">
+                            <label for="access_code" class="form-label fw-semibold">
+                                Access Code <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control form-control access-code-input" 
+                                   id="access_code" 
+                                   name="access_code" 
+                                   placeholder="000000" 
+                                   required 
+                                   pattern="[0-9]{6}"
+                                   maxlength="6"
+                                   minlength="6">
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-1"></i>Enter the 6-digit code provided with this signup link
+                            </div>
+                            <div class="invalid-feedback">Please enter a valid 6-digit access code</div>
                         </div>
                         
                         <div class="d-grid gap-2">
@@ -133,7 +242,7 @@
                         <div class="text-center mt-3">
                             <small class="text-muted">
                                 <i class="bi bi-shield-check me-1"></i>
-                                By registering, you agree to receive class updates via SMS
+                                By registering, you agree to receive class updates from botle
                             </small>
                         </div>
                     </form>
@@ -143,38 +252,125 @@
     </div>
 </div>
 
+<!-- Phone Number Verification Modal -->
+<div class="modal fade" id="phoneVerificationModal" tabindex="-1" aria-labelledby="phoneVerificationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="phoneVerificationModalLabel">Verify Phone Number</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Please confirm <strong id="displayPhoneNumber"></strong> is correct</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="editPhoneBtn">Edit</button>
+                <button type="button" class="btn btn-primary" id="confirmPhoneBtn">Yes, continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Set theme to dark
-
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         document.querySelector('html').setAttribute('data-theme', 'dark');
         document.querySelector('.main-content').classList.remove('d-none');
-    }, 1000);
-});
-// Form validation
-(() => {
-    'use strict'
-    const form = document.getElementById('signupForm');
-    const phoneInput = document.getElementById('phone');
-    // Phone number validation - only allow numbers
-    phoneInput.addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
-    });
+    }, 0);
     
-    form.addEventListener('submit', event => {
-        if (!form.checkValidity()) {
+    // Form validation and phone verification
+    (() => {
+        'use strict'
+        const form = document.getElementById('signupForm');
+        if (!form) return;
+        
+        const phoneInput = document.getElementById('phone');
+        if (!phoneInput) return;
+        
+        // Phone number validation - only allow numbers
+        phoneInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+        });
+
+        // Access code validation - only allow numbers
+        const accessCodeInput = document.getElementById('access_code');
+        if (accessCodeInput) {
+            accessCodeInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+            });
+
+            accessCodeInput.addEventListener('keypress', (e) => {
+                // Only allow numeric input
+                if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    e.preventDefault();
+                }
+            });
+        }
+        
+        // Setup phone verification modal handlers
+        const modalElement = document.getElementById('phoneVerificationModal');
+        if (!modalElement) return;
+        
+        const modal = new bootstrap.Modal(modalElement, {
+            backdrop: 'static',
+            keyboard: false
+        });
+        
+        const confirmBtn = document.getElementById('confirmPhoneBtn');
+        if (!confirmBtn) return;
+        
+        let phoneConfirmed = false;
+        
+        // Handle modal close - when user clicks "Edit" or closes modal
+        modalElement.addEventListener('hidden.bs.modal', () => {
+            if (phoneConfirmed) {
+                // Phone was confirmed, submit the form
+                form.removeEventListener('submit', handleSubmit);
+                form.submit();
+                // Reset flag after submission starts
+                phoneConfirmed = false;
+            } else {
+                // User clicked Edit or closed modal, focus back on phone input field
+                phoneInput.focus();
+            }
+        });
+        
+        // Handle "Yes, continue" button
+        confirmBtn.addEventListener('click', () => {
+            phoneConfirmed = true;
+            modal.hide();
+        });
+        
+        const handleSubmit = function(event) {
             event.preventDefault();
             event.stopPropagation();
-        } else {
-            // Show loading state
-            // const submitBtn = document.getElementById('submitBtn');
-            // submitBtn.disabled = true;
-            // submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
-        }
-        form.classList.add('was-validated');
-    }, false);
-})();
+            
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                phoneConfirmed = false; // Reset flag if validation fails
+                return false;
+            }
+            
+            // If phone number hasn't been confirmed yet, show modal
+            if (!phoneConfirmed) {
+                // Get phone number value
+                const phoneValue = phoneInput.value;
+                
+                // Display phone number in modal
+                document.getElementById('displayPhoneNumber').textContent = phoneValue;
+                
+                // Show the verification modal
+                modal.show();
+                return false;
+            }
+            // If we reach here, phone is confirmed - this shouldn't happen
+            // as the listener should be removed before submission
+        };
+        
+        form.addEventListener('submit', handleSubmit, false);
+    })();
+});
 </script>
 
 {% endblock %}

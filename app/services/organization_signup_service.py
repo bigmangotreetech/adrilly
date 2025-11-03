@@ -185,17 +185,15 @@ class OrganizationSignupService:
                 if not is_valid_password:
                     return False, password_message, None
             
-            # Create new user
+            # Create new user (phone_number is required for signup, email is optional)
             new_user = User(
                 phone_number=normalized_phone,
                 name=name,
+                email=email,  # Can be None
                 role='student',  # Default role for signups
                 password=password,
                 organization_id=str(org._id)
             )
-            
-            # Set additional fields
-            new_user.email = email
             new_user.verification_status = 'verified'  # Pre-verified through center code
             
             # Parse name into first_name and last_name if possible

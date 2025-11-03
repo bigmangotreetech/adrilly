@@ -3,9 +3,13 @@
 {% block title %}Payments - botle Sports Coaching{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1 class="page-title">Payment Management</h1>
-    <p class="page-subtitle">Manage student payments and billing</p>
+<div class="page-header-modern pt-5">
+    <div class="page-header-content">
+        <div class="page-title-section">
+            <h1 class="page-title-modern">Payments</h1>
+        </div>
+        
+    </div>
 </div>
 
 <div class="card">
@@ -49,31 +53,90 @@
 
         <!-- Students List -->
         {% if users %}
-        <div class="">
-            <table class="table table-striped">
-                <thead>
+        <div class="table-container-modern">
+            <table class="table-modern" id="studentsTable">
+                <thead class="table-header-sticky">
                     <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Billing Date</th>
-                        <th>Actions</th>
+                        <th class="sortable text-left" data-sort="name" style="width: 30%;">
+                            <div class="th-content">
+                                <span>Name</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="sortable d-none d-md-table-cell text-left" data-sort="email" style="width: 25%;">
+                            <div class="th-content">
+                                <span>Email</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="sortable d-none d-sm-table-cell text-left" data-sort="phone" style="width: 15%;">
+                            <div class="th-content">
+                                <span>Phone</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="text-left" style="width: 15%;">
+                            <div class="th-content">
+                                <span>Billing Start Date</span>
+                            </div>
+                        </th>
+                        <th class=" actions-column" style="width: 15%;">
+                            <div class="th-content">
+                                <span>Actions</span>
+                            </div>
+                        </th>
                     </tr>
                 </thead>
-            {% for user in users %}
-            <tr>
-                <td>{{ user.name }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.phone_number }}</td>
-                <td>{{ user.billing_start_date }}</td>
-                <td>
-                    <a href="{{ url_for('web.user_payments', user_id=user._id) }}" class="btn btn-sm btn-outline-primary">View Payments</a>
-                    <a href="{{ url_for('web.create_payment', user_id=user._id) }}" class="btn btn-sm btn-primary">Add Payment</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-            
+                <tbody class="table-body-modern">
+                    {% for user in users %}
+                    <tr class="table-row-modern" data-user-id="{{ user._id }}">
+                        <td class="td-modern text-left user-cell">
+                            <div class="user-info-modern">
+                                <div class="user-avatar">
+                                    {{ user.name[0].upper() if user.name else 'U' }}
+                                </div>
+                                <div class="user-details">
+                                    <div class="user-name">{{ user.name }}</div>
+                                    <div class="mobile-info d-md-none">
+                                        <div class="mobile-detail">{{ user.email or 'No email' }}</div>
+                                        <div class="mobile-detail">{{ user.phone_number }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="td-modern d-none d-md-table-cell text-left">
+                            <span class="email-text">{{ user.email or '-' }}</span>
+                        </td>
+                        <td class="td-modern d-none d-sm-table-cell text-left">
+                            <span class="phone-text">{{ user.phone_number }}</span>
+                        </td>
+                        <td class="td-modern text-left">
+                            <span class="date-text">{{ user.billing_start_date.strftime('%b %d, %Y') }}</span>
+                        </td>
+                        <td class="td-modern">
+                            <!-- Bootstrap dropdown -->
+                            <div class="dropdown">
+                                <button class="action-item dropdown-toggle ps-0" type="button"
+                                    id="dropdownMenuButton{{ user._id }}" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    More
+                                </button>
+                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ user._id }}">
+                                    <li><a class="dropdown-item" href="{{ url_for('web.user_payments', user_id=user._id) }}">View Payments</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('web.create_payment', user_id=user._id) }}">Add Payment</a></li>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
         {% else %}
         <div class="text-center py-4">
@@ -102,34 +165,70 @@
             </div>
             <div class="card-body">
                 {% if subscriptions %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
+                <div class="table-container-modern">
+                    <table class="table-modern" id="subscriptionsTable">
+                        <thead class="table-header-sticky">
                             <tr>
-                                <th>Name</th>
-                                <th>Price (₹/month)</th>
-                                <th>Created On</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th class="sortable text-left" data-sort="name" style="width: 30%;">
+                                    <div class="th-content">
+                                        <span>Name</span>
+                                        <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </div>
+                                </th>
+                                <th class="text-left" style="width: 15%;">
+                                    <div class="th-content">
+                                        <span>Price (₹/month)</span>
+                                    </div>
+                                </th>
+                                <th class="sortable d-none d-md-table-cell text-left" data-sort="created_at" style="width: 15%;">
+                                    <div class="th-content">
+                                        <span>Created On</span>
+                                        <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                        </svg>
+                                    </div>
+                                </th>
+                                <th class="text-center" style="width: 15%;">
+                                    <div class="th-content">
+                                        <span>Status</span>
+                                    </div>
+                                </th>
+                                <th class="actions-column" style="width: 25%;">
+                                    <div class="th-content align-items-start">
+                                        <span>Actions</span>
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="table-body-modern">
                             {% for subscription in subscriptions %}
-                            <tr>
-                                <td>
-                                    <strong>{{ subscription.name }}</strong>
-                                    {% if subscription.description %}
-                                    <br><small class="text-muted">{{ subscription.description }}</small>
-                                    {% endif %}
+                            <tr class="table-row-modern" data-subscription-id="{{ subscription._id }}">
+                                <td class="td-modern text-left">
+                                    <div class="org-info-modern">
+                                        <div class="org-details-modern">
+                                            <div class="org-name-modern">{{ subscription.name }}</div>
+                                            {% if subscription.description %}
+                                            <div class="org-meta-modern">
+                                                <span class="meta-item">{{ subscription.description }}</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </td>
-                                <td>₹{{ subscription.price_per_month }}</td>
-                                <td>{{ subscription.created_at.strftime('%Y-%m-%d') }}</td>
-                                <td>
-                                    <span class="badge bg-{{ 'success' if subscription.is_active else 'secondary' }}">
-                                        {{ 'Active' if subscription.is_active else 'Inactive' }}
+                                <td class="td-modern text-left">
+                                    <span class="price-text">₹{{ subscription.price_per_month }}</span>
+                                </td>
+                                <td class="td-modern d-none d-md-table-cell text-left">
+                                    <span class="date-text">{{ subscription.created_at.strftime('%Y-%m-%d') }}</span>
+                                </td>
+                                <td class="td-modern">
+                                    <span class="status-pill c-{{ 'active' if subscription.is_active else 'inactive' }}">
+                                        <span class="status-text">{{ 'Active' if subscription.is_active else 'Inactive' }}</span>
                                     </span>
                                 </td>
-                                <td>
+                                <td class="td-modern">
                                     <div class="btn-group">
                                         <button class="btn btn-sm btn-outline-primary" 
                                                 onclick="editSubscription('{{ subscription._id }}')">Edit</button>

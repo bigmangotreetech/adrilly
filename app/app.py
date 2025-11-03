@@ -3,7 +3,7 @@ from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from config import config
 from app.extensions import mongo, jwt, cors
-from app.extensions import celery
+from app.extensions import make_celery
 import os
 import logging
 
@@ -30,7 +30,7 @@ def create_app(config_name=None):
     cors.init_app(app)
     
     # Create Celery instance
-    # celery = make_celery(app)
+    celery = make_celery(app)
     
     # Add context processor to make session available in templates
     @app.context_processor
@@ -60,22 +60,6 @@ def create_app(config_name=None):
     
     return app, celery
 
-def make_celery(app):
-    """Create a new Celery object and tie together the Celery config to the app's config."""
-    celery = Celery(
-        app.import_name,
-        backend=app.config['CELERY_RESULT_BACKEND'],
-        broker=app.config['CELERY_BROKER_URL']
-    )
-    celery.conf.update(app.config)
-
-    class ContextTask(celery.Task):
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
-
-    celery.Task = ContextTask
-    return celery
 
 def register_blueprints(app):
     """Register all blueprints"""

@@ -197,6 +197,55 @@ def verify_code():
         current_app.logger.error(f"Verify code error: {str(e)}")
         return jsonify({'error': 'Failed to verify code'}), 500
 
+@web_bp.route('/login-password', methods=['POST'])
+def login_password():
+    """Login with username (email/phone) and password"""
+    try:
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if not username or not password:
+            return jsonify({'error': 'Username and password are required'}), 400
+        
+        # Login with username and password
+        result, status_code = AuthService.login_with_username_password(username, password)
+        
+        if status_code == 200:
+            user_data = result['user']
+            # Set session
+            session['user_id'] = str(user_data['_id'])
+            session['email'] = user_data.get('email', '')
+            session['first_name'] = user_data.get('first_name', 'User')
+            session['last_name'] = user_data.get('last_name', '')
+            session['role'] = user_data.get('role', 'student')
+            session['phone_number'] = user_data.get('phone_number', '')
+            
+            # Handle multiple organizations - store all organization_ids and set active one
+            organization_ids = user_data.get('organization_ids', [])
+            if not organization_ids and user_data.get('organization_id'):
+                # Backward compatibility: if only organization_id exists, use it
+                organization_ids = [str(user_data['organization_id'])]
+            
+            session['organization_ids'] = [str(oid) for oid in organization_ids] if organization_ids else []
+            
+            # Set active organization (default to first one)
+            if organization_ids:
+                session['organization_id'] = str(organization_ids[0])
+            elif user_data.get('organization_id'):
+                session['organization_id'] = str(user_data['organization_id'])
+            
+            # Return success response for AJAX
+            return jsonify({
+                'message': 'Login successful',
+                'redirect': url_for('web.dashboard')
+            }), 200
+        else:
+            return jsonify(result), status_code
+        
+    except Exception as e:
+        current_app.logger.error(f"Login password error: {str(e)}")
+        return jsonify({'error': 'Failed to login'}), 500
+
 # Legacy email/password login route (for backward compatibility)
 @web_bp.route('/legacy-login', methods=['POST'])
 def legacy_login():
@@ -299,6 +348,11 @@ def dashboard():
     # """Dashboard for all user roles"""
     # try:
         user_role = session.get('role')
+        
+        # Redirect super admin directly to organizations page
+        if user_role == 'super_admin':
+            return redirect(url_for('web.organizations'))
+        
         print(user_role)
         user_name = session.get('first_name', 'User')
         current_user = mongo.db.users.find_one({'_id': ObjectId(session.get('user_id'))})
@@ -319,7 +373,7 @@ def dashboard():
         revenue_data = []
         next_class = None
 
-        if user_role == 'super_admin':
+        if False:  # Removed super_admin logic since it redirects
             # Super admin stats
             total_orgs = mongo.db.organizations.count_documents({})
             total_users = mongo.db.users.count_documents({})
@@ -334,6 +388,7 @@ def dashboard():
             
             # Get recent updates
             updates = list(mongo.db.announcements.find().sort('created_at', -1).limit(5))
+            
         
         elif user_role in ['org_admin', 'coach_admin']:
             next_class = None
@@ -2001,12 +2056,15 @@ def create_organization_submit():
         # Create organization with admin
         result, status_code = AuthService.create_organization_with_admin(
             org_name, contact_info, address, activities, 
-            admin_phone, admin_name, admin_password
+            admin_phone, admin_name, admin_password, admin_email
         )
+
+        print(result)
         
         if status_code == 201 and 'organization' in result:
             org = result['organization']
             org_id = org['_id']
+            admin_user_id = result.get('admin_user', {}).get('_id')
             
             # Update organization with additional details
             update_data = {
@@ -2019,6 +2077,19 @@ def create_organization_submit():
                 {'$set': update_data}
             )
             
+            # Update admin user with email, first_name, and last_name
+            if admin_user_id:
+                user_update_data = {
+                    'email': admin_email,
+                    'first_name': admin_first_name,
+                    'last_name': admin_last_name
+                }
+                
+                mongo.db.users.update_one(
+                    {'_id': ObjectId(admin_user_id)},
+                    {'$set': user_update_data}
+                )
+            
             flash(f'Organization "{org_name}" created successfully!', 'success')
         else:
             error_msg = result.get('error', 'Failed to create organization')
@@ -2029,8 +2100,7 @@ def create_organization_submit():
         flash('An error occurred while creating organization.', 'error')
     
     return redirect(url_for('web.organizations'))
-
-@web_bp.route('/api/organizations/<org_id>')
+    
 @login_required
 @role_required(['super_admin'])
 def api_get_organization(org_id):
@@ -2194,15 +2264,11 @@ def edit_organization(org_id):
 def delete_organization(org_id):
     """Delete organization"""
     try:
+        
         # Get organization data
         org = mongo.db.organizations.find_one({'_id': ObjectId(org_id)})
         if not org:
             return jsonify({'error': 'Organization not found'}), 404
-        
-        # Check if organization has users
-        user_count = mongo.db.users.count_documents({'organization_id': ObjectId(org_id)})
-        if user_count > 0:
-            return jsonify({'error': f'Cannot delete organization with {user_count} users. Please remove all users first.'}), 400
         
         # Delete organization
         result = mongo.db.organizations.delete_one({'_id': ObjectId(org_id)})
@@ -2214,7 +2280,7 @@ def delete_organization(org_id):
         
     except Exception as e:
         current_app.logger.error(f"Delete organization error: {str(e)}")
-        return jsonify({'error': 'An unexpected error occurred'}), 500
+        return jsonify({'error': f'An unexpected error occurred: {str(e)}'}), 500
 
 @web_bp.route('/api/organizations/<org_id>/status', methods=['PUT'])
 @login_required
@@ -2257,7 +2323,7 @@ def update_organization_status(org_id):
 @login_required
 @role_required(['super_admin'])
 def organization_detail(org_id):
-    """Organization detail page"""
+    """Organization detail page with comprehensive information"""
     try:
         org = mongo.db.organizations.find_one({'_id': ObjectId(org_id)})
         if not org:
@@ -2269,13 +2335,39 @@ def organization_detail(org_id):
         if org.get('owner_id'):
             admin = mongo.db.users.find_one({'_id': org['owner_id']})
         
-        # Get users and centers
+        # Get all users in this organization
         users = list(mongo.db.users.find({'organization_id': ObjectId(org_id)}))
+        
+        # Get centers
         centers = list(mongo.db.centers.find({'organization_id': ObjectId(org_id)})) if 'centers' in mongo.db.list_collection_names() else []
         
-        return render_template('organization_detail.html', org=org, admin=admin, users=users, centers=centers)
+        # Get classes
+        classes = list(mongo.db.classes.find({'organization_id': ObjectId(org_id)}).sort('scheduled_at', -1).limit(50))
+        
+        # Get statistics
+        stats = {
+            'total_users': len(users),
+            'total_classes': len(classes),
+            'total_centers': len(centers),
+            'active_users': len([u for u in users if u.get('is_active', True)]),
+            'coaches': len([u for u in users if u.get('role') in ['coach', 'coach_admin']]),
+            'students': len([u for u in users if u.get('role') == 'student']),
+        }
+        
+        # Get recent payments
+        payments = list(mongo.db.payments.find({'organization_id': ObjectId(org_id)}).sort('date', -1).limit(20))
+        
+        return render_template('organization_detail.html', 
+                             org=org, 
+                             admin=admin, 
+                             users=users, 
+                             centers=centers,
+                             classes=classes,
+                             stats=stats,
+                             payments=payments)
     
     except Exception as e:
+        current_app.logger.error(f"Organization detail error: {str(e)}")
         flash('Error loading organization details.', 'error')
         return redirect(url_for('web.organizations'))
 
@@ -2373,6 +2465,27 @@ def update_organization_settings(org_id, current_org):
         activities_str = request.form.get('activities', '')
         activities = [activity.strip() for activity in activities_str.split(',') if activity.strip()]
         
+        # Get existing settings or initialize empty dict
+        existing_settings = current_org.get('settings', {}) if isinstance(current_org, dict) else {}
+        
+        # Get reminder minutes setting
+        reminder_minutes_str = request.form.get('settings[reminder_minutes_before]', '').strip()
+        reminder_minutes = None
+        if reminder_minutes_str:
+            try:
+                reminder_minutes = int(reminder_minutes_str)
+                if reminder_minutes < 1:
+                    reminder_minutes = 120  # Default to 2 hours if invalid
+            except ValueError:
+                reminder_minutes = 120  # Default to 2 hours if invalid
+        else:
+            # If not provided, use existing value or default to 120
+            reminder_minutes = existing_settings.get('reminder_minutes_before', 120)
+        
+        # Update settings dictionary
+        settings = existing_settings.copy()
+        settings['reminder_minutes_before'] = reminder_minutes
+        
         # Basic validation
         if not name:
             flash('Organization name is required.', 'error')
@@ -2400,6 +2513,7 @@ def update_organization_settings(org_id, current_org):
             },
             'address': address,
             'activities': activities,
+            'settings': settings,
             'updated_at': datetime.utcnow()
         }
 
@@ -3229,16 +3343,21 @@ def create_user():
         # Billing date
         billing_start_date = request.form.get('billing_start_date')
         
-        # Basic validation
-        if not all([name, email, phone_number, password, role]):
+        # Basic validation - at least one of email or phone must be provided
+        if not all([name, password, role]):
             flash('Please fill in all required fields.', 'error')
             return redirect(url_for('web.users'))
         
-        # Validate email
-        is_valid_email, email_message = User.validate_email(email)
-        if not is_valid_email:
-            flash(f'Email validation failed: {email_message}', 'error')
+        if not email and not phone_number:
+            flash('Either email or phone number must be provided.', 'error')
             return redirect(url_for('web.users'))
+        
+        # Validate email if provided
+        if email:
+            is_valid_email, email_message = User.validate_email(email)
+            if not is_valid_email:
+                flash(f'Email validation failed: {email_message}', 'error')
+                return redirect(url_for('web.users'))
         
         # Validate password
         is_valid_password, password_message = User.validate_password(password)
@@ -3246,10 +3365,11 @@ def create_user():
             flash(f'Password validation failed: {password_message}', 'error')
             return redirect(url_for('web.users'))
         
-        # Validate phone number
-        if not User.validate_phone_number(phone_number):
-            flash('Please enter a valid phone number.', 'error')
-            return redirect(url_for('web.users'))
+        # Validate phone number if provided
+        if phone_number:
+            if not User.validate_phone_number(phone_number):
+                flash('Please enter a valid phone number.', 'error')
+                return redirect(url_for('web.users'))
         
         # Role validation based on current user's permissions
         current_user_role = session.get('user_role')
@@ -4411,9 +4531,10 @@ def signup_classes(link_token):
         for schedule_item_id in schedule_item_ids:
             class_id_str = str(schedule_item_id)
             class_id_strings.append(class_id_str)
-            class_info = get_class_info(class_id_str)
-            if class_info:
-                classes.append(class_info)
+            schedule_item = mongo.db.schedules.find_one({'_id': ObjectId(schedule_item_id)})
+            if schedule_item:
+                schedule_item['activity'] = mongo.db.activities.find_one({'_id': schedule_item['activity_id']})
+                classes.append(schedule_item)
         
         if not classes:
             flash('No valid classes found', 'error')
@@ -4423,10 +4544,17 @@ def signup_classes(link_token):
         class_ids = ','.join(class_id_strings)
         print(f"DEBUG: Passing class_ids to template: {class_ids}")
         
+        # Get organization information
+        organization = None
+        if sign_up_link.get('organization_id'):
+            organization = mongo.db.organizations.find_one({'_id': ObjectId(sign_up_link['organization_id'])})
+        
         return render_template('signup_classes.html', 
                              classes=classes,
                              class_ids=class_ids,
-                             link_token=link_token)
+                             link_token=link_token,
+                             activity_link=sign_up_link,
+                             organization=organization)
     
     except Exception as e:
         flash('Error loading class information', 'error')
@@ -4440,8 +4568,9 @@ def signup_classes_submit(link_token):
         phone = request.form.get('phone', '').strip()
         email = request.form.get('email', '').strip()
         class_ids = request.form.get('class_ids')
+        access_code = request.form.get('access_code', '').strip()
         
-        print(f"DEBUG: Received form data - name: {name}, phone: {phone}, class_ids: {class_ids}")
+        print(f"DEBUG: Received form data - name: {name}, phone: {phone}, class_ids: {class_ids}, access_code: {access_code}")
         
         # Validate class_ids
         if not class_ids:
@@ -4453,6 +4582,11 @@ def signup_classes_submit(link_token):
         if not sign_up_link:
             flash('Invalid or expired link', 'error')
             return redirect(url_for('web.classes'))
+        
+        # Validate access code
+        if not access_code or access_code != sign_up_link.get('access_code'):
+            flash('Invalid access code. Please enter the correct 6-digit code.', 'error')
+            return redirect(url_for('web.signup_classes', link_token=link_token))
         
         # Validate required fields
         if not name or not phone:
@@ -4581,6 +4715,13 @@ def signup_classes_submit(link_token):
 
         class_names = class_names[:-2]
 
+        # Track enrolled user in activity link
+        if enrolled_count > 0:
+            mongo.db.activity_links.update_one(
+                {'link_token': link_token},
+                {'$addToSet': {'enrolled_users': user_id}, '$set': {'updated_at': datetime.utcnow()}}
+            )
+
         # enhanced_whatsapp_service = EnhancedWhatsAppService()
         # try:
         #     enhanced_whatsapp_service.send_added_to_class_message(phone, name, class_names, center_doc['name'])
@@ -4624,6 +4765,11 @@ def generate_activity_link():
         schedule_item_object_ids = []
         for schedule_item_id in schedule_item_ids:
             schedule_item_object_ids.append(ObjectId(schedule_item_id))
+
+        organization = mongo.db.organizations.find_one({'_id': ObjectId(organization_id)})
+        if not organization:
+            return jsonify({'error': 'Organization not found'}), 404
+
         
         # Create activity link
         activity_link = ActivityLink(
@@ -4643,7 +4789,9 @@ def generate_activity_link():
         
         return jsonify({
             'link': signup_url,
-            'link_token': link_token
+            'link_token': link_token,
+            'access_code': activity_link.access_code,
+            'organization_name': organization['name']
         }), 201
         
     except Exception as e:
@@ -4654,16 +4802,106 @@ def generate_activity_link():
 def signup_activities(link_token):
     activity_link = mongo.db.activity_links.find_one({'link_token': link_token})
     if not activity_link:
-        return jsonify({'error': 'Invalid link'}), 400
+        flash('Invalid or expired link', 'error')
+        return redirect(url_for('web.classes'))
 
     schedule_items = mongo.db.schedules.find({'_id': {'$in': activity_link['schedule_item_ids']}})
     classes = []
     for schedule_item in schedule_items:
         schedule_item['activity'] = mongo.db.activities.find_one({'_id': schedule_item['activity_id']}) 
+        timeslot = mongo.db.time_slots.find_one({'_id': schedule_item['time_slot_id']})
+        schedule_item['start_time'] = timeslot['start_time']
         classes.append(schedule_item)
 
     class_ids = [str(class_id) for class_id in activity_link['schedule_item_ids']]
     class_ids = ','.join(class_ids)
     
+    # Get organization information
+    organization = None
+    if activity_link.get('organization_id'):
+        organization = mongo.db.organizations.find_one({'_id': ObjectId(activity_link['organization_id'])})
    
-    return render_template('signup_classes.html', activity_link=activity_link, classes=classes, class_ids=class_ids, link_token=link_token)
+    return render_template('signup_classes.html', 
+                         activity_link=activity_link, 
+                         classes=classes, 
+                         class_ids=class_ids, 
+                         link_token=link_token,
+                         no_sidebar=True,
+                         organization=organization)
+
+@web_bp.route('/signup-links')
+@login_required
+def view_signup_links():
+    """View all sign up links created for classes from the schedule page"""
+    try:
+        # Get current user and organization
+        user_info = get_user_info_from_session_or_claims()
+        if not user_info:
+            flash('Authentication required', 'error')
+            return redirect(url_for('web.login'))
+        
+        organization_id = user_info.get('organization_id')
+        if not organization_id:
+            flash('User must be associated with an organization', 'error')
+            return redirect(url_for('web.classes'))
+        
+        # Get all activity links for this organization
+        activity_links = list(mongo.db.activity_links.find({
+            'organization_id': ObjectId(organization_id)
+        }).sort('created_at', -1))
+        
+        # Enrich links with additional information
+        enriched_links = []
+        for link in activity_links:
+            # Get classes information
+            schedule_item_ids = link.get('schedule_item_ids', [])
+            classes_info = []
+            for schedule_id in schedule_item_ids:
+                schedule_item = mongo.db.schedules.find_one({'_id': schedule_id})
+                if schedule_item:
+                    activity = mongo.db.activities.find_one({'_id': schedule_item.get('activity_id')})
+                    if activity:
+                        classes_info.append({
+                            'name': activity.get('name', 'Unknown'),
+                            'schedule_id': str(schedule_id)
+                        })
+            
+            # Get enrolled users information
+            enrolled_user_ids = link.get('enrolled_users', [])
+            enrolled_users = []
+            for user_id in enrolled_user_ids:
+                user = mongo.db.users.find_one({'_id': user_id})
+                if user:
+                    enrolled_users.append({
+                        'id': str(user_id),
+                        'name': user.get('name', 'Unknown'),
+                        'phone': user.get('phone_number', 'N/A'),
+                        'email': user.get('email', 'N/A')
+                    })
+            
+            # Generate signup URL
+            signup_url = f"{request.host_url.rstrip('/')}/signup-activities/{link.get('link_token')}"
+            
+            enriched_links.append({
+                'id': str(link.get('_id')),
+                'link_token': link.get('link_token'),
+                'access_code': link.get('access_code', 'N/A'),
+                'signup_url': signup_url,
+                'classes': classes_info,
+                'enrolled_users': enrolled_users,
+                'enrolled_count': len(enrolled_users),
+                'status': link.get('status', 'active'),
+                'created_at': link.get('created_at'),
+                'created_by': link.get('created_by'),
+                'classes_count': len(classes_info)
+            })
+        
+        return render_template('signup_links.html', 
+                             activity_links=enriched_links,
+                             organization_id=organization_id)
+        
+    except Exception as e:
+        current_app.logger.error(f"Error viewing signup links: {str(e)}")
+        traceback.print_exc()
+        flash('Error loading sign up links', 'error')
+        return redirect(url_for('web.classes'))

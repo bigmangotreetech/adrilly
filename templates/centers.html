@@ -3,21 +3,21 @@
 {% block title %}Centers Management - botle Sports Coaching{% endblock %}
 
 {% block content %}
-<div class="centers-page">
+<div class="centers-page pt-5">
     <div class="page-header-modern">
         <div class="page-header-content">
             <div class="page-title-section">
                 <h1 class="page-title-modern">Centers Management</h1>
-                <p class="page-subtitle-modern">Manage training centers and facilities</p>
+                <p class="page-subtitle-modern">Manage training centers and locations</p>
             </div>
             <div class="page-actions">
-                <button class="btn btn-secondary-modern" onclick="exportCenters()">
+                <button class="btn btn-secondary" onclick="exportCenters()">
                     <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     Export
                 </button>
-                <button class="btn btn-primary-modern" onclick="openCreateCenterModal()">
+                <button class="btn btn-primary" onclick="openCreateCenterModal()">
                     <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
@@ -27,7 +27,7 @@
         </div>
 </div>
 
-    <div class="content-card-modern">
+    <div class="">
         <!-- Enhanced Filter Bar -->
         <div class="filter-bar-modern">
             <form method="GET" class="filter-form" id="filterForm">
@@ -36,7 +36,7 @@
                         <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
-                        <input type="text" name="search" class="search-input" 
+                        <input type="text" name="search" class="search-input w-50" 
                                placeholder="Search by center name, location, facilities..." 
                                value="{{ request.args.get('search', '') }}"
                                id="searchInput">
@@ -52,7 +52,7 @@
                         </select>
                     </div>
                     
-                    <div class="filter-dropdown">
+                    <div class="filter-dropdown d-none">
                         <select name="facility" class="filter-select select2" id="facilityFilter" data-placeholder="Filter by facility">
                             <option value="">All Facilities</option>
                             <option value="yoga" {{ 'selected' if request.args.get('facility') == 'yoga' }}>Yoga</option>
@@ -120,11 +120,7 @@
                                 </div>
                                 <div class="org-details-modern">
                                     <div class="org-name-modern">{{ center.name }}</div>
-                                    {% if center.contact_info and center.contact_info.phone %}
-                                    <div class="org-meta-modern">
-                                        <span class="meta-item">📞 {{ center.contact_info.phone }}</span>
-                                    </div>
-                                    {% endif %}
+                                    
                                 </div>
                             </div>
                         </td>
@@ -132,9 +128,7 @@
                             {% if center.address %}
                             <div class="location-info-modern">
                                 <div class="location-primary">{{ center.address.city or 'Unknown' }}</div>
-                                {% if center.address.state %}
-                                <div class="location-secondary">{{ center.address.state }}</div>
-                                    {% endif %}
+                                
                                 </div>
                             {% else %}
                             <span class="text-muted-modern">Not specified</span>
@@ -145,24 +139,18 @@
 
                         <td class="td-modern">
                             {% if center.is_active %}
-                            <span class="status-pill status-active">
-                                <span class="status-dot"></span>
+                            <span class="status-pill c-active">
                                 <span class="status-text">Active</span>
                                 </span>
                             {% else %}
-                            <span class="status-pill status-inactive">
-                                <span class="status-dot"></span>
+                            <span class="status-pill c-inactive">
                                 <span class="status-text">Inactive</span>
                                 </span>
                             {% endif %}
                         </td>
                         <td class="td-modern text-left">
-                            <button class="btn-schedule-modern" onclick="window.open('/centers/{{ center._id }}/schedule', '_blank')" title="Open Schedule">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                </svg>
-                                </button>
-                        </td>
+                            <a href="{{ url_for('web.center_schedule', center_id=center._id) }}" class="btn btn-sm btn-outline-primary">View schedule</a>
+                            </td>
                         <td class="td-modern">
                             <button class="actions-trigger-modern" onclick="toggleActionDropdownPortal(event, '{{ center._id }}')">
                                 <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -468,46 +456,6 @@
 /* Modern Centers Page Styles */
 
 /* Page layout */
-.centers-page {
-    padding: 0;
-}
-
-.page-header-modern {
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--border-primary);
-    padding: 1.5rem 2rem;
-    margin-bottom: 2rem;
-}
-
-.page-header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 0 auto;
-}
-
-.page-title-section {
-    flex: 1;
-}
-
-.page-title-modern {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0 0 0.5rem 0;
-}
-
-.page-subtitle-modern {
-    font-size: 1rem;
-    color: var(--text-muted);
-    margin: 0;
-}
-
-.page-actions {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-}
 
 .btn-primary-modern, .btn-secondary-modern {
     display: inline-flex;
@@ -569,38 +517,6 @@
     margin-bottom: 1rem;
 }
 
-.search-section {
-    flex: 1;
-}
-
-.search-input-container {
-    position: relative;
-}
-
-.search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    color: var(--text-muted);
-}
-
-.search-input {
-    width: 100%;
-    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    background: var(--bg-input);
-    color: var(--text-primary);
-    font-size: 0.875rem;
-}
-
-.search-input:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-}
 
 .filter-controls {
     display: flex;
@@ -655,81 +571,13 @@
     font-size: 0.75rem;
 }
 
-/* Table styles */
-.table-container-modern {
-    overflow-x: auto;
-    overflow-y: visible;
-    position: relative;
-}
-
-.table-modern {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-}
-
-.table-header-sticky {
-    background: var(--bg-secondary);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.table-modern th {
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid var(--border-primary);
-    font-weight: 600;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-}
-
-.table-modern td {
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-primary);
-    vertical-align: top;
-}
-
-.td-modern {
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-primary);
-    vertical-align: top;
-}
-
-.th-content {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.sort-icon {
-    width: 14px;
-    height: 14px;
-    color: var(--text-muted);
-}
-
-.sortable {
-    cursor: pointer;
-}
-
-.sortable:hover .sort-icon {
-    color: var(--text-primary);
-}
-
-.table-row-modern:hover {
-    background: var(--bg-hover);
-}
-
-.table-body-modern tr:hover {
-    background: var(--bg-hover);
-}
-
-/* Organization info styles */
 .org-info-modern {
     display: flex;
     align-items: center;
     gap: 1rem;
 }
+
+
 
 .org-avatar-modern {
     width: 48px;
@@ -795,7 +643,6 @@
 }
 
 .location-primary {
-    font-weight: 500;
     color: var(--text-primary);
     font-size: 0.875rem;
 }
@@ -871,14 +718,26 @@
     font-size: 0.75rem;
 }
 
-.status-active {
-    background: var(--success-bg);
-    color: var(--success-color);
+.c-active {
+    color: var(--accent-primary);
 }
 
+.status-active {
+    color: var(--accent-primary);
+    border: 1px solid var(--accent-primary);
+    padding: 8px 12px !important;
+    border-radius: 12px;
+    text-decoration: none !important;
+    transition: all 0.3s ease;
+}
+
+.status-active:hover {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+}
 .status-inactive {
-    background: var(--error-bg);
     color: var(--error-color);
+    border: 1px solid var(--error-color);
 }
 
 /* Actions modern */
@@ -930,7 +789,7 @@
     align-items: center;
     gap: 0.75rem;
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.2rem 0.6rem;
     background: none;
     border: none;
     color: var(--text-primary);

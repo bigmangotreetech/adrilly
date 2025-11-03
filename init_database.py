@@ -80,7 +80,23 @@ def init_database():
         print("\n3️⃣ Creating database indexes...")
         try:
             # Users collection indexes
-            mongo.db.users.create_index("phone_number", unique=True)
+            # Drop existing non-sparse indexes if they exist, then create sparse indexes
+            # Use sparse indexes for email and phone_number to allow multiple NULLs while maintaining uniqueness
+            try:
+                mongo.db.users.drop_index("phone_number_1")
+                print("   Dropped old phone_number index")
+            except Exception:
+                pass  # Index doesn't exist, which is fine
+            
+            try:
+                mongo.db.users.drop_index("email_1")
+                print("   Dropped old email index")
+            except Exception:
+                pass  # Index doesn't exist, which is fine
+            
+            # Create new sparse indexes
+            mongo.db.users.create_index("phone_number", unique=True, sparse=True)
+            mongo.db.users.create_index("email", unique=True, sparse=True)
             mongo.db.users.create_index("organization_id")
             mongo.db.users.create_index([("role", 1), ("organization_id", 1)])
             mongo.db.users.create_index("created_by")

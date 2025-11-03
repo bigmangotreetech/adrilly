@@ -1,6 +1,7 @@
 from datetime import datetime
 from bson import ObjectId
 from typing import Optional, List, Dict
+import random
 
 class ActivityLink:
     """
@@ -15,6 +16,8 @@ class ActivityLink:
                  status: str = 'active',  # 'active', 'expired', 'disabled'
                  expires_at: Optional[datetime] = None,
                  metadata: Optional[Dict] = None,
+                 access_code: Optional[str] = None,
+                 enrolled_users: Optional[List[ObjectId]] = None,
                  created_at: datetime = None,
                  updated_at: datetime = None):
         self._id = _id
@@ -25,34 +28,67 @@ class ActivityLink:
         self.status = status
         self.expires_at = expires_at
         self.metadata = metadata or {}
+        self.access_code = access_code or self._generate_access_code()
+        self.enrolled_users = enrolled_users or []
         self.created_at = created_at or datetime.utcnow()
         self.updated_at = updated_at or datetime.utcnow()
+    
+    @staticmethod
+    def _generate_access_code() -> str:
+        """Generate a 6-digit access code"""
+        return ''.join([str(random.randint(0, 9)) for _ in range(6)])
 
     @classmethod
     def from_dict(cls, data: dict) -> 'ActivityLink':
+        enrolled_users = data.get('enrolled_users', [])
+        # Convert string IDs to ObjectId if needed
+        if enrolled_users:
+            if isinstance(enrolled_users[0], str):
+                enrolled_users = [ObjectId(uid) for uid in enrolled_users]
+            elif isinstance(enrolled_users[0], ObjectId):
+                enrolled_users = enrolled_users
+        else:
+            enrolled_users = []
+        
+        # Ensure organization_id and created_by are ObjectId
+        org_id = data.get('organization_id')
+        if org_id and not isinstance(org_id, ObjectId):
+            org_id = ObjectId(org_id)
+        
+        created_by = data.get('created_by')
+        if created_by and not isinstance(created_by, ObjectId):
+            created_by = ObjectId(created_by)
+        
         return cls(
             _id=data.get('_id'),
             schedule_item_ids=data.get('schedule_item_ids', []),
-            organization_id=data.get('organization_id'),
-            created_by=data.get('created_by'),
+            organization_id=org_id,
+            created_by=created_by,
             link_token=data.get('link_token'),
             status=data.get('status', 'active'),
             expires_at=data.get('expires_at'),
             metadata=data.get('metadata'),
+            access_code=data.get('access_code'),
+            enrolled_users=enrolled_users,
             created_at=data.get('created_at'),
             updated_at=data.get('updated_at')
         )
 
     def to_dict(self) -> dict:
-        return {
-            '_id': str(self._id) if self._id else None,
+        """Convert to dictionary for database storage"""
+        result = {
             'schedule_item_ids': self.schedule_item_ids,
-            'organization_id': str(self.organization_id),
-            'created_by': str(self.created_by),
+            'organization_id': self.organization_id,
+            'created_by': self.created_by,
             'link_token': self.link_token,
             'status': self.status,
             'expires_at': self.expires_at,
             'metadata': self.metadata,
+            'access_code': self.access_code,
+            'enrolled_users': self.enrolled_users,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
+        if self._id:
+            result['_id'] = self._id
+        return result

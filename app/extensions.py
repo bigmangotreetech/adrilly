@@ -42,5 +42,3 @@ def init_extensions(app):
     mongo.init_app(app)
     jwt.init_app(app)
     cors.init_app(app)
-
-celery = make_celery(app)

@@ -1,0 +1,587 @@
+{% extends "base.html" %}
+
+{% block title %}{{ org.name }} - Organization Details{% endblock %}
+
+{% block content %}
+<div class="organization-detail-page">
+    <div class="page-header-modern">
+        <div class="page-header-content">
+            <div class="page-title-section">
+                <a href="{{ url_for('web.organizations') }}" class="back-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Organizations
+                </a>
+                <h1 class="page-title-modern">{{ org.name }}</h1>
+                <p class="page-subtitle-modern">Organization Details & Statistics</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-secondary-modern" onclick="editOrganization('{{ org._id }}')">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Edit Organization
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid-modern">
+        <div class="stat-card">
+            <div class="stat-icon users-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.total_users }}</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon classes-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.total_classes }}</div>
+                <div class="stat-label">Total Classes</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon centers-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.total_centers }}</div>
+                <div class="stat-label">Centers</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon active-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-number">{{ stats.active_users }}</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs for different sections -->
+    <div class="content-card-modern">
+        <div class="tab-container">
+            <button class="tab-button active" onclick="showTab('overview')">Overview</button>
+            <button class="tab-button" onclick="showTab('users')">Users ({{ stats.total_users }})</button>
+            <button class="tab-button" onclick="showTab('classes')">Classes ({{ stats.total_classes }})</button>
+            <button class="tab-button" onclick="showTab('centers')">Centers ({{ stats.total_centers }})</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview-tab" class="tab-content active">
+            <div class="detail-grid">
+                <div class="detail-section">
+                    <h3 class="section-title">Organization Information</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Name:</span>
+                        <span class="detail-value">{{ org.name }}</span>
+                    </div>
+                    {% if org.description %}
+                    <div class="detail-row">
+                        <span class="detail-label">Description:</span>
+                        <span class="detail-value">{{ org.description }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value">
+                            <span class="status-pill {% if org.is_active %}status-active{% else %}status-inactive{% endif %}">
+                                {% if org.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </span>
+                    </div>
+                    {% if org.subscription_status %}
+                    <div class="detail-row">
+                        <span class="detail-label">Subscription:</span>
+                        <span class="detail-value">{{ org.subscription_status|title }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="detail-section">
+                    <h3 class="section-title">Admin Information</h3>
+                    {% if admin %}
+                    <div class="detail-row">
+                        <span class="detail-label">Admin Name:</span>
+                        <span class="detail-value">{{ admin.name }}</span>
+                    </div>
+                    {% if admin.email %}
+                    <div class="detail-row">
+                        <span class="detail-label">Email:</span>
+                        <span class="detail-value">{{ admin.email }}</span>
+                    </div>
+                    {% endif %}
+                    {% if admin.phone_number %}
+                    <div class="detail-row">
+                        <span class="detail-label">Phone:</span>
+                        <span class="detail-value">{{ admin.phone_number }}</span>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="detail-row">
+                        <span class="detail-value">No admin assigned</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="detail-section">
+                    <h3 class="section-title">Contact Information</h3>
+                    {% if org.contact_info %}
+                    {% if org.contact_info.email %}
+                    <div class="detail-row">
+                        <span class="detail-label">Email:</span>
+                        <span class="detail-value">{{ org.contact_info.email }}</span>
+                    </div>
+                    {% endif %}
+                    {% if org.contact_info.phone %}
+                    <div class="detail-row">
+                        <span class="detail-label">Phone:</span>
+                        <span class="detail-value">{{ org.contact_info.phone }}</span>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    {% if org.whatsapp_number %}
+                    <div class="detail-row">
+                        <span class="detail-label">WhatsApp:</span>
+                        <span class="detail-value">{{ org.whatsapp_number }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="detail-section">
+                    <h3 class="section-title">Address</h3>
+                    {% if org.address %}
+                    <div class="detail-row">
+                        <span class="detail-label">Street:</span>
+                        <span class="detail-value">{{ org.address.street or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">City:</span>
+                        <span class="detail-value">{{ org.address.city or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">State:</span>
+                        <span class="detail-value">{{ org.address.state or 'N/A' }}</span>
+                    </div>
+                    {% if org.address.zipcode %}
+                    <div class="detail-row">
+                        <span class="detail-label">ZIP Code:</span>
+                        <span class="detail-value">{{ org.address.zipcode }}</span>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="detail-row">
+                        <span class="detail-value">No address provided</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if org.activities %}
+                <div class="detail-section">
+                    <h3 class="section-title">Activities</h3>
+                    <div class="activities-list">
+                        {% for activity in org.activities %}
+                        <span class="activity-badge">{{ activity }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="users-tab" class="tab-content">
+            <div class="table-container-modern">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.email or 'N/A' }}</td>
+                            <td>{{ user.phone_number or 'N/A' }}</td>
+                            <td><span class="role-badge">{{ user.role|title }}</span></td>
+                            <td>
+                                <span class="status-pill {% if user.get('is_active', True) %}status-active{% else %}status-inactive{% endif %}">
+                                    {% if user.get('is_active', True) %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not users %}
+                        <tr>
+                            <td colspan="5" class="text-center">No users found</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Classes Tab -->
+        <div id="classes-tab" class="tab-content">
+            <div class="table-container-modern">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Sport</th>
+                            <th>Scheduled At</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for class_item in classes %}
+                        <tr>
+                            <td>{{ class_item.get('title', 'Untitled Class') }}</td>
+                            <td>{{ class_item.get('sport', 'N/A') }}</td>
+                            <td>
+                                {% if class_item.get('scheduled_at') %}
+                                {{ class_item.scheduled_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="status-pill {% if class_item.get('status') == 'active' %}status-active{% else %}status-inactive{% endif %}">
+                                    {{ class_item.get('status', 'unknown')|title }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not classes %}
+                        <tr>
+                            <td colspan="4" class="text-center">No classes found</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Centers Tab -->
+        <div id="centers-tab" class="tab-content">
+            <div class="table-container-modern">
+                <table class="table-modern">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Address</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for center in centers %}
+                        <tr>
+                            <td>{{ center.name }}</td>
+                            <td>
+                                {% if center.address %}
+                                {{ center.address.city }}, {{ center.address.state }}
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="status-pill {% if center.get('is_active', True) %}status-active{% else %}status-inactive{% endif %}">
+                                    {% if center.get('is_active', True) %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not centers %}
+                        <tr>
+                            <td colspan="3" class="text-center">No centers found</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.organization-detail-page {
+    padding: 0;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.back-link:hover {
+    color: var(--accent-primary);
+}
+
+.stats-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin: 0 2rem 2rem 2rem;
+}
+
+.stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.users-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.classes-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.centers-icon { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+.active-icon { background: rgba(236, 72, 153, 0.1); color: #ec4899; }
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.tab-container {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border-primary);
+    padding: 0 1.5rem;
+}
+
+.tab-button {
+    padding: 1rem 1.5rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.tab-button:hover {
+    color: var(--text-primary);
+}
+
+.tab-button.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.tab-content {
+    display: none;
+    padding: 2rem;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.detail-section {
+    background: var(--bg-tertiary);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-primary);
+}
+
+.section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent-primary);
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    flex: 0 0 40%;
+    font-size: 0.875rem;
+}
+
+.detail-value {
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    text-align: right;
+    flex: 1;
+    word-break: break-word;
+}
+
+.activities-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.activity-badge {
+    background: var(--accent-bg);
+    color: var(--accent-primary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.role-badge {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+}
+
+.text-center {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+}
+
+.table-container-modern {
+    overflow-x: auto;
+}
+
+.table-modern {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-modern th {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-primary);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.table-modern td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-primary);
+    vertical-align: top;
+}
+
+.status-pill {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-active {
+    background: var(--success-bg);
+    color: var(--success-color);
+}
+
+.status-inactive {
+    background: var(--error-bg);
+    color: var(--text-inverse);
+}
+</style>
+
+<script>
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + '-tab').classList.add('active');
+    event.target.classList.add('active');
+}
+
+function editOrganization(orgId) {
+    // Use the existing edit function from organizations.html
+    if (typeof editOrganization === 'function') {
+        editOrganization(orgId);
+    } else {
+        // Fallback: open edit modal if available
+        window.location.href = "{{ url_for('web.organizations') }}";
+    }
+}
+</script>
+{% endblock %}
+

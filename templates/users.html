@@ -3,12 +3,12 @@
 {% block title %}Users - botle Sports Coaching{% endblock %}
 
 {% block content %}
-<div class="users-page">
+<div class="users-page pt-5">
     <div class="page-header-modern">
         <div class="page-header-content">
             <div class="page-title-section">
                 <h1 class="page-title-modern">User Management</h1>
-                <p class="page-subtitle-modern">Manage all users in your organization</p>
+                <p class="page-subtitle-modern">Manage users, roles, and permissions</p>
             </div>
             <div class="page-actions">
                 <a href="{{ url_for('web.export_users') }}" class="btn btn-secondary" id="exportUsersBtn">
@@ -30,7 +30,7 @@
         </div>
     </div>
 
-    <div class="content-card-modern">
+    <div class="">
         <!-- Enhanced Filter Bar -->
         <div class="filter-bar-modern">
             <form method="GET" class="filter-form" id="filterForm">
@@ -136,7 +136,7 @@
                                 </svg>
                             </div>
                         </th>
-                        <th class="d-none d-lg-table-cell">
+                        <th class="d-lg-table-cell d-lg-none ">
                             <div class="th-content">
                                 <span>Groups</span>
                             </div>
@@ -208,7 +208,7 @@
                                 </span>
                             </div>
                         </td>
-                        <td class="d-none d-lg-table-cell">
+                        <td class="d-lg-table-cell d-lg-none ">
                             <span class="groups-text">
                                 {% if user.groups %}
                                 {{ user.groups|length }} group{{ 's' if user.groups|length != 1 else '' }}
@@ -236,11 +236,7 @@
                                 <button class="action-item dropdown-toggle" type="button"
                                     id="dropdownMenuButton{{ user._id }}" data-bs-toggle="dropdown"
                                     aria-expanded="false">
-                                    <svg class="actions-dots" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
-                                        </path>
-                                    </svg>
+                                    More
                                 </button>
                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ user._id }}">
                                     <button class="dropdown-item d-flex align-items-center"
@@ -397,11 +393,7 @@
                     </div>
                     <div class="user-card-actions">
                         <button class="actions-button" onclick="toggleActionDropdown(this)">
-                            <svg class="actions-dots" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
-                                </path>
-                            </svg>
+                            More
                         </button>
                         <div class="actions-menu">
                             <a class="action-item" href="{{ url_for('web.user_detail', user_id=user._id) }}">View

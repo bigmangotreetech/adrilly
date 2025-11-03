@@ -3,12 +3,12 @@
 {% block title %}Holidays Management - botle Sports Coaching{% endblock %}
 
 {% block content %}
-<div class="holidays-page users-page">
+<div class="holidays-page users-page pt-5">
     <div class="page-header-modern">
         <div class="page-header-content">
             <div class="page-title-section">
-                <h1 class="page-title-modern">Holidays Management</h1>
-                <p class="page-subtitle-modern">Manage organization holidays and class cancellations</p>
+                <h1 class="page-title-modern">Leaves and Holidays</h1>
+                <p class="page-subtitle-modern">Manage holidays, leaves, and special dates</p>
             </div>
             <div class="page-actions">
                 <button class="btn btn-accent-modern" data-bs-toggle="modal" data-bs-target="#masterHolidaysModal" onclick="loadMasterHolidays()">
@@ -1101,8 +1101,7 @@ function generateMonthCalendar(year, month, monthName) {
             
             const isCurrentMonthDate = currentDate.getMonth() === month;
             const isToday = isCurrentMonth && currentDate.getDate() === today.getDate();
-            const dateStr = currentDate.toISOString().split('T')[0];
-            
+            const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${currentDate.getDate()}`;
             // Check if this date has holidays
             const dayHolidays = getHolidaysForDate(dateStr);
             const hasHolidays = dayHolidays.length > 0;
@@ -2000,25 +1999,7 @@ input:disabled + .toggle-slider {
     }
 }
 
-/* Accent button style */
-.btn-accent-modern {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s;
-}
 
-.btn-accent-modern:hover {
-    background: linear-gradient(135deg, #d97706, #b45309);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
-}
 
 /* Holiday-specific role pills */
 .role-national {

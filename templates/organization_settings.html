@@ -4,14 +4,14 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="page-header mb-4">
-        <h1 class="page-title">
-            <i class="bi bi-gear-fill"></i>
-            Organization Settings
-        </h1>
-        <p class="page-description">Manage your organization's details, branding, and settings</p>
+    <div class="page-header-modern pt-5">
+        <div class="page-header-content">
+            <div class="page-title-section">
+                <h1 class="page-title-modern">Organization Settings</h1>
+            </div>
+            
+        </div>
     </div>
-
     <form method="POST" action="{{ url_for('web.organization_settings') }}" enctype="multipart/form-data" id="organizationSettingsForm">
         <div class="row g-4">
             <!-- Basic Information Card -->
@@ -191,6 +191,30 @@
                                       rows="6"
                                       placeholder="Enter your organization's terms and conditions...">{{ org.terms_and_conditions or '' }}</textarea>
                             <div class="form-text">Terms and conditions for students and members</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Settings Card -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header  py-3">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-bell-fill text-primary"></i>
+                            Notification Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="reminder_minutes_before" class="form-label">Class Reminder (Minutes Before)</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="reminder_minutes_before" 
+                                   name="settings[reminder_minutes_before]" 
+                                   value="{{ org.settings.reminder_minutes_before if org.settings and 'reminder_minutes_before' in org.settings else 120 }}"
+                                   min="1"
+                                   max="10080"
+                                   placeholder="120">
+                            <div class="form-text">Number of minutes before class start time to send WhatsApp reminders (default: 120 minutes = 2 hours)</div>
                         </div>
                     </div>
                 </div>
@@ -410,7 +434,6 @@
     }
     
     .placeholder-logo, .placeholder-banner {
-        background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
         border: 2px dashed #dee2e6;
     }
     

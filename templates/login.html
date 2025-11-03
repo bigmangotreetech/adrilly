@@ -6,12 +6,17 @@
 <style>
     /* Minimal login page styles - clean and balanced */
     .login-container {
-        min-height: 100vh;
+        margin: auto;
         display: flex;
         align-items: center;
         justify-content: center;
         background: var(--bg-primary);
         padding: var(--spacing-lg);
+        width: fit-content;
+        border-radius: 10px;
+        margin-top: 20vh;
+        min-width: 450px;
+        box-shadow: 0px -17px 50px 5px #232323;
     }
 
     .login-card {
@@ -20,7 +25,7 @@
         box-shadow: none;
         padding: var(--spacing-xl);
         width: 100%;
-        max-width: 420px;
+        max-width: 450px;
         font-weight: 400 !important;
     }
 
@@ -31,6 +36,7 @@
     .login-header {
         text-align: left;
         margin-bottom: var(--spacing-xl);
+        border-radius: 10px;
     }
 
     .login-title {
@@ -132,12 +138,60 @@
         font-size: 0.95rem;
         font-weight: 400 !important;
         transition: all 0.3s ease;
+        position: relative;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .verification-button:hover {
         background: var(--accent-hover);
         transform: none;
         box-shadow: none;
+    }
+
+    .verification-button:disabled {
+        opacity: 0.8;
+        cursor: not-allowed;
+    }
+
+    .verification-button .btn-text {
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .verification-button.loading .btn-text {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    .verification-button .loading {
+        position: absolute;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .verification-button.loading .loading {
+        opacity: 1;
+    }
+
+    /* Spinner animation */
+    .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .auth-footer {
@@ -184,14 +238,139 @@
     .step-number {
         display: none;
     }
+
+    /* Login mode toggle */
+    .login-mode-toggle {
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-xl);
+        padding: var(--spacing-xs);
+        background: var(--bg-secondary);
+        border-radius: var(--radius-sm);
+    }
+
+    .mode-button {
+        flex: 1;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 400 !important;
+        transition: all 0.3s ease;
+    }
+
+    .mode-button.active {
+        background: var(--accent-primary);
+        color: white;
+    }
+
+    .mode-button:hover {
+        color: var(--text-primary);
+    }
+
+    .mode-button.active:hover {
+        color: white;
+    }
+
+    /* Hidden class */
+    .hidden {
+        display: none !important;
+    }
+
+    /* Micro animations for form fields */
+    .form-group {
+        opacity: 0;
+        transform: translateY(-20px);
+        animation: slideDown 0.5s ease-out forwards;
+    }
+
+    .form-group:nth-child(1) {
+        animation-delay: 0.1s;
+    }
+
+    .form-group:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .form-group:nth-child(3) {
+        animation-delay: 0.3s;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Animate form container */
+    .login-card {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Login header animation */
+    .login-header {
+        animation: scaleIn 0.5s ease-out;
+    }
+
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.5);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
 </style>
 {% endblock %}
 
 {% block login_content %}
 <div class="login-container">
     <div class="login-card">
-        <div class="login-header">
-            <h1 class="login-title">botle</h1>
+        <div class="login-header text-center">
+            <img width="100" src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
+        </div>
+        
+        <!-- Login Mode Toggle -->
+        <div>Login with</div>
+        <div class="login-mode-toggle">
+            <button type="button" class="mode-button" id="otpModeBtn" onclick="switchMode('otp')">
+                OTP
+            </button>
+            <button type="button" class="mode-button active" id="passwordModeBtn" onclick="switchMode('password')">
+                Password
+            </button>
         </div>
         
         <div class="auth-steps" style="display: none;">
@@ -203,50 +382,83 @@
             </div>
         </div>
         
-        <!-- Step 1: Phone Number Entry -->
-        <div id="phoneStep">
-            <form id="phoneForm" method="POST" action="{{ url_for('web.send_verification') }}">
+        <!-- Password Login Form -->
+        <div id="passwordLoginForm">
+            <form id="passwordForm" method="POST" action="{{ url_for('web.login_password') }}">
                 <div class="form-group">
-                    <label for="phone_number" class="form-label">Phone Number</label>
-                    <input type="tel" class="form-control" id="phone_number" name="phone_number" 
-                            required>
+                    <label for="username" class="form-label">Email or Phone Number</label>
+                    <input type="text" class="form-control" id="username" name="username" 
+                            placeholder="" required>
                 </div>
                 
                 <div class="form-group">
-                <button type="submit" class="btn btn-primary btn-block verification-button">
-                    <span class="btn-text">Send Verification Code</span>
-                    <span class="loading hidden"></span>
-                </button>
-                </div>
-            </form>
-        </div>
-        
-        <!-- Step 2: Verification Code Entry -->
-        <div id="verificationStep" class="hidden">
-            <form id="verificationForm" method="POST" action="{{ url_for('web.verify_code') }}">
-                <input type="hidden" id="hidden_phone" name="phone_number">
-                
-                <div class="form-group">
-                    <label for="verification_code" class="form-label">Enter 6-digit Verification Code</label>
-                    <input type="text" class="form-control" id="verification_code" name="verification_code" 
-                            maxlength="6" required>
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" 
+                            placeholder="" required>
                 </div>
                 
                 <div class="form-group">
-                <button type="submit" class="btn btn-primary verification-button btn-block">
-                    <span class="btn-text">Verify & Login</span>
-                    <span class="loading hidden"></span>
-                </button>
-                </div>
-                <div class="text-center mt-3">
-                    <button type="button" class="btn btn-outline btn-sm" onclick="resendCode()">
-                        Resend Code
+                    <button type="submit" class="btn btn-primary btn-block verification-button">
+                        <span class="btn-text">Login</span>
+                        <span class="loading">
+                            <span class="spinner"></span>
+                        </span>
                     </button>
                 </div>
             </form>
         </div>
         
-        <div class="auth-footer">
+        <!-- OTP Login Forms -->
+        <div id="otpLoginForm" class="hidden">
+            <!-- Step 1: Phone Number Entry -->
+            <div id="phoneStep">
+                <form id="phoneForm" method="POST" action="{{ url_for('web.send_verification') }}">
+                    <div class="form-group">
+                        <label for="phone_number" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone_number" name="phone_number" 
+                                required>
+                    </div>
+                    
+                    <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-block verification-button">
+                        <span class="btn-text">Send Verification Code</span>
+                        <span class="loading">
+                            <span class="spinner"></span>
+                        </span>
+                    </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Step 2: Verification Code Entry -->
+            <div id="verificationStep" class="hidden">
+                <form id="verificationForm" method="POST" action="{{ url_for('web.verify_code') }}">
+                    <input type="hidden" id="hidden_phone" name="phone_number">
+                    
+                    <div class="form-group">
+                        <label for="verification_code" class="form-label">Enter 6-digit Verification Code</label>
+                        <input type="text" class="form-control" id="verification_code" name="verification_code" 
+                                maxlength="6" required>
+                    </div>
+                    
+                    <div class="form-group">
+                    <button type="submit" class="btn btn-primary verification-button btn-block">
+                        <span class="btn-text">Verify & Login</span>
+                        <span class="loading">
+                            <span class="spinner"></span>
+                        </span>
+                    </button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-outline btn-sm" onclick="resendCode()">
+                            Resend Code
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="auth-footer d-none">
             <p>Don't have an account? <a href="{{ url_for('web.register') }}">Register here</a></p>
         </div>
     </div>
@@ -255,15 +467,85 @@
 
 {% block scripts %}
 <script>
-// Phone number formatting
-document.getElementById('phone_number').addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, '');
-    // Split phone number into two parts of 5 digits each
-    if (value.length > 5) {
-        value = value.slice(0, 5) + ' ' + value.slice(5, 10);
+// Login mode toggle functionality
+function switchMode(mode) {
+    const otpBtn = document.getElementById('otpModeBtn');
+    const passwordBtn = document.getElementById('passwordModeBtn');
+    const otpForm = document.getElementById('otpLoginForm');
+    const passwordForm = document.getElementById('passwordLoginForm');
+    
+    if (mode === 'otp') {
+        otpBtn.classList.add('active');
+        passwordBtn.classList.remove('active');
+        otpForm.classList.remove('hidden');
+        passwordForm.classList.add('hidden');
+        
+        // Reset OTP form to phone step
+        document.getElementById('phoneStep').classList.remove('hidden');
+        document.getElementById('verificationStep').classList.add('hidden');
+        document.getElementById('step2').classList.remove('active');
+    } else {
+        passwordBtn.classList.add('active');
+        otpBtn.classList.remove('active');
+        passwordForm.classList.remove('hidden');
+        otpForm.classList.add('hidden');
     }
-    e.target.value = value;
+}
+
+// Password form submission
+document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Show loading state with smooth animation
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+    
+    try {
+        const formData = new FormData(form);
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Redirect to dashboard
+            window.location.href = result.redirect || '/dashboard';
+        } else {
+            // Reset button state on error
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
+            showMessage(result.error || 'Invalid username or password', 'error');
+        }
+    } catch (error) {
+        // Reset button state on error
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+        showMessage('Network error. Please try again.', 'error');
+    }
 });
+
+// Phone number formatting (only when OTP mode is active)
+function setupPhoneNumberFormatting() {
+    const phoneInput = document.getElementById('phone_number');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            // Split phone number into two parts of 5 digits each
+            if (value.length > 5) {
+                value = value.slice(0, 5) + ' ' + value.slice(5, 10);
+            }
+            e.target.value = value;
+        });
+    }
+}
+
+// Setup phone formatting when page loads (if OTP form is available)
+setupPhoneNumberFormatting();
 
 // Phone form submission
 document.getElementById('phoneForm').addEventListener('submit', async function(e) {
@@ -271,12 +553,9 @@ document.getElementById('phoneForm').addEventListener('submit', async function(e
     
     const form = e.target;
     const submitBtn = form.querySelector('button[type="submit"]');
-    const btnText = submitBtn.querySelector('.btn-text');
-    const loading = submitBtn.querySelector('.loading');
     
-    // Show loading state
-    btnText.classList.add('hidden');
-    loading.classList.remove('hidden');
+    // Show loading state with smooth animation
+    submitBtn.classList.add('loading');
     submitBtn.disabled = true;
     
     try {
@@ -295,20 +574,25 @@ document.getElementById('phoneForm').addEventListener('submit', async function(e
             document.getElementById('step2').classList.add('active');
             document.getElementById('hidden_phone').value = formData.get('phone_number');
             
+            // Reset button state after navigation
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
+            
             // Show success message
             if (result.message) {
                 showMessage(result.message, 'success');
             }
         } else {
+            // Reset button state on error
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
             showMessage(result.error || 'Failed to send verification code', 'error');
         }
     } catch (error) {
-        showMessage('Network error. Please try again.', 'error');
-    } finally {
-        // Reset button state
-        btnText.classList.remove('hidden');
-        loading.classList.add('hidden');
+        // Reset button state on error
+        submitBtn.classList.remove('loading');
         submitBtn.disabled = false;
+        showMessage('Network error. Please try again.', 'error');
     }
 });
 
@@ -318,12 +602,9 @@ document.getElementById('verificationForm').addEventListener('submit', async fun
     
     const form = e.target;
     const submitBtn = form.querySelector('button[type="submit"]');
-    const btnText = submitBtn.querySelector('.btn-text');
-    const loading = submitBtn.querySelector('.loading');
     
-    // Show loading state
-    btnText.classList.add('hidden');
-    loading.classList.remove('hidden');
+    // Show loading state with smooth animation
+    submitBtn.classList.add('loading');
     submitBtn.disabled = true;
     
     try {
@@ -339,15 +620,16 @@ document.getElementById('verificationForm').addEventListener('submit', async fun
             // Redirect to dashboard
             window.location.href = result.redirect || '/dashboard';
         } else {
+            // Reset button state on error
+            submitBtn.classList.remove('loading');
+            submitBtn.disabled = false;
             showMessage(result.error || 'Invalid verification code', 'error');
         }
     } catch (error) {
-        showMessage('Network error. Please try again.', 'error');
-    } finally {
-        // Reset button state
-        btnText.classList.remove('hidden');
-        loading.classList.add('hidden');
+        // Reset button state on error
+        submitBtn.classList.remove('loading');
         submitBtn.disabled = false;
+        showMessage('Network error. Please try again.', 'error');
     }
 });
 

@@ -6,6 +6,7 @@ from pymongo import MongoClient
 from typing import List, Dict
 import os
 from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash
 
 # Load environment variables
 load_dotenv()
@@ -95,7 +96,7 @@ def create_users(org_id: ObjectId, org_config: Dict) -> List[ObjectId]:
             role = "org_admin"
             email = f"admin@{email_domain}"
             phone = f"{base_phone}{99}"
-            metadata = {}
+            metadata = {}   
         else:
             role = "student"
             email = f"{first.lower()}.{last.lower()}.{org_short_name}{i}@gmail.com"
@@ -150,6 +151,8 @@ def clean_seeded_data():
             print(f"Cleaned data for: {org_name}")
         else:
             print(f"No data found for: {org_name}")
+    
+    # Note: Super admin is NOT deleted in clean_seeded_data to preserve platform admin access
 
 def clean_all_data():
     """Clean all data from collections"""
@@ -166,8 +169,20 @@ def setup_database(clean_mode='all'):
         clean_seeded_data()
     
     # Create indexes
-    db.users.create_index("email", unique=True)
-    db.users.create_index("phone_number", unique=True)
+    # Drop existing non-sparse indexes if they exist, then create sparse indexes
+    # Use sparse indexes for email and phone_number to allow multiple NULLs while maintaining uniqueness
+    try:
+        db.users.drop_index("phone_number_1")
+    except Exception:
+        pass  # Index doesn't exist, which is fine
+    
+    try:
+        db.users.drop_index("email_1")
+    except Exception:
+        pass  # Index doesn't exist, which is fine
+    
+    db.users.create_index("email", unique=True, sparse=True)
+    db.users.create_index("phone_number", unique=True, sparse=True)
     db.organizations.create_index("name", unique=True)
     
     print("Database setup completed")
@@ -294,8 +309,46 @@ def create_organization_with_users(org_config: Dict) -> ObjectId:
     return org_id
 
 
+def create_super_admin():
+    """Create a super admin user"""
+    print("\n" + "="*60)
+    print("CREATING SUPER ADMIN")
+    print("="*60)
+    
+    # Check if super admin already exists
+    existing_super_admin = db.users.find_one({"role": "super_admin"})
+    if existing_super_admin:
+        print(f"✓ Super admin already exists: {existing_super_admin.get('name')} ({existing_super_admin.get('email')})")
+        return existing_super_admin['_id']
+    
+    # Create super admin user
+    super_admin = User(
+        _id=ObjectId(),
+        email="superadmin@adrilly.com",
+        phone_number="+919876543210",
+        name="Super Administrator",
+        role="super_admin",
+        organization_id=None,  # Super admin doesn't belong to any organization
+        status="active",
+        password_hash=generate_password_hash("superadmin123"),  # Default password
+        metadata={},
+        email_verified=True,
+        phone_verified=True
+    )
+    
+    db.users.insert_one(super_admin.__dict__)
+    print(f"✓ Created super admin: {super_admin.name} ({super_admin.email})")
+    print(f"  Phone: {super_admin.phone_number}")
+    print(f"  Password: superadmin123")
+    
+    return super_admin._id
+
+
 def create_seed_data():
-    """Create 3 organizations with their users"""
+    """Create 3 organizations with their users and a super admin"""
+    # Create super admin first
+    super_admin_id = create_super_admin()
+    
     org_configs = get_organization_configs()
     
     print("\n" + "="*60)
@@ -313,6 +366,11 @@ def create_seed_data():
     print("\n" + "="*60)
     print("SUMMARY")
     print("="*60)
+    print("Super Admin:")
+    print(f"  Email: superadmin@adrilly.com")
+    print(f"  Phone: +919876543210")
+    print(f"  Password: superadmin123")
+    print("\nOrganizations:")
     for i, org in enumerate(created_orgs, 1):
         print(f"{i}. {org['name']}")
     

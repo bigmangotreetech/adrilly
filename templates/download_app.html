@@ -1,16 +1,56 @@
 {% extends "base.html" %}
+
+<!-- Set viewport to not zoom in -->
+{% block head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+{% endblock %}
+
 {% block login_content %}
 <style>
    .sidebar {
        display: none;
    }
+
+   @media (max-width: 768px) {
+    .download-container {
+        margin-top: 0px !important;
+    }
+   }
    
+   /* Main container with centered layout matching login page */
+   .download-container {
+       margin: auto;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       background: var(--bg-primary);
+       padding: var(--spacing-lg);
+       width: fit-content;
+       border-radius: 10px;
+       margin-top: 10vh;
+       min-width: 450px;
+       max-width: 600px;
+       box-shadow: 0px -17px 50px 5px #232323;
+   }
+
+   .download-card {
+       background: transparent;
+       border: none;
+       box-shadow: none;
+       padding: var(--spacing-xl);
+       width: 100%;
+       max-width: 100%;
+   }
+
+   /* Success header with animation */
    .success-header {
-       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+       background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%);
        color: white;
-       padding: 3rem 2rem;
+       padding: 2rem;
        border-radius: 1rem;
-       margin-bottom: 2rem;
+       margin-bottom: var(--spacing-xl);
+       text-align: center;
+       animation: scaleIn 0.5s ease-out;
    }
    
    .success-icon {
@@ -22,46 +62,72 @@
        align-items: center;
        justify-content: center;
        margin: 0 auto 1rem;
+       animation: scaleIn 0.6s ease-out 0.2s both;
    }
    
-   .app-store-btn {
-       background: #000;
-       color: white;
-       padding: 1rem 2rem;
-       border-radius: 0.75rem;
-       text-decoration: none;
-       display: inline-flex;
-       align-items: center;
-       gap: 1rem;
-       transition: all 0.3s ease;
-       border: 2px solid transparent;
+   .success-header h1 {
+       font-size: 1.75rem;
+       font-weight: 400;
+       margin-bottom: var(--spacing-sm);
    }
    
-   .app-store-btn:hover {
-       background: #1a1a1a;
-       color: white;
-       transform: translateY(-2px);
-       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+   .success-header p {
+       font-size: 0.95rem;
+       opacity: 0.9;
+       margin: 0;
+   }
+
+   /* Card animations */
+   .app-card {
+       background: var(--bg-secondary);
+       border: none;
+       border-radius: var(--radius-sm);
+       padding: var(--spacing-lg);
+       margin-bottom: var(--spacing-lg);
+       animation: fadeInUp 0.6s ease-out;
+       box-shadow: none;
+   }
+
+   .app-card:nth-child(1) {
+       animation-delay: 0.3s;
+       animation-fill-mode: both;
+   }
+
+   .app-card:nth-child(2) {
+       animation-delay: 0.5s;
+       animation-fill-mode: both;
    }
    
+   /* Download buttons */
+   .download-buttons {
+       display: flex;
+       flex-direction: column;
+       gap: var(--spacing-md);
+       margin-top: var(--spacing-lg);
+   }
+   
+   .app-store-btn,
    .play-store-btn {
-       background: linear-gradient(135deg, #01875f 0%, #006241 100%);
-       color: white;
-       padding: 1rem 2rem;
-       border-radius: 0.75rem;
+       background: var(--bg-primary);
+       color: var(--text-primary);
+       padding: var(--spacing-md) var(--spacing-lg);
+       border-radius: var(--radius-sm);
        text-decoration: none;
-       display: inline-flex;
+       display: flex;
        align-items: center;
-       gap: 1rem;
+       gap: var(--spacing-md);
        transition: all 0.3s ease;
-       border: 2px solid transparent;
+       border: 1px solid var(--border-primary);
+       font-weight: 400;
    }
    
+   .app-store-btn:hover,
    .play-store-btn:hover {
-       background: linear-gradient(135deg, #006241 0%, #004a31 100%);
-       color: white;
+       background: var(--bg-secondary);
+       color: var(--text-primary);
        transform: translateY(-2px);
-       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+       border-color: var(--accent-primary);
    }
    
    .store-icon {
@@ -70,156 +136,280 @@
        display: flex;
        align-items: center;
        justify-content: center;
+       font-size: 1.5rem;
    }
    
+   .store-text {
+       flex: 1;
+   }
+   
+   .store-text .store-label {
+       font-size: 0.75rem;
+       opacity: 0.7;
+       margin: 0;
+   }
+   
+   .store-text .store-name {
+       font-size: 1rem;
+       font-weight: 500;
+       margin: 0;
+   }
+   
+   /* Features card */
    .features-card {
-       background: linear-gradient(135deg, var(--accent-bg) 0%, rgba(118, 182, 39, 0.1) 100%);
-       border-left: 4px solid var(--accent-primary);
-       padding: 1.5rem;
-       border-radius: 0.5rem;
-       margin-bottom: 1rem;
+       background: transparent;
+       border-left: 3px solid var(--accent-primary);
+       padding: var(--spacing-md);
+       border-radius: var(--radius-sm);
+       margin-bottom: var(--spacing-md);
+       opacity: 0;
+       transform: translateX(-20px);
+       animation: slideIn 0.5s ease-out forwards;
+   }
+
+   .features-card:nth-child(1) {
+       animation-delay: 0.6s;
+   }
+
+   .features-card:nth-child(2) {
+       animation-delay: 0.7s;
+   }
+
+   .features-card:nth-child(3) {
+       animation-delay: 0.8s;
+   }
+
+   .features-card:nth-child(4) {
+       animation-delay: 0.9s;
    }
    
    .feature-icon {
-       width: 50px;
-       height: 50px;
+       width: 40px;
+       height: 40px;
        background: var(--accent-primary);
        color: white;
        border-radius: 50%;
        display: flex;
        align-items: center;
        justify-content: center;
-       font-size: 1.5rem;
+       font-size: 1.25rem;
+       flex-shrink: 0;
+   }
+   
+   .feature-content h6 {
+       font-size: 0.95rem;
+       font-weight: 500;
+       margin-bottom: 0.25rem;
+   }
+   
+   .feature-content p {
+       font-size: 0.85rem;
+       opacity: 0.7;
+       margin: 0;
+   }
+
+   /* Info text */
+   .info-text {
+       text-align: center;
+       margin-top: var(--spacing-xl);
+       padding-top: var(--spacing-lg);
+       border-top: 1px solid var(--border-primary);
+       opacity: 0;
+       animation: fadeIn 0.5s ease-out 1s forwards;
+   }
+
+   .info-text p {
+       font-size: 0.9rem;
+       margin: 0;
+       opacity: 0.7;
+   }
+
+   /* Section titles */
+   .section-title {
+       font-size: 1.1rem;
+       font-weight: 500;
+       margin-bottom: var(--spacing-md);
+       color: var(--text-primary);
+   }
+
+   .section-description {
+       font-size: 0.9rem;
+       opacity: 0.7;
+       margin-bottom: var(--spacing-lg);
+       text-align: center;
+   }
+
+   /* Animations */
+   @keyframes fadeInUp {
+       from {
+           opacity: 0;
+           transform: translateY(30px);
+       }
+       to {
+           opacity: 1;
+           transform: translateY(0);
+       }
+   }
+
+   @keyframes scaleIn {
+       from {
+           opacity: 0;
+           transform: scale(0.9);
+       }
+       to {
+           opacity: 1;
+           transform: scale(1);
+       }
+   }
+
+   @keyframes slideIn {
+       from {
+           opacity: 0;
+           transform: translateX(-20px);
+       }
+       to {
+           opacity: 1;
+           transform: translateX(0);
+       }
+   }
+
+   @keyframes fadeIn {
+       from {
+           opacity: 0;
+       }
+       to {
+           opacity: 1;
+       }
+   }
+
+   /* Main content animation */
+   .main-content {
+       opacity: 0;
+       animation: fadeIn 0.6s ease-out 0.2s forwards;
    }
 </style>
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-12 col-md-10 col-lg-8">
-            <!-- Success Header -->
-            <div class="success-header text-center shadow-lg">
-                <div class="success-icon">
-                    <i class="bi bi-check-circle-fill" style="font-size: 3rem;"></i>
-                </div>
-                <h1 class="display-4 fw-bold mb-3">Successfully Registered! 🎉</h1>
-                <p class="lead mb-0">You're all set! Download our app to manage your classes.</p>
+<div class="download-container main-content">
+    <div class="download-card">
+        <!-- Success Header -->
+        <div class="success-header">
+            <div class="success-icon">
+                <i class="bi bi-check-circle-fill" style="font-size: 2.5rem;"></i>
             </div>
+            <h1>Successfully Registered!</h1>
+        </div>
 
-            <!-- Download App Section -->
-            <div class="card shadow-sm border-0 rounded-3 mb-4">
-                <div class="card-body p-4">
-                    <h4 class="text-center mb-4 fw-bold text-primary">Download the App</h4>
-                    <p class="text-center text-muted mb-4">
-                        Get instant access to your schedule, receive notifications, and manage your classes on the go
-                    </p>
-                    
-                    <div class="row g-3 justify-content-center">
-                        <!-- App Store Button -->
-                        <div class="col-12 col-md-6 text-center">
-                            <a href="#" class="app-store-btn w-100 justify-content-center" target="_blank">
-                                <div class="store-icon">
-                                    <i class="bi bi-apple fs-1"></i>
-                                </div>
-                                <div class="text-start">
-                                    <div style="font-size: 0.75rem;">Download on the</div>
-                                    <div class="fw-bold" style="font-size: 1.25rem;">App Store</div>
-                                </div>
-                            </a>
-                        </div>
-                        
-                        <!-- Play Store Button -->
-                        <div class="col-12 col-md-6 text-center">
-                            <a href="#" class="play-store-btn w-100 justify-content-center" target="_blank">
-                                <div class="store-icon">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-                                        <path d="M14.222 9.374c1.037-.61 1.037-2.137 0-2.748L11.528 5.04 8.32 8l3.207 2.96 2.694-1.586Zm-3.595 2.116L7.583 8.68 1.03 14.73c.201 1.029 1.36 1.61 2.303 1.055l7.294-4.295ZM1 13.396V2.603L6.846 8 1 13.396ZM1.03 1.27l6.553 6.05 3.044-2.81L3.333.215C2.39-.341 1.231.24 1.03 1.27Z"/>
-                                    </svg>
-                                </div>
-                                <div class="text-start">
-                                    <div style="font-size: 0.75rem;">GET IT ON</div>
-                                    <div class="fw-bold" style="font-size: 1.25rem;">Google Play</div>
-                                </div>
-                            </a>
-                        </div>
+        <!-- Download App Section -->
+        <div class="app-card">
+            <h4 class="section-title text-center">Download the App</h4>
+            <p class="section-description">
+                Get instant access to your schedule, receive notifications, and manage your classes on the go
+            </p>
+            
+            <div class="download-buttons">
+                <!-- App Store Button -->
+                <a href="#" class="app-store-btn" target="_blank">
+                    <div class="store-icon">
+                        <i class="bi bi-apple"></i>
                     </div>
-                    
-                    <div class="text-center mt-4">
-                        <small class="text-muted">Available for iOS 12+ and Android 6.0+</small>
+                    <div class="store-text">
+                        <div class="store-label">Download on the</div>
+                        <div class="store-name">App Store</div>
                     </div>
-                </div>
+                </a>
+                
+                <!-- Play Store Button -->
+                <a href="#" class="play-store-btn" target="_blank">
+                    <div class="store-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M14.222 9.374c1.037-.61 1.037-2.137 0-2.748L11.528 5.04 8.32 8l3.207 2.96 2.694-1.586Zm-3.595 2.116L7.583 8.68 1.03 14.73c.201 1.029 1.36 1.61 2.303 1.055l7.294-4.295ZM1 13.396V2.603L6.846 8 1 13.396ZM1.03 1.27l6.553 6.05 3.044-2.81L3.333.215C2.39-.341 1.231.24 1.03 1.27Z"/>
+                        </svg>
+                    </div>
+                    <div class="store-text">
+                        <div class="store-label">GET IT ON</div>
+                        <div class="store-name">Google Play</div>
+                    </div>
+                </a>
             </div>
+            
+            <div class="text-center mt-3">
+                <small style="font-size: 0.8rem; opacity: 0.6;">Available for iOS 12+ and Android 6.0+</small>
+            </div>
+        </div>
 
-            <!-- Features Section -->
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-body p-4">
-                    <h5 class="text-primary mb-4 fw-bold">
-                        <i class="bi bi-stars me-2"></i>What You Can Do With The App
-                    </h5>
-                    
-                    <div class="features-card">
-                        <div class="d-flex align-items-start gap-3">
-                            <div class="feature-icon">
-                                <i class="bi bi-calendar-check"></i>
-                            </div>
-                            <div>
-                                <h6 class="fw-bold mb-1">View Your Schedule</h6>
-                                <p class="text-muted mb-0 small">See all your upcoming classes at a glance</p>
-                            </div>
-                        </div>
+        <!-- Features Section -->
+        <div class="app-card">
+            <h5 class="section-title">
+                <i class="bi bi-stars me-2"></i>What You Can Do With The App
+            </h5>
+            
+            <div class="features-card">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="feature-icon">
+                        <i class="bi bi-calendar-check"></i>
                     </div>
-                    
-                    <div class="features-card">
-                        <div class="d-flex align-items-start gap-3">
-                            <div class="feature-icon">
-                                <i class="bi bi-bell"></i>
-                            </div>
-                            <div>
-                                <h6 class="fw-bold mb-1">Get Notifications</h6>
-                                <p class="text-muted mb-0 small">Receive reminders and important updates</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="features-card">
-                        <div class="d-flex align-items-start gap-3">
-                            <div class="feature-icon">
-                                <i class="bi bi-person-check"></i>
-                            </div>
-                            <div>
-                                <h6 class="fw-bold mb-1">Mark Attendance</h6>
-                                <p class="text-muted mb-0 small">Easy check-in for your classes</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="features-card">
-                        <div class="d-flex align-items-start gap-3">
-                            <div class="feature-icon">
-                                <i class="bi bi-chat-dots"></i>
-                            </div>
-                            <div>
-                                <h6 class="fw-bold mb-1">Stay Connected</h6>
-                                <p class="text-muted mb-0 small">Communicate with coaches and classmates</p>
-                            </div>
-                        </div>
+                    <div class="feature-content">
+                        <h6>View Your Schedule</h6>
+                        <p>See all your upcoming classes at a glance</p>
                     </div>
                 </div>
             </div>
-
-            <!-- Next Steps -->
-            <div class="text-center mt-4">
-                <p class="text-muted">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Use your phone number (<strong>{{ user_phone }}</strong>) to log in to the app
-                </p>
+            
+            <div class="features-card">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="feature-icon">
+                        <i class="bi bi-bell"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h6>Get Notifications</h6>
+                        <p>Receive reminders and important updates</p>
+                    </div>
+                </div>
             </div>
+            
+            <div class="features-card">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="feature-icon">
+                        <i class="bi bi-person-check"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h6>Mark Attendance</h6>
+                        <p>Easy check-in for your classes</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="features-card">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="feature-icon">
+                        <i class="bi bi-chat-dots"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h6>Stay Connected</h6>
+                        <p>Communicate with coaches and classmates</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Steps -->
+        <div class="info-text">
+            <p>
+                <i class="bi bi-info-circle me-1"></i>
+                Use your phone number (<strong>{{ user_phone }}</strong>) to log in to the app
+            </p>
         </div>
     </div>
 </div>
 
 <script>
 // Set theme to dark
-document.documentElement.setAttribute('data-theme', 'dark');
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        document.querySelector('html').setAttribute('data-theme', 'dark');
+        document.querySelector('.main-content').classList.remove('d-none');
+    }, 0);
+});
 </script>
 
 {% endblock %}

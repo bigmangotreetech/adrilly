@@ -14,7 +14,7 @@
     <!-- Google Fonts for better typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -32,6 +32,10 @@
             --bs-primary-rgb: 118, 182, 39;  /* RGB values for #76b627 */
             --bs-primary-bg-subtle: var(--accent-bg);
             --bs-primary-border-subtle: var(--accent-primary);
+        }
+
+        .logo img {
+            max-height: 60px;
         }
 
         /* Primary button styles */
@@ -373,17 +377,17 @@
     </div>
     
     <div class="" id="appContent">
-    {% if session.get('user_id') %}
+    {% if session.get('user_id') and no_sidebar != True %}
     <!-- Header -->
     <header class="header">
         <div class="">
             <div class="header-content">
-                <a href="{{ url_for('web.dashboard') }}" class="logo">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+                <a href="{{ url_for('web.dashboard') }}" class="ps-3 rounded logo">
+                    <img src="{{ url_for('static', filename='images/text-logo.png') }}" alt="Logo" height="60">
                 </a>
                 
                 <nav class="nav">
-                    <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+                    Switch to <button class="theme-toggle" onclick="toggleTheme()">Dark mode</button>
                     
                 </nav>
                 
@@ -395,15 +399,15 @@
     <!-- Sidebar -->
     <nav class="sidebar">
         <div class="sidebar-nav">
-            <a href="{{ url_for('web.dashboard') }}" class="{% if request.endpoint == 'web.dashboard' %}active{% endif %}">Dashboard</a>
-            
             {% if session.role == 'super_admin' %}
+            <!-- Super Admin: Only Organizations -->
             <div class="nav-group">
                 <div class="nav-group-title">Platform Management</div>
-                <a href="{{ url_for('web.organizations') }}" class="{% if request.endpoint == 'web.organizations' %}active{% endif %}">Organizations</a>
-                <a href="{{ url_for('web.users') }}" class="{% if request.endpoint == 'web.users' %}active{% endif %}">All Users</a>
+                <a href="{{ url_for('web.organizations') }}" class="{% if request.endpoint == 'web.organizations' or request.endpoint == 'web.organization_detail' %}active{% endif %}">Organizations</a>
             </div>
-            {% endif %}
+            {% else %}
+            <!-- Other roles: Full sidebar -->
+            <a href="{{ url_for('web.dashboard') }}" class="{% if request.endpoint == 'web.dashboard' %}active{% endif %}">Dashboard</a>
             
             {% if session.role in ['org_admin', 'coach_admin'] %}
             <div class="nav-group">
@@ -412,7 +416,7 @@
                 {% if session.role == 'org_admin' %}
                 <a href="{{ url_for('web.centers') }}" class="{% if request.endpoint == 'web.centers' %}active{% endif %}">Centers</a>
                 {% endif %}
-                <a href="{{ url_for('class_cancellation.class_management') }}" class="{% if request.endpoint == 'class_cancellation.class_management' %}active{% endif %}">Class Management</a>
+                <a href="{{ url_for('class_cancellation.class_management') }}" class="{% if request.endpoint == 'class_cancellation.class_management' %}active{% endif %}">Classes</a>
                 <a href="{{ url_for('class_cancellation.holidays_management') }}" class="{% if request.endpoint == 'class_cancellation.holidays_management' %}active{% endif %}">Holidays</a>
                 <a href="{{ url_for('web.payments') }}" class="{% if request.endpoint == 'web.payments' %}active{% endif %}">Payments</a>
             </div>
@@ -452,6 +456,7 @@
                 <a href="{{ url_for('web.organization_signup_management') }}" class="{% if request.endpoint == 'web.organization_signup_management' %}active{% endif %}">Signup Links</a>
             </div>
             {% endif %}
+            {% endif %}
             
             <div class="nav-group">
                 <div class="nav-group-title">Account</div>
@@ -480,12 +485,28 @@
             {% endif %}
         {% endwith %}
         
-        <div class="content-wrapper p-6 h-full overflow-y-auto scrollbar-primary">
+        <div class="content-wrapper py-6 h-full overflow-y-auto scrollbar-primary">
             {% block content %}{% endblock %}
         </div>
     </main>
     {% else %}
     <!-- Non-authenticated content -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="alerts-container p-4">
+                {% for category, message in messages %}
+                    <div class="alert bg-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-50 border border-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-200 text-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-700 p-4 rounded-lg mb-4 animate-slide-up">
+                        <div class="flex items-center gap-3">
+                            <span class="text-lg">
+                                {% if category == 'error' %}❌{% elif category == 'success' %}✅{% else %}⚠️{% endif %}
+                            </span>
+                            <span>{{ message }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
     {% block login_content %}{% endblock %}
     
     {% endif %}

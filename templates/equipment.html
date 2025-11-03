@@ -3,20 +3,32 @@
 {% block title %}Equipment Marketplace - botle Sports Coaching{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1 class="page-title">Equipment Marketplace</h1>
-    <p class="page-subtitle">Buy and sell sports equipment within your community</p>
-</div>
-
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="card-title">Available Equipment</h3>
-        <div class="btn-group">
-            <button class="btn btn-primary" onclick="openListEquipmentModal()">List Equipment</button>
-            <button class="btn btn-outline" onclick="toggleView()">Grid View</button>
+<div class="equipment-page">
+    <div class="page-header-modern">
+        <div class="page-header-content">
+            <div class="page-title-section">
+                <h1 class="page-title-modern">Equipment Marketplace</h1>
+                <p class="page-subtitle-modern">Buy and sell sports equipment within your community</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-secondary" onclick="toggleView()">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                    </svg>
+                    Grid View
+                </button>
+                <button class="btn btn-primary" onclick="openListEquipmentModal()">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    List Equipment
+                </button>
+            </div>
         </div>
     </div>
-    <div class="card-body">
+    
+    <div class="content-card-modern">
+        <div class="filter-bar-modern">
         <!-- Filters -->
         <form method="GET" class="mb-3">
             <div class="form-row">
@@ -103,33 +115,67 @@
                 </div>
             {% endif %}
         </div>
-
+        
         <!-- Equipment Table (hidden by default) -->
         <div id="equipmentTable" class="hidden">
             {% if equipment %}
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
+            <div class="table-container-modern">
+                <table class="table-modern">
+                    <thead class="table-header-sticky">
                         <tr>
-                            <th>Item</th>
-                            <th>Category</th>
-                            <th>Condition</th>
-                            <th>Price</th>
-                            <th>Owner</th>
-                            <th>Location</th>
-                            <th>Posted</th>
-                            <th>Actions</th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Item</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Category</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Condition</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Price</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Owner</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Location</span>
+                                </div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    <span>Posted</span>
+                                </div>
+                            </th>
+                            <th class="actions-column">
+                                <div class="th-content">
+                                    <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                    </svg>
+                                </div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in equipment %}
-                        <tr>
+                        <tr class="table-row-modern">
                             <td>
                                 <strong>{{ item.title }}</strong>
                                 <br><small class="text-muted">{{ item.description[:50] }}...</small>
                             </td>
-                            <td><span class="badge badge-primary">{{ item.category|title }}</span></td>
-                            <td><span class="badge badge-{{ 'success' if item.condition == 'new' or item.condition == 'excellent' else 'warning' if item.condition == 'good' else 'secondary' }}">{{ item.condition|title }}</span></td>
+                            <td><span class="status-pill">{{ item.category|title }}</span></td>
+                            <td><span class="status-pill status-{{ item.condition }}">{{ item.condition|title }}</span></td>
                             <td>
                                 <strong>${{ item.price }}</strong>
                                 {% if item.negotiable %}<br><small class="text-muted">Negotiable</small>{% endif %}
@@ -137,14 +183,19 @@
                             <td>{{ item.owner_name }}</td>
                             <td>{{ item.location or 'Not specified' }}</td>
                             <td>{{ item.created_at.strftime('%Y-%m-%d') }}</td>
-                            <td>
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline" onclick="viewEquipment('{{ item._id }}')">View</button>
-                                    {% if item.owner_id == session.user_id %}
-                                    <button class="btn btn-sm btn-primary" onclick="editEquipment('{{ item._id }}')">Edit</button>
-                                    {% else %}
-                                    <button class="btn btn-sm btn-success" onclick="contactSeller('{{ item._id }}')">Contact</button>
-                                    {% endif %}
+                            <td class="actions-cell">
+                                <div class="dropdown">
+                                    <button class="action-item dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        More
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <button class="dropdown-item" onclick="viewEquipment('{{ item._id }}')">View</button>
+                                        {% if item.owner_id == session.user_id %}
+                                        <button class="dropdown-item" onclick="editEquipment('{{ item._id }}')">Edit</button>
+                                        {% else %}
+                                        <button class="dropdown-item" onclick="contactSeller('{{ item._id }}')">Contact</button>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </td>
                         </tr>

@@ -123,11 +123,9 @@
                                 </svg>
                             </div>
                         </th>
-                        <th class="actions-column">
+                        <th class="text-center" style="width: 15%;">
                             <div class="th-content">
-                                <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
-                                </svg>
+                                <span>Actions</span>
                             </div>
                         </th>
                     </tr>
@@ -207,51 +205,63 @@
                                 {% endif %}
                             </div>
                         </td>
-                        <td class="actions-cell">
-                            <div class="actions-dropdown">
-                                <button class="actions-button" type="button" onclick="toggleActionDropdown(this)">
-                                    <svg class="actions-dots" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <td class="td-modern">
+                            <div class="dropdown">
+                                <button class="btn btn-sm dropdown-toggle actions-button" type="button"
+                                    id="dropdownMenuButton{{ org._id }}" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
                                     </svg>
                                 </button>
-                                <div class="actions-menu">
-                                    <button class="action-item" onclick="viewOrganization('{{ org._id }}')">
-                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                        View Details
-                                    </button>
-                                    <div class="action-divider"></div>
-                                    <button class="action-item" onclick="editOrganization('{{ org._id }}')">
-                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                        Edit Organization
-                                </button>
-                                {% if org.subscription_status != 'active' %}
-                                    <button class="action-item" onclick="activateOrganization('{{ org._id }}')">
-                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        Activate
-                                </button>
-                                {% else %}
-                                    <button class="action-item warning" onclick="suspendOrganization('{{ org._id }}')">
-                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        Suspend
-                                </button>
-                                {% endif %}
-                                    <div class="action-divider"></div>
-                                    <button class="action-item danger" onclick="deleteOrganization('{{ org._id }}', '{{ org.name }}')">
-                                        <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                        Delete Organization
-                                    </button>
-                                </div>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton{{ org._id }}">
+                                    <li>
+                                        <button class="dropdown-item" onclick="viewOrganization('{{ org._id }}')">
+                                            <svg class="action-icon me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                            View Details
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button class="dropdown-item" onclick="editOrganization('{{ org._id }}')">
+                                            <svg class="action-icon me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                            Edit Organization
+                                        </button>
+                                    </li>
+                                    {% if org.subscription_status != 'active' %}
+                                    <li>
+                                        <button class="dropdown-item" onclick="activateOrganization('{{ org._id }}')">
+                                            <svg class="action-icon me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Activate
+                                        </button>
+                                    </li>
+                                    {% else %}
+                                    <li>
+                                        <button class="dropdown-item text-warning" onclick="suspendOrganization('{{ org._id }}')">
+                                            <svg class="action-icon me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Suspend
+                                        </button>
+                                    </li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button class="dropdown-item text-danger" onclick="deleteOrganization('{{ org._id }}', '{{ org.name }}')">
+                                            <svg class="action-icon me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                            Delete Organization
+                                        </button>
+                                    </li>
+                                </ul>
                             </div>
                         </td>
                     </tr>
@@ -285,21 +295,36 @@
             </div>
                 </div>
                     <div class="org-card-actions">
-                        <button class="actions-button" onclick="toggleActionDropdown(this)">
-                            <svg class="actions-dots" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
-                            </svg>
-                        </button>
-                        <div class="actions-menu">
-                            <button class="action-item" onclick="editOrganization('{{ org._id }}')">Edit Organization</button>
-                            {% if org.subscription_status != 'active' %}
-                            <button class="action-item" onclick="activateOrganization('{{ org._id }}')">Activate</button>
-                            {% else %}
-                            <button class="action-item warning" onclick="suspendOrganization('{{ org._id }}')">Suspend</button>
-                            {% endif %}
-                            <div class="action-divider"></div>
-                            <button class="action-item danger" onclick="deleteOrganization('{{ org._id }}', '{{ org.name }}')">Delete Organization</button>
-            </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm dropdown-toggle actions-button" type="button"
+                                id="dropdownMenuButtonMobile{{ org._id }}" data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                                <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                </svg>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButtonMobile{{ org._id }}">
+                                <li>
+                                    <button class="dropdown-item" onclick="viewOrganization('{{ org._id }}')">View Details</button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item" onclick="editOrganization('{{ org._id }}')">Edit Organization</button>
+                                </li>
+                                {% if org.subscription_status != 'active' %}
+                                <li>
+                                    <button class="dropdown-item" onclick="activateOrganization('{{ org._id }}')">Activate</button>
+                                </li>
+                                {% else %}
+                                <li>
+                                    <button class="dropdown-item text-warning" onclick="suspendOrganization('{{ org._id }}')">Suspend</button>
+                                </li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <button class="dropdown-item text-danger" onclick="deleteOrganization('{{ org._id }}', '{{ org.name }}')">Delete Organization</button>
+                                </li>
+                            </ul>
+                        </div>
                 </div>
             </div>
                 <div class="org-card-details">
@@ -827,7 +852,7 @@
     border-radius: 12px;
     border: 1px solid var(--border-primary);
     margin: 0 2rem 2rem 2rem;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* Filter bar */
@@ -942,6 +967,8 @@
 /* Table styles */
 .table-container-modern {
     overflow-x: auto;
+    overflow-y: visible;
+    position: relative;
 }
 
 .table-modern {
@@ -966,6 +993,12 @@
 }
 
 .table-modern td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-primary);
+    vertical-align: top;
+}
+
+.td-modern {
     padding: 1rem;
     border-bottom: 1px solid var(--border-primary);
     vertical-align: top;
@@ -1022,14 +1055,6 @@
 }
 
 /* Actions dropdown */
-.actions-cell {
-    position: relative;
-}
-
-.actions-dropdown {
-    position: relative;
-}
-
 .actions-button {
     background: none;
     border: 1px solid var(--border-primary);
@@ -1037,6 +1062,10 @@
     padding: 0.5rem;
     cursor: pointer;
     color: var(--text-muted);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .actions-button:hover {
@@ -1044,53 +1073,13 @@
     color: var(--text-primary);
 }
 
-.actions-dots {
+.actions-button::after {
+    display: none; /* Hide Bootstrap's default dropdown arrow */
+}
+
+.actions-icon {
     width: 16px;
     height: 16px;
-}
-
-.actions-menu {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 100%;
-    margin-top: 0.25rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    box-shadow: var(--shadow-lg);
-    z-index: 1000;
-    min-width: 180px;
-}
-
-.actions-menu.show {
-    display: block;
-}
-
-.action-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    width: 100%;
-    padding: 0.75rem 1rem;
-    background: none;
-    border: none;
-    color: var(--text-primary);
-    font-size: 0.875rem;
-    cursor: pointer;
-    text-align: left;
-}
-
-.action-item:hover {
-    background: var(--bg-hover);
-}
-
-.action-item.warning {
-    color: var(--warning);
-}
-
-.action-item.danger {
-    color: var(--error);
 }
 
 .action-icon {
@@ -1098,10 +1087,35 @@
     height: 16px;
 }
 
-.action-divider {
-    height: 1px;
-    background: var(--border-primary);
-    margin: 0.25rem 0;
+/* Bootstrap dropdown customization */
+.dropdown-menu {
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    padding: 0.5rem 0;
+    min-width: 180px;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: var(--bg-hover);
+}
+
+.dropdown-item.text-danger:hover {
+    background: var(--error-bg);
+    color: var(--error);
+}
+
+.dropdown-item.text-warning:hover {
+    background: var(--warning-bg);
+    color: var(--warning);
 }
 
 /* Empty state */
@@ -1584,7 +1598,6 @@
 }
 
 .summary-card {
-    background: var(--card-bg);
     border: 1px solid var(--border-primary);
     border-radius: 12px;
     padding: 20px;
@@ -1796,6 +1809,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTableSorting();
     updateActiveFilters();
     setupExportFunctionality();
+    
 });
 
 // Validation functions
@@ -1980,51 +1994,6 @@ function setupExportFunctionality() {
     }
 }
 
-// Actions Dropdown
-function toggleActionDropdown(button) {
-    const dropdown = button.parentElement;
-    const menu = dropdown.querySelector('.actions-menu');
-    const isOpen = menu.classList.contains('show');
-    
-    // Close all other dropdowns
-    document.querySelectorAll('.actions-menu.show').forEach(openMenu => {
-        if (openMenu !== menu) {
-            openMenu.classList.remove('show');
-        }
-    });
-    
-    // Toggle current dropdown
-    menu.classList.toggle('show', !isOpen);
-    
-    if (!isOpen) {
-        // Smart positioning to prevent going off-screen
-        setTimeout(() => {
-            const rect = menu.getBoundingClientRect();
-            const viewportWidth = window.innerWidth;
-            
-            // If menu goes off the right edge, position it to the left
-            if (rect.right > viewportWidth - 20) {
-                menu.style.right = '0';
-                menu.style.left = 'auto';
-                menu.style.transform = 'translateX(0)';
-            } else {
-                menu.style.right = '0';
-                menu.style.left = 'auto';
-                menu.style.transform = 'none';
-            }
-        }, 0);
-        
-        // Close dropdown when clicking outside
-        setTimeout(() => {
-            document.addEventListener('click', function closeDropdown(e) {
-                if (!dropdown.contains(e.target)) {
-                    menu.classList.remove('show');
-                    document.removeEventListener('click', closeDropdown);
-                }
-            });
-        }, 0);
-    }
-}
 
 // Modal functions
 function openCreateOrgModal() {
@@ -2076,7 +2045,7 @@ function openEditOrgModal(orgId) {
     `;
     
     // Fetch organization data and populate the modal
-    fetch(`/api/organizations/${new ObjectId(orgId)}`)
+    fetch(`/api/organizations/${orgId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Failed to fetch organization data');
@@ -2516,101 +2485,77 @@ function suspendOrganization(orgId) {
 
 function deleteOrganization(orgId, orgName) {
     if (confirm(`Are you sure you want to delete "${orgName}"? This action cannot be undone and will delete all associated data.`)) {
-        fetch(`/api/organizations/${new ObjectId(orgId)}`, {
+        // orgId is already a string from the template, use it directly
+        fetch(`/api/organizations/${orgId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
             },
         })
-        .then(response => response.json())
+        .then(response => {
+            // Check if response is ok before parsing
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || `Failed to delete organization (${response.status})`);
+                }).catch(parseError => {
+                    // If JSON parsing fails, return a generic error
+                    throw new Error(`Failed to delete organization: HTTP ${response.status}`);
+                });
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 alert('Organization deleted successfully');
                 location.reload();
             } else {
-                alert('Error deleting organization: ' + data.message);
+                alert('Error deleting organization: ' + (data.error || data.message || 'Unknown error'));
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error deleting organization');
+            alert('Error deleting organization: ' + error.message);
         });
     }
 }
 
 function updateOrganizationStatus(orgId, status) {
-    fetch(`/api/organizations/${new ObjectId(orgId)}/status`, {
+    // orgId is already a string from the template, use it directly
+    fetch(`/api/organizations/${orgId}/status`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: status })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || `Failed to update organization status (${response.status})`);
+            }).catch(parseError => {
+                throw new Error(`Failed to update organization status: HTTP ${response.status}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert(`Organization ${status} successfully`);
             location.reload();
         } else {
-            alert('Error updating organization: ' + data.message);
+            alert('Error updating organization: ' + (data.error || data.message || 'Unknown error'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error updating organization');
+        alert('Error updating organization: ' + error.message);
     });
 }
 
 // View Organization Functions
-let currentViewingOrgId = null;
-
 function viewOrganization(orgId) {
-    currentViewingOrgId = orgId;
-    
-    // Check if modal exists
-    const modal = document.getElementById('viewOrgModal');
-    const content = document.getElementById('viewOrgContent');
-    
-    if (!modal || !content) {
-        console.error('View organization modal elements not found');
-        alert('Error: Modal not properly loaded. Please refresh the page.');
-        return;
-    }
-    
-    // Show modal and loading state
-    modal.style.display = 'flex';
-    content.innerHTML = `
-        <div class="loading-spinner">
-            <div class="spinner"></div>
-            <span>Loading organization details...</span>
-        </div>
-    `;
-    
-    // Fetch organization details
-    fetch(`/api/organizations/${new ObjectId(orgId)}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(org => {
-            const contentElement = document.getElementById('viewOrgContent');
-            if (contentElement) {
-                contentElement.innerHTML = generateOrgDetailsHTML(org);
-            }
-        })
-        .catch(error => {
-            console.error('Error loading organization:', error);
-            const contentElement = document.getElementById('viewOrgContent');
-            if (contentElement) {
-                contentElement.innerHTML = `
-                    <div class="error-message">
-                        <p>Error loading organization details. Please try again.</p>
-                    </div>
-                `;
-            }
-        });
+    // Navigate to organization detail page
+    window.location.href = `/organizations/${orgId}`;
 }
 
 function generateOrgDetailsHTML(org) {

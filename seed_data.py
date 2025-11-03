@@ -58,7 +58,19 @@ def ensure_database_and_collections():
             print("🔍 Creating database indexes...")
             
             # Users collection indexes
-            mongo.db.users.create_index("phone_number", unique=True)
+            # Drop existing non-sparse indexes if they exist
+            try:
+                mongo.db.users.drop_index("phone_number_1")
+            except Exception:
+                pass
+            try:
+                mongo.db.users.drop_index("email_1")
+            except Exception:
+                pass
+            
+            # Create sparse indexes for email and phone_number to allow multiple NULLs
+            mongo.db.users.create_index("phone_number", unique=True, sparse=True)
+            mongo.db.users.create_index("email", unique=True, sparse=True)
             mongo.db.users.create_index("organization_id")
             mongo.db.users.create_index([("role", 1), ("organization_id", 1)])
             
