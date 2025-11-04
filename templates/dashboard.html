@@ -39,7 +39,7 @@
         background-color: var(--bg-card);
         border: 1px solid var(--border-primary);
         border-radius: var(--radius-lg);
-        padding: var(--spacing-lg);
+        padding: var(--spacing-md);
         margin-bottom: var(--spacing-lg);
     }
     .class-badge {
@@ -257,41 +257,45 @@
                     </div>
                     {% if next_class %}
                     <div style="background-color: var(--bg-tertiary); border-radius: var(--radius-md); padding: var(--spacing-lg);">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
                             <h3 class="h5 font-weight-bold mb-0">{{ next_class.title }}</h3>
                             <span class="text-accent font-weight-medium">{{ next_class.time }}</span>
                         </div>
                         
                         <div class="row mb-3">
-                            <div class="col-6 mb-2">
+                            <div class="col-12 mb-2">
                                 <div style="background-color: var(--bg-card); border-radius: var(--radius-md); padding: var(--spacing-sm);">
                                     <span class="small text-muted">Students</span>
                                     <div class="d-flex align-items-baseline mt-1">
                                         <span class="h4 font-weight-bold">{{ next_class.total_students }}</span>
-                                        <span class="small text-muted ml-1">enrolled</span>
+                                        <small class="small text-muted ml-1">enrolled</small>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-6 mb-2">
+                            <div class="col-12 mb-2">
                                 <div style="background-color: var(--bg-card); border-radius: var(--radius-md); padding: var(--spacing-sm);">
                                     <span class="small text-muted">RSVP Status</span>
                                     <div class="d-flex align-items-baseline mt-1">
                                         <span class="h4 font-weight-bold text-accent">{{ next_class.rsvp_count }}</span>
-                                        <span class="small text-muted ml-1">confirmed</span>
+                                        <small class="small text-muted ml-1">confirmed</small>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div>
+                            {% if next_class.coach_name is not none and next_class.coach_name.strip() != '' %}
                             <div class="d-flex align-items-center mb-2">
                                 <i class="fas fa-user-tie text-muted" style="width: 20px;"></i>
                                 <span class="ml-2">{{ next_class.coach_name }}</span>
                             </div>
+                            {% endif %}
+                            {% if next_class.center is not none and next_class.center.strip() != '' %}
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-location-dot text-muted" style="width: 20px;"></i>
                                 <span class="ml-2">{{ next_class.center }}</span>
                             </div>
+                            {% endif %}
                         </div>
                     </div>
                     {% else %}
@@ -313,13 +317,13 @@
                    <div id="attendanceList">
                        {% if todays_classes %}
                            {% for class in todays_classes %}
-                           <div class="attendance-item d-flex align-items-center justify-content-between">
-                               <div class="flex-grow-1">
+                           <div class="attendance-item row align-items-center justify-content-between">
+                               <div class="col-12">
                                    <h4 class="font-weight-bold mb-1">{{ class.name if class.name is defined else 'Untitled Class' }}</h4>
                                    <p class="small text-muted mb-0">{{ class.time if class.time is defined else 'Time not set' }}</p>
                                </div>
-                               <div class="d-flex align-items-center ml-3">
-                                   <div class="text-right mr-3">
+                               <div class="col-12 mt-3 d-flex align-items-center">
+                                   <div class=" mr-3">
                                        <span class="small text-muted">Checked-in</span>
                                        <p class="font-weight-bold mb-0">{{ class.checked_in if class.checked_in is defined else 0 }}/{{ class.total if class.total is defined else 0 }}</p>
                                    </div>
@@ -343,25 +347,25 @@
                 <div class="quick-actions-card mb-4">
                     <h2 class="h4 font-weight-bold mb-4">Quick Actions</h2>
                     <div class="row">
-                        <div class="col-6 mb-3">
+                        <div class="col-12 mb-3">
                             <a href="/class/new" class="quick-action-btn">
                                 <i class="fas fa-plus-circle text-accent fa-2x mb-2"></i>
                                 <span class="small">Add Class</span>
                             </a>
                         </div>
-                        <div class="col-6 mb-3">
+                        z<div class="col-12 mb-3">
                             <a href="/announcement/new" class="quick-action-btn">
                                 <i class="fas fa-bullhorn text-accent fa-2x mb-2"></i>
                                 <span class="small">Announcement</span>
                             </a>
                         </div>
-                        <div class="col-6 mb-3">
+                        <div class="col-12 mb-3">
                             <a href="/coaches" class="quick-action-btn">
                                 <i class="fas fa-users text-accent fa-2x mb-2"></i>
                                 <span class="small">Coaches</span>
                             </a>
                         </div>
-                        <div class="col-6 mb-3">
+                        <div class="col-12 mb-3">
                             <a href="/payments" class="quick-action-btn">
                                 <i class="fas fa-wallet text-accent fa-2x mb-2"></i>
                                 <span class="small">Payments</span>

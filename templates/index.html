@@ -102,28 +102,171 @@
                 transform: translateY(0);
             }
         }
+
+        /* Mobile Menu Toggle Button */
+        .mobile-menu-btn {
+            display: block !important;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(30, 30, 30, 0.8);
+            color: white;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            z-index: 1002;
+            flex-shrink: 0;
+        }
+
+        .mobile-menu-btn:hover {
+            background: rgba(50, 50, 50, 0.9);
+            border-color: #a1de56;
+            transform: scale(1.05);
+        }
+
+        .mobile-menu-btn:active {
+            transform: scale(0.95);
+        }
+
+        .mobile-menu-btn .hamburger-icon {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            gap: 5px;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .mobile-menu-btn .hamburger-icon span {
+            display: block;
+            width: 20px;
+            height: 2px;
+            background: white;
+            border-radius: 2px;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transform-origin: center;
+        }
+
+        .mobile-menu-btn.active .hamburger-icon {
+            transform: rotate(180deg);
+        }
+
+        .mobile-menu-btn.active .hamburger-icon span:nth-child(1) {
+            transform: translateY(7px) rotate(45deg);
+        }
+
+        .mobile-menu-btn.active .hamburger-icon span:nth-child(2) {
+            opacity: 0;
+            transform: scaleX(0);
+        }
+
+        .mobile-menu-btn.active .hamburger-icon span:nth-child(3) {
+            transform: translateY(-7px) rotate(-45deg);
+        }
+
+        /* Mobile Menu Overlay */
+        .mobile-menu-overlay {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .mobile-menu-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .mobile-menu-overlay.open .mobile-menu-content {
+            transform: translateX(0) !important;
+        }
+
+        /* Mobile Navigation Links */
+        .mobile-nav-link {
+            position: relative;
+        }
+
+        .mobile-nav-link:hover {
+            background: rgba(161, 222, 86, 0.1);
+            color: #a1de56 !important;
+            border-left-color: #a1de56 !important;
+        }
+
+        .mobile-nav-link:active {
+            background: rgba(161, 222, 86, 0.15);
+        }
+
+        .mobile-nav-login-btn:hover {
+            background: #8bc34a !important;
+            transform: scale(1.02);
+        }
+
+        .mobile-nav-login-btn:active {
+            transform: scale(0.98);
+        }
+
+        @media (min-width: 768px) {
+            .mobile-menu-btn {
+                display: none !important;
+            }
+            .nav {
+                display: flex !important;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .nav {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-black text-white">
     <!-- Navigation -->
-    <nav class="fixed w-full z-50 bg-[#121212]/80 backdrop-blur-sm">
+    <header class="fixed w-full z-50 bg-[#121212]/80 backdrop-blur-sm" style="position: relative;">
         <div class="container mx-auto px-4 py-4">
-            <div class="flex justify-between items-center">
+            <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
                 <a href="#" class="text-2xl font-bold text-primary">
                     <img src="/static/images/logo.png" width="90" alt="">
                 </a>
-                <div class="hidden md:flex space-x-8">
-                    <a href="#why" class="hover:text-primary transition-colors">Why botle</a>
+                <nav class="nav" style="display: none; gap: 2rem; align-items: center;">
+                    <a href="{{ url_for('web.index') }}" class="hover:text-primary transition-colors">Home</a>
                     <a href="#contact" class="hover:text-primary transition-colors">Contact</a>
-                </div>
-                <div class="hidden md:flex space-x-4">
                     <a href="{{ url_for('web.login') }}" class="px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary-dark transition-colors">Login</a>
-                    <!-- <button class="px-4 py-2 bg-primary text-black rounded-lg hover:bg-primary-dark transition-colors">Sign Up</button> -->
-                </div>
-                <button class="md:hidden text-2xl">☰</button>
+                </nav>
             </div>
         </div>
-    </nav>
+        <!-- Mobile Menu Overlay -->
+        <div id="mobileMenuOverlay" class="mobile-menu-overlay md:hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(10px); z-index: 1000; transition: opacity 0.3s ease;" onclick="event.target === this && closeMobileMenu()">
+            <div class="mobile-menu-content" style="background: #121212; width: 75%; max-width: 300px; height: 100vh; padding: 0; transform: translateX(-100%); transition: transform 0.3s ease; overflow-y: auto; position: relative; z-index: 1001;" onclick="event.stopPropagation()">
+                <!-- Logo in sidebar -->
+                <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                    <a href="#" onclick="closeMobileMenu()">
+                        <img src="/static/images/logo.png" width="90" alt="botle Logo">
+                    </a>
+                </div>
+                <!-- Navigation items -->
+                <nav class="mobile-sidebar-nav" style="padding: 1.5rem 0; display: flex; flex-direction: column;">
+                    <a href="{{ url_for('web.index') }}" class="mobile-nav-link" onclick="closeMobileMenu()" style="padding: 1rem 1.5rem; color: #ffffff; text-decoration: none; font-size: 1rem; transition: all 0.2s ease; border-left: 3px solid transparent;">
+                        Home
+                    </a>
+                    <a href="#contact" class="mobile-nav-link" onclick="closeMobileMenu()" style="padding: 1rem 1.5rem; color: #ffffff; text-decoration: none; font-size: 1rem; transition: all 0.2s ease; border-left: 3px solid transparent;">
+                        Contact
+                    </a>
+                    <div style="padding: 1rem 1.5rem; margin-top: 0.5rem;">
+                        <a href="{{ url_for('web.login') }}" class="mobile-nav-login-btn" onclick="closeMobileMenu()" style="display: block; padding: 0.75rem 1.5rem; background: #a1de56; color: #000000; text-decoration: none; border-radius: 0.5rem; text-align: center; font-weight: 500; transition: all 0.2s ease;">
+                            Login
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </header>
 
     <!-- Hero Section -->
     <section id="hero" class="min-h-screen pt-20 bg-black">
@@ -701,6 +844,83 @@
             
             // Start auto-advance
             slideInterval = setInterval(showSlides, 4000); // Change image every 4 seconds
+            
+            // Initialize mobile menu button
+            initHomepageMobileMenu();
+        });
+
+        // Mobile menu functionality for homepage
+        function initHomepageMobileMenu() {
+            const headerContent = document.querySelector('.header-content');
+            if (headerContent && !headerContent.querySelector('.mobile-menu-btn')) {
+                const menuBtn = document.createElement('button');
+                menuBtn.className = 'mobile-menu-btn';
+                menuBtn.setAttribute('aria-label', 'Toggle menu');
+                menuBtn.innerHTML = `
+                    <div class="hamburger-icon">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                `;
+                menuBtn.onclick = toggleHomepageMobileMenu;
+                
+                // Insert before nav or at the end of header-content
+                const nav = headerContent.querySelector('.nav');
+                if (nav) {
+                    headerContent.insertBefore(menuBtn, nav);
+                } else {
+                    headerContent.appendChild(menuBtn);
+                }
+            }
+        }
+
+        function toggleHomepageMobileMenu() {
+            const overlay = document.getElementById('mobileMenuOverlay');
+            const menuBtn = document.querySelector('.mobile-menu-btn');
+            
+            if (overlay && menuBtn) {
+                const isOpen = overlay.classList.toggle('open');
+                menuBtn.classList.toggle('active', isOpen);
+            }
+        }
+
+        function closeMobileMenu() {
+            const overlay = document.getElementById('mobileMenuOverlay');
+            const menuBtn = document.querySelector('.mobile-menu-btn');
+            
+            if (overlay) {
+                overlay.classList.remove('open');
+            }
+            if (menuBtn) {
+                menuBtn.classList.remove('active');
+            }
+        }
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth < 768) {
+                const overlay = document.getElementById('mobileMenuOverlay');
+                const menuBtn = document.querySelector('.mobile-menu-btn');
+                const menuContent = document.querySelector('.mobile-menu-content');
+                
+                if (overlay && overlay.classList.contains('open') && 
+                    !menuContent?.contains(e.target) && 
+                    !menuBtn?.contains(e.target)) {
+                    closeMobileMenu();
+                }
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                // Close mobile menu on desktop
+                closeMobileMenu();
+            } else {
+                // Reinitialize mobile menu button if needed
+                initHomepageMobileMenu();
+            }
         });
 
         // Contact Form Validation and Submission

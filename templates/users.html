@@ -466,7 +466,6 @@
                 <div class="form-group">
                     <label class="form-label">Share this payment link with the student:</label>
                     <div class="input-group">
-                        <input type="text" class="form-control" id="paymentLinkInput" readonly>
                         <button class="btn btn-outline-primary" type="button" onclick="copyPaymentLink()">
                             <i class="bi bi-clipboard me-1"></i>Copy
                         </button>
@@ -698,9 +697,8 @@
                         <div class="col-md-6 mb-4">
                             <label for="edit_email" class="form-label">
                                 <span>Email Address</span>
-                                <span class="text-danger">*</span>
                             </label>
-                            <input type="email" class="form-control" id="edit_email" name="email" required
+                            <input type="email" class="form-control" id="edit_email" name="email"
                                 pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
                                 placeholder="user@example.com" title="Enter a valid email address">
                             <div id="edit-email-feedback" class="invalid-feedback"></div>
@@ -716,9 +714,6 @@
                             <input type="tel" class="form-control" id="edit_phone" name="phone_number" required
                                 pattern="^(\+?[1-9]\d{1,14}|[0-9]{10})$" placeholder="+91-9876543210"
                                 title="Enter a valid phone number (10 digits or international format)">
-                            <div class="form-text">
-                                Enter 10-digit number or international format
-                            </div>
                             <div id="edit-phone-feedback" class="invalid-feedback"></div>
                         </div>
 
@@ -761,9 +756,6 @@
                             </label>
                             <input type="date" class="form-control" id="edit_billing_start_date"
                                 name="billing_start_date" title="Date when billing should start for this user">
-                            <div class="form-text">
-                                Optional: When billing cycle starts for this user
-                            </div>
                             <div id="edit-billing-start-date-feedback" class="invalid-feedback"></div>
                         </div>
 
@@ -779,17 +771,38 @@
                                 </option>
                                 {% endfor %}
                             </select>
-                            <div class="form-text">
-                                Optional: Assign a subscription plan to this user. Billing will be processed automatically based on the billing cycle.
-                            </div>
                             <div class="mt-2">
                                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="generatePaymentLink()">
                                     <i class="bi bi-link-45deg me-1"></i>Generate Payment Link
                                 </button>
                             </div>
+                            
                             <div id="edit-subscription-feedback" class="invalid-feedback"></div>
                         </div>
                     </div>
+                    <div class="payment-link-container payment-link-container bg-card p-3 border" style="display: none;">
+                        <div class="alert alert-success mb-3">
+                            <i class="bi bi-check-circle me-2"></i>Payment link has been generated successfully!
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Share this payment link with the student:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="paymentLinkInput" readonly>
+                                <button class="btn btn-outline-primary" type="button" onclick="copyPaymentLink()">
+                                    <i class="bi bi-clipboard me-1"></i>Copy
+                                </button>
+                            </div>
+                            <small class="text-muted mt-2 d-block">
+                                <i class="bi bi-clock me-1"></i>Link expires in 24 hours
+                            </small>
+                        </div>
+                        <div class="mt-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-shield-check text-success me-2"></i>
+                                <small class="text-muted">Secure payment processing with Razorpay</small>
+                            </div>
+                        </div>
+                    </div>  
 
                     <div id="editStudentFields" class="role-fields-section hidden">
                         <h4 class="section-title-modern">Student Information</h4>
@@ -1180,15 +1193,75 @@
                 return response.json();
             })
             .then(user => {
-                // Restore original content
+                // Destroy ALL Select2 instances in the modal BEFORE restoring content
+                // Remove any Select2 containers that might exist
+                $(modalElement).find('.select2-container').remove();
+                $(modalElement).find('select').each(function() {
+                    try {
+                        if ($(this).data('select2')) {
+                            $(this).select2('destroy');
+                        }
+                    } catch(e) {
+                        // Ignore errors
+                    }
+                });
+
+                // Restore original content AFTER destroying Select2
                 modalBody.innerHTML = originalContent;
 
-                // Populate basic form fields
-                document.getElementById('edit_name').value = user.name || '';
-                document.getElementById('edit_email').value = user.email || '';
-                document.getElementById('edit_phone').value = user.phone_number || '';
-                document.getElementById('edit_role').value = user.role || '';
-                document.getElementById('edit_status').value = user.is_active ? 'true' : 'false';
+                // Small delay to ensure DOM is ready, then initialize Select2
+                setTimeout(function() {
+                    // Double-check cleanup of any Select2 instances that might have been created
+                    const editRoleEl = $('#edit_role');
+                    const editStatusEl = $('#edit_status');
+                    
+                    // Destroy if already initialized
+                    if (editRoleEl.length && editRoleEl.data('select2')) {
+                        try {
+                            editRoleEl.select2('destroy');
+                        } catch(e) {}
+                    }
+                    if (editStatusEl.length && editStatusEl.data('select2')) {
+                        try {
+                            editStatusEl.select2('destroy');
+                        } catch(e) {}
+                    }
+                    
+                    // Remove any Select2 containers that might exist (check all possible locations)
+                    $(modalElement).find('.select2-container').remove();
+                    editRoleEl.siblings('.select2-container').remove();
+                    editStatusEl.siblings('.select2-container').remove();
+                    editRoleEl.parent().find('.select2-container').remove();
+                    editStatusEl.parent().find('.select2-container').remove();
+                    
+                    // Remove select2 class to prevent auto-initialization, then initialize manually
+                    editRoleEl.removeClass('select2');
+                    editStatusEl.removeClass('select2');
+                    
+                    // Initialize Select2 dropdowns after restoring content
+                    editRoleEl.select2({
+                        theme: 'bootstrap-5',
+                        width: '100%'
+                    }).on('select2:select', function() {
+                        updateEditRoleFields(this.value);
+                    });
+                    
+                    editStatusEl.select2({
+                        theme: 'bootstrap-5',
+                        width: '100%'
+                    });
+                    
+                    // Populate basic form fields after Select2 is initialized
+                    document.getElementById('edit_name').value = user.name || '';
+                    document.getElementById('edit_email').value = user.email || '';
+                    document.getElementById('edit_phone').value = user.phone_number || '';
+                    
+                    // Set role using Select2 API
+                    editRoleEl.val(user.role || '').trigger('change');
+                   
+                    // Set status using Select2 API
+                    editStatusEl.val(user.is_active ? 'true' : 'false').trigger('change');
+                }, 0);
 
                 // Set subscription if exists
                 const subscriptionSelect = document.getElementById('edit_subscription');
@@ -1426,17 +1499,8 @@
             handleRoleChange(this.value);
         });
 
-        // Initialize edit role select
-        $('#edit_role').select2({
-            theme: 'bootstrap-5',
-            width: '100%'
-        });
-
-        // Initialize edit status select
-        $('#edit_status').select2({
-            theme: 'bootstrap-5',
-            width: '100%'
-        });
+        // Note: edit_role and edit_status are initialized in openEditUserModal()
+        // to avoid duplicate Select2 instances when the modal opens
     });
 
     // Close modal when clicking outside
@@ -1639,19 +1703,8 @@
         }
     });
 
-    // Role change handler for edit form
-    document.getElementById('edit_role').addEventListener('change', function () {
-        updateEditRoleFields(this.value);
-    });
-    
-    // Also listen for Select2 events on edit role
-    $(document).ready(function() {
-        $('#edit_role').on('select2:select', function() {
-            updateEditRoleFields(this.value);
-        });
-    });
-
-    // Duplicate role change handler removed - using the one above with Select2 support
+    // Role change handler for edit form is set up in openEditUserModal()
+    // when Select2 is initialized to avoid duplicate instances
 
     // Close edit modal when clicking outside
     document.getElementById('editUserModal').addEventListener('click', function (e) {
@@ -1700,9 +1753,9 @@
             const data = await response.json();
             
             // Show payment link modal
-            const paymentLinkModal = new bootstrap.Modal(document.getElementById('paymentLinkModal'));
+            document.querySelector('.payment-link-container').style.display = 'block';
+            document.querySelector('.payment-link-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
             document.getElementById('paymentLinkInput').value = data.payment_link;
-            paymentLinkModal.show();
 
         } catch (error) {
             console.error('Error:', error);

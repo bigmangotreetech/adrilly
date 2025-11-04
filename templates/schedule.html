@@ -2033,6 +2033,17 @@
     let selectedDay = null;
     let selectedDayName = '';
     let existingTimeSlots = [];
+    
+    // Touch drag state
+    let touchDragState = {
+        isDragging: false,
+        activityCard: null,
+        startX: 0,
+        startY: 0,
+        currentX: 0,
+        currentY: 0,
+        dragOffset: { x: 0, y: 0 }
+    };
 
     // Debug logging
     console.log('Schedule page initialized with:', {
@@ -2084,6 +2095,12 @@
         card.addEventListener('dragstart', handleActivityDragStart);
         card.addEventListener('dragend', handleActivityDragEnd);
 
+        // Touch event handlers for drag and drop
+        card.addEventListener('touchstart', handleActivityTouchStart, { passive: false });
+        card.addEventListener('touchmove', handleActivityTouchMove, { passive: false });
+        card.addEventListener('touchend', handleActivityTouchEnd, { passive: false });
+        card.addEventListener('touchcancel', handleActivityTouchCancel, { passive: false });
+
         // Prevent edit button from interfering with drag
         const editBtn = card.querySelector('.activity-edit-btn');
         if (editBtn) {
@@ -2102,6 +2119,10 @@
                 e.stopPropagation();
                 e.preventDefault();
             });
+            // Prevent touch events on edit button
+            editBtn.addEventListener('touchstart', function (e) {
+                e.stopPropagation();
+            }, { passive: true });
         }
 
         // Prevent delete button from interfering with drag
@@ -2123,6 +2144,10 @@
                 e.stopPropagation();
                 e.preventDefault();
             });
+            // Prevent touch events on delete button
+            deleteBtn.addEventListener('touchstart', function (e) {
+                e.stopPropagation();
+            }, { passive: true });
         }
     });
 
@@ -2137,6 +2162,10 @@
         cell.addEventListener('dragleave', handleDragLeave);
         cell.addEventListener('drop', handleDrop);
         cell.addEventListener('click', handleCellClick);
+
+        // Touch event handlers for drag and drop
+        cell.addEventListener('touchmove', handleCellTouchMove, { passive: false });
+        cell.addEventListener('touchend', handleCellTouchEnd, { passive: false });
 
         // Add cursor pointer style for empty cells
         if (!cell.querySelector('.schedule-item')) {
@@ -2290,6 +2319,188 @@
         // Create schedule item
         createScheduleItem(dayIndex, slotId, draggedActivity);
     }
+
+    // Touch drag and drop handlers
+    function handleActivityTouchStart(e) {
+        // Don't start drag if clicking on edit/delete buttons
+        const target = e.target.closest('.activity-edit-btn, .activity-delete-btn');
+        if (target) {
+            return;
+        }
+
+        const touch = e.touches[0];
+        const card = e.currentTarget;
+        
+        // Get the card's position relative to viewport
+        const rect = card.getBoundingClientRect();
+        
+        touchDragState.isDragging = false; // Will be set to true after movement threshold
+        touchDragState.activityCard = card;
+        touchDragState.startX = touch.clientX;
+        touchDragState.startY = touch.clientY;
+        touchDragState.currentX = touch.clientX;
+        touchDragState.currentY = touch.clientY;
+        touchDragState.dragOffset.x = touch.clientX - rect.left;
+        touchDragState.dragOffset.y = touch.clientY - rect.top;
+
+        // Set dragged activity data (will be used if drag starts)
+        draggedActivity = {
+            id: card.dataset.activityId,
+            name: card.dataset.activityName,
+            type: card.dataset.activityType,
+            color: card.dataset.activityColor
+        };
+
+        // Don't prevent default here - allow normal taps to work
+        // We'll prevent default only after drag threshold is met
+    }
+
+    function handleActivityTouchMove(e) {
+        if (!touchDragState.activityCard) return;
+
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - touchDragState.startX);
+        const deltaY = Math.abs(touch.clientY - touchDragState.startY);
+        
+        // Start dragging after 10px movement threshold
+        if (!touchDragState.isDragging && (deltaX > 10 || deltaY > 10)) {
+            touchDragState.isDragging = true;
+            touchDragState.activityCard.style.opacity = '0.5';
+            touchDragState.activityCard.style.transition = 'opacity 0.2s';
+        }
+
+        if (touchDragState.isDragging) {
+            touchDragState.currentX = touch.clientX;
+            touchDragState.currentY = touch.clientY;
+
+            // Prevent scrolling
+            e.preventDefault();
+
+            // Find the schedule cell under the touch point
+            const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+            const scheduleCell = elementUnderTouch?.closest('.schedule-cell');
+            
+            // Remove drag-over from all cells
+            document.querySelectorAll('.schedule-cell.drag-over').forEach(cell => {
+                cell.classList.remove('drag-over');
+            });
+
+            // Add drag-over to the cell under touch (if it's empty)
+            if (scheduleCell && !scheduleCell.querySelector('.schedule-item')) {
+                scheduleCell.classList.add('drag-over');
+            }
+        }
+    }
+
+    function handleActivityTouchEnd(e) {
+        // If we didn't drag, just reset state
+        if (!touchDragState.isDragging) {
+            touchDragState.activityCard = null;
+            draggedActivity = null;
+            return;
+        }
+        
+        // Let the document-level handler process the drop
+        // Don't reset state here - let document handler do it
+    }
+
+    function handleCellTouchMove(e) {
+        // This handler helps with touch drag over cells
+        if (touchDragState.isDragging) {
+            e.preventDefault();
+        }
+    }
+
+    function handleCellTouchEnd(e) {
+        // This is handled by handleActivityTouchEnd
+        // But we prevent default to avoid cell click during drag
+        if (touchDragState.isDragging) {
+            e.preventDefault();
+        }
+    }
+
+    function handleActivityTouchCancel(e) {
+        // Clean up touch drag state if touch is cancelled
+        if (touchDragState.activityCard) {
+            touchDragState.activityCard.style.opacity = '1';
+        }
+        
+        // Remove all drag-over classes
+        document.querySelectorAll('.schedule-cell.drag-over, .schedule-cell.drag-active').forEach(cell => {
+            cell.classList.remove('drag-over', 'drag-active');
+        });
+
+        touchDragState.isDragging = false;
+        touchDragState.activityCard = null;
+        draggedActivity = null;
+    }
+
+    // Document-level touchmove handler to handle dragging anywhere
+    document.addEventListener('touchmove', function(e) {
+        if (touchDragState.isDragging && touchDragState.activityCard) {
+            const touch = e.touches[0];
+            touchDragState.currentX = touch.clientX;
+            touchDragState.currentY = touch.clientY;
+
+            // Find the schedule cell under the touch point
+            const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+            const scheduleCell = elementUnderTouch?.closest('.schedule-cell');
+            
+            // Remove drag-over from all cells
+            document.querySelectorAll('.schedule-cell.drag-over').forEach(cell => {
+                cell.classList.remove('drag-over');
+            });
+
+            // Add drag-over to the cell under touch (if it's empty)
+            if (scheduleCell && !scheduleCell.querySelector('.schedule-item')) {
+                scheduleCell.classList.add('drag-over');
+            }
+
+            // Prevent scrolling while dragging
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // Document-level touchend handler to handle drops anywhere
+    document.addEventListener('touchend', function(e) {
+        if (touchDragState.isDragging && touchDragState.activityCard) {
+            const touch = e.changedTouches[0];
+            
+            // Find the schedule cell under the touch point
+            const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+            const scheduleCell = elementUnderTouch?.closest('.schedule-cell');
+
+            // Reset card opacity
+            touchDragState.activityCard.style.opacity = '1';
+
+            // Remove all drag-over classes
+            document.querySelectorAll('.schedule-cell.drag-over, .schedule-cell.drag-active').forEach(cell => {
+                cell.classList.remove('drag-over', 'drag-active');
+            });
+
+            // If we dropped on a valid schedule cell
+            if (scheduleCell && !scheduleCell.querySelector('.schedule-item') && draggedActivity) {
+                const dayIndex = parseInt(scheduleCell.dataset.day);
+                const slotId = scheduleCell.dataset.slotId;
+
+                console.log('Touch drop data:', { dayIndex, slotId, draggedActivity });
+
+                // Add visual feedback for successful drop
+                scheduleCell.style.background = 'var(--success-bg)';
+                setTimeout(() => {
+                    scheduleCell.style.background = '';
+                }, 1000);
+
+                // Create schedule item
+                createScheduleItem(dayIndex, slotId, draggedActivity);
+            }
+
+            // Reset touch drag state
+            touchDragState.isDragging = false;
+            touchDragState.activityCard = null;
+            draggedActivity = null;
+        }
+    }, { passive: false });
 
     function handleCellClick(e) {
         // Don't trigger if clicking on an existing schedule item

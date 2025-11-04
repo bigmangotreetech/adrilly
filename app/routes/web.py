@@ -1181,7 +1181,8 @@ def process_payment(token):
             user=user,
             subscription=subscription,
             razorpay_order=order,
-            razorpay_key=environ.get('RAZORPAY_API_KEY')
+            razorpay_key=environ.get('RAZORPAY_API_KEY'),
+            no_sidebar=True,
         )
         
     except Exception as e:
@@ -4740,7 +4741,7 @@ def signup_classes_submit(link_token):
 def download_app():
     """Display download app page after successful registration"""
     phone = request.args.get('phone', '')
-    return render_template('download_app.html', user_phone=phone)
+    return render_template('download_app.html', user_phone=phone, no_sidebar=True)
     
 @web_bp.route('/generate-activity-link', methods=['POST'])
 @login_required

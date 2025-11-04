@@ -367,22 +367,38 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeTheme();
     // Mobile menu toggle
     const createMobileMenuButton = () => {
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= 1024) {
             const header = document.querySelector('.header-content');
             if (header && !header.querySelector('.mobile-menu-btn')) {
                 const menuBtn = document.createElement('button');
-                menuBtn.className = 'mobile-menu-btn btn btn-outline btn-sm';
-                menuBtn.innerHTML = '☰';
+                menuBtn.className = 'mobile-menu-btn';
+                menuBtn.setAttribute('aria-label', 'Toggle menu');
+                menuBtn.innerHTML = `
+                    <div class="hamburger-icon">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                `;
                 menuBtn.onclick = toggleSidebar;
                 header.insertBefore(menuBtn, header.firstChild);
+            }
+        } else {
+            // Remove button on larger screens
+            const menuBtn = document.querySelector('.mobile-menu-btn');
+            if (menuBtn) {
+                menuBtn.remove();
             }
         }
     };
 
     const toggleSidebar = () => {
         const sidebar = document.querySelector('.sidebar');
-        if (sidebar) {
-            sidebar.classList.toggle('open');
+        const menuBtn = document.querySelector('.mobile-menu-btn');
+        
+        if (sidebar && menuBtn) {
+            const isOpen = sidebar.classList.toggle('open');
+            menuBtn.classList.toggle('active', isOpen);
         }
     };
 
@@ -392,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Close sidebar when clicking outside on mobile
     document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= 1024) {
             const sidebar = document.querySelector('.sidebar');
             const menuBtn = document.querySelector('.mobile-menu-btn');
             
@@ -400,6 +416,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 !sidebar.contains(e.target) && 
                 !menuBtn?.contains(e.target)) {
                 sidebar.classList.remove('open');
+                if (menuBtn) {
+                    menuBtn.classList.remove('active');
+                }
             }
         }
     });

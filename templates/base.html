@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,40 +11,42 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/scrollbar-styles.css') }}">
     <!-- Main Application CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    
+
     <!-- Google Fonts for better typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
+
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+        rel="stylesheet" />
+
     <!-- Bootstrap Theme Overrides -->
     <style>
         :root {
             --bs-primary: var(--accent-primary);
-            --bs-primary-rgb: 118, 182, 39;  /* RGB values for #76b627 */
+            --bs-primary-rgb: 118, 182, 39;
+            /* RGB values for #76b627 */
             --bs-primary-bg-subtle: var(--accent-bg);
             --bs-primary-border-subtle: var(--accent-primary);
         }
 
-        .logo img {
-            max-height: 60px;
-        }
+
 
         /* Primary button styles */
         .btn-primary {
             background-color: var(--accent-primary) !important;
             border-color: var(--accent-primary) !important;
         }
-        
+
         .btn-primary:hover {
             background-color: var(--accent-hover) !important;
             border-color: var(--accent-hover) !important;
@@ -95,26 +98,26 @@
             transition: var(--transition-normal, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out);
             font-family: 'Inter', sans-serif !important;
         }
-        
+
         .select2-container--bootstrap-5 .select2-selection--single:focus-within,
         .select2-container--bootstrap-5.select2-container--focus .select2-selection--single {
             border-color: var(--accent-primary) !important;
             box-shadow: 0 0 0 3px rgba(161, 222, 86, 0.1);
             background-color: var(--bg-input) !important;
         }
-        
+
         .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
             padding-left: 0;
             padding-right: 20px;
             color: var(--text-primary) !important;
             line-height: 1.5;
         }
-        
+
         .select2-container--bootstrap-5 .select2-selection--single .select2-selection__placeholder {
             color: var(--text-muted) !important;
             opacity: 0.65;
         }
-        
+
         .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
             height: calc(2.25rem);
             position: absolute;
@@ -122,31 +125,32 @@
             right: 0.75rem;
             width: 20px;
         }
-        
+
         .select2-container--bootstrap-5 .select2-dropdown {
             background-color: var(--bg-card) !important;
             border: 1px solid var(--border-primary) !important;
             border-radius: var(--radius-md, 0.375rem);
             box-shadow: var(--shadow-xl, 0 0.5rem 1rem rgba(0, 0, 0, 0.15));
-            z-index: 1056; /* Above Bootstrap modals */
+            z-index: 1056;
+            /* Above Bootstrap modals */
         }
-        
+
         .select2-container--bootstrap-5 .select2-results__option {
             padding: 0.375rem 0.75rem;
             color: var(--text-primary) !important;
             background-color: transparent;
         }
-        
+
         .select2-container--bootstrap-5 .select2-results__option--highlighted {
             background-color: var(--accent-primary) !important;
             color: var(--text-inverse) !important;
         }
-        
+
         .select2-container--bootstrap-5 .select2-results__option--selected {
             background-color: var(--bg-hover) !important;
             color: var(--text-primary) !important;
         }
-        
+
         .select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field {
             background-color: var(--bg-input) !important;
             border: 1px solid var(--border-primary) !important;
@@ -154,12 +158,12 @@
             color: var(--text-primary) !important;
             padding: 0.375rem 0.75rem;
         }
-        
+
         .select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field:focus {
             border-color: var(--accent-primary) !important;
             box-shadow: 0 0 0 3px rgba(161, 222, 86, 0.1);
         }
-        
+
         /* Filter select specific styling */
         .filter-select.select2-container--bootstrap-5 .select2-selection--single {
             height: auto;
@@ -171,19 +175,19 @@
             border-radius: var(--radius-md);
             color: var(--text-primary) !important;
         }
-        
+
         .filter-select.select2-container--bootstrap-5.select2-container--focus .select2-selection--single {
             border-color: var(--accent-primary) !important;
             box-shadow: 0 0 0 3px rgba(161, 222, 86, 0.1);
         }
-        
+
         /* Form select specific styling */
         .form-select.select2-container,
         .form-control.select2-container {
             display: block !important;
             width: 100% !important;
         }
-        
+
         /* Clear button styling */
         .select2-container--bootstrap-5 .select2-selection__clear {
             color: var(--text-muted) !important;
@@ -191,11 +195,11 @@
             font-weight: bold;
             margin-right: 10px;
         }
-        
+
         .select2-container--bootstrap-5 .select2-selection__clear:hover {
             color: var(--accent-primary) !important;
         }
-        
+
         /* Disabled state */
         .select2-container--bootstrap-5.select2-container--disabled .select2-selection--single {
             background-color: var(--bg-tertiary, #f8f9fa) !important;
@@ -203,12 +207,12 @@
             cursor: not-allowed;
             opacity: 0.65;
         }
-        
+
         /* Loading state */
         .select2-container--bootstrap-5 .select2-selection--single .select2-selection__placeholder.select2-selection__placeholder--loading {
             color: var(--text-muted) !important;
         }
-        
+
         /* Multiple select styling (if needed) */
         .select2-container--bootstrap-5 .select2-selection--multiple {
             background-color: var(--bg-input) !important;
@@ -216,19 +220,19 @@
             border-radius: var(--radius-md, 0.375rem);
             min-height: calc(2.25rem + 2px);
         }
-        
+
         .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
             background-color: var(--accent-primary) !important;
             border: 1px solid var(--accent-primary) !important;
             color: var(--text-inverse) !important;
             border-radius: var(--radius-sm, 0.25rem);
         }
-        
+
         /* Ensure consistent spacing in modals */
         .modal .select2-container {
             z-index: 1056;
         }
-        
+
         /* RTL support if needed */
         .select2-container--bootstrap-5[dir="rtl"] .select2-selection--single .select2-selection__rendered {
             padding-left: 20px;
@@ -236,7 +240,7 @@
         }
     </style>
 
-    
+
     <!-- Page Loading Animation CSS -->
     <style>
         /* Page Loading Animation */
@@ -247,7 +251,7 @@
             width: 100%;
             height: 100%;
             /* glass effect */
-            background: rgb(0, 0, 0,0.9);
+            background: rgb(0, 0, 0, 0.9);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(5px);
             border-radius: 10px;
@@ -261,17 +265,17 @@
             opacity: 1;
             transition: opacity 0.5s ease, visibility 0.5s ease;
         }
-        
+
         .page-loader.fade-out {
             opacity: 0;
             visibility: hidden;
         }
-        
+
         .loader-content {
             text-align: center;
             color: white;
         }
-        
+
         .loader-logo {
             font-size: 10rem;
             font-weight: 800;
@@ -279,7 +283,7 @@
             animation: logoFloat 2s ease-in-out infinite;
             letter-spacing: -0.02em;
         }
-        
+
         .loader-spinner {
             width: 50px;
             height: 50px;
@@ -289,84 +293,235 @@
             animation: loaderSpin 1s linear infinite;
             margin: 0 auto 1rem;
         }
-        
+
         .loader-text {
             margin-top: 10px;
             font-size: 1.5rem;
             opacity: 0.8;
             animation: fadeIn 0.5s ease-out forwards;
         }
-        
+
         @keyframes logoFloat {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
         }
-        
+
         @keyframes loaderSpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
-        
+
         @keyframes textPulse {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 1; }
+
+            0%,
+            100% {
+                opacity: 0.8;
+            }
+
+            50% {
+                opacity: 1;
+            }
         }
-        
+
         /* Hide content until loaded */
         .app-content {
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.6s ease, transform 0.6s ease;
         }
-        
+
         .app-content.loaded {
             opacity: 1;
             transform: translateY(0);
         }
-        
+
         /* Micro Animations */
         .animate-fade-in {
             animation: fadeIn 0.5s ease-out forwards;
         }
-        
+
         .animate-slide-up {
             animation: slideUp 0.5s ease-out forwards;
         }
-        
+
         .animate-scale-in {
             animation: scaleIn 0.3s ease-out forwards;
         }
-        
+
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
-        
+
         @keyframes slideUp {
-            from { 
+            from {
                 opacity: 0;
                 transform: translateY(20px);
             }
-            to { 
+
+            to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-        
+
         @keyframes scaleIn {
-            from { 
+            from {
                 opacity: 0;
                 transform: scale(0.95);
             }
-            to { 
+
+            to {
                 opacity: 1;
                 transform: scale(1);
             }
         }
+
+        /* Mobile Menu Toggle Button for non-authenticated pages */
+        .mobile-menu-btn {
+            display: block !important;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(30, 30, 30, 0.8);
+            color: white;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            z-index: 1002;
+            flex-shrink: 0;
+        }
+
+        .mobile-menu-btn:hover {
+            background: rgba(50, 50, 50, 0.9);
+            border-color: #a1de56;
+            transform: scale(1.05);
+        }
+
+        .mobile-menu-btn:active {
+            transform: scale(0.95);
+        }
+
+        .mobile-menu-btn .hamburger-icon {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            gap: 5px;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .mobile-menu-btn .hamburger-icon span {
+            display: block;
+            width: 20px;
+            height: 2px;
+            background: white;
+            border-radius: 2px;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transform-origin: center;
+        }
+
+        .mobile-menu-btn.active .hamburger-icon {
+            transform: rotate(180deg);
+        }
+
+        .mobile-menu-btn.active .hamburger-icon span:nth-child(1) {
+            transform: translateY(7px) rotate(45deg);
+        }
+
+        .mobile-menu-btn.active .hamburger-icon span:nth-child(2) {
+            opacity: 0;
+            transform: scaleX(0);
+        }
+
+        .mobile-menu-btn.active .hamburger-icon span:nth-child(3) {
+            transform: translateY(-7px) rotate(-45deg);
+        }
+
+        /* Mobile Menu Overlay for non-authenticated pages */
+        .mobile-menu-overlay {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .mobile-menu-overlay.open {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        .mobile-menu-overlay.open .mobile-menu-content {
+            transform: translateX(0) !important;
+        }
+
+        /* Mobile Navigation Links */
+        .mobile-nav-link {
+            position: relative;
+        }
+
+        .mobile-nav-link:hover,
+        .mobile-nav-link.active {
+            background: rgba(161, 222, 86, 0.1);
+            color: #a1de56 !important;
+            border-left-color: #a1de56 !important;
+        }
+
+        .mobile-nav-link:active {
+            background: rgba(161, 222, 86, 0.15);
+        }
+
+        .mobile-nav-login-btn:hover {
+            background: #8bc34a !important;
+            transform: scale(1.02);
+        }
+
+        .mobile-nav-login-btn:active {
+            transform: scale(0.98);
+        }
+
+        
+
+        @media (max-width: 1024px) {
+            header nav {
+                display: none !important;
+            }
+        }
+
+        /* Header nav link hover for non-authenticated */
+        .header .nav a:not(.mobile-nav-login-btn):hover {
+            background: rgba(161, 222, 86, 0.1);
+            color: #a1de56;
+        }
+
+
     </style>
-    
+
     {% block head %}{% endblock %}
 </head>
+
 <body class="bg-gray-50 font-primary antialiased scrollbar-primary">
     <!-- Page Loading Animation -->
     <div id="pageLoader" class="page-loader">
@@ -375,147 +530,273 @@
             <div class="loader-text">Loading...</div>
         </div>
     </div>
-    
+
     <div class="" id="appContent">
-    {% if session.get('user_id') and no_sidebar != True %}
-    <!-- Header -->
-    <header class="header">
-        <div class="">
-            <div class="header-content">
-                <a href="{{ url_for('web.dashboard') }}" class="ps-3 rounded logo">
-                    <img src="{{ url_for('static', filename='images/text-logo.png') }}" alt="Logo" height="60">
-                </a>
-                
-                <nav class="nav">
-                    Switch to <button class="theme-toggle" onclick="toggleTheme()">Dark mode</button>
+        {% if session.get('user_id') and no_sidebar != True %}
+        <!-- Header -->
+        <header class="fixed w-full z-50 bg-[#121212]/80 backdrop-blur-sm" style="position: relative;">
+            <div class="border-bottom border-gray-800 w-full">
+                <div class="header-content" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+                    <a href="#" class="text-2xl font-bold text-primary logo">
+                        <img src="/static/images/logo.png" width="90" alt="">
+                    </a>
                     
-                </nav>
-                
-                
-            </div>
-        </div>
-    </header>
-
-    <!-- Sidebar -->
-    <nav class="sidebar">
-        <div class="sidebar-nav">
-            {% if session.role == 'super_admin' %}
-            <!-- Super Admin: Only Organizations -->
-            <div class="nav-group">
-                <div class="nav-group-title">Platform Management</div>
-                <a href="{{ url_for('web.organizations') }}" class="{% if request.endpoint == 'web.organizations' or request.endpoint == 'web.organization_detail' %}active{% endif %}">Organizations</a>
-            </div>
-            {% else %}
-            <!-- Other roles: Full sidebar -->
-            <a href="{{ url_for('web.dashboard') }}" class="{% if request.endpoint == 'web.dashboard' %}active{% endif %}">Dashboard</a>
-            
-            {% if session.role in ['org_admin', 'coach_admin'] %}
-            <div class="nav-group">
-                <div class="nav-group-title">Management</div>
-                <a href="{{ url_for('web.users') }}" class="{% if request.endpoint == 'web.users' %}active{% endif %}">Users</a>
-                {% if session.role == 'org_admin' %}
-                <a href="{{ url_for('web.centers') }}" class="{% if request.endpoint == 'web.centers' %}active{% endif %}">Centers</a>
-                {% endif %}
-                <a href="{{ url_for('class_cancellation.class_management') }}" class="{% if request.endpoint == 'class_cancellation.class_management' %}active{% endif %}">Classes</a>
-                <a href="{{ url_for('class_cancellation.holidays_management') }}" class="{% if request.endpoint == 'class_cancellation.holidays_management' %}active{% endif %}">Holidays</a>
-                <a href="{{ url_for('web.payments') }}" class="{% if request.endpoint == 'web.payments' %}active{% endif %}">Payments</a>
-            </div>
-            {% endif %}
-            
-            {% if session.role in ['coach', 'coach_admin'] %}
-            <div class="nav-group">
-                <div class="nav-group-title">Teaching</div>
-                <a href="{{ url_for('web.classes') }}" class="{% if request.endpoint == 'web.classes' %}active{% endif %}">Classes</a>
-                <a href="{{ url_for('web.calendar') }}" class="{% if request.endpoint == 'web.calendar' %}active{% endif %}">Calendar</a>
-            </div>
-            {% endif %}
-            
-            {% if session.role == 'student' %}
-            <div class="nav-group">
-                <div class="nav-group-title">My Learning</div>
-                <a href="{{ url_for('web.classes') }}" class="{% if request.endpoint == 'web.classes' %}active{% endif %}">My Classes</a>
-                <a href="{{ url_for('web.calendar') }}" class="{% if request.endpoint == 'web.calendar' %}active{% endif %}">My Calendar</a>
-                <a href="{{ url_for('web.equipment') }}" class="{% if request.endpoint == 'web.equipment' %}active{% endif %}">Equipment</a>
-            </div>
-            {% endif %}
-            
-            {% if session.role in ['org_admin', 'center_admin', 'coach', 'student'] %}
-            <div class="nav-group">
-                <div class="nav-group-title">Community</div>
-                <a href="{{ url_for('feed.feed_page') }}" class="{% if request.endpoint == 'feed.feed_page' %}active{% endif %}">Feed</a>
-                {% if session.role in ['org_admin', 'center_admin', 'coach'] %}
-                <a href="{{ url_for('feed.create_post_page') }}" class="{% if request.endpoint == 'feed.create_post_page' %}active{% endif %}">Create Post</a>
-                {% endif %}
-            </div>
-            {% endif %}
-            
-            {% if session.role == 'org_admin' %}
-            <div class="nav-group">
-                <div class="nav-group-title">Organization</div>
-                <a href="{{ url_for('web.organization_settings') }}" class="{% if request.endpoint == 'web.organization_settings' %}active{% endif %}">Settings</a>
-                <a href="{{ url_for('web.organization_signup_management') }}" class="{% if request.endpoint == 'web.organization_signup_management' %}active{% endif %}">Signup Links</a>
-            </div>
-            {% endif %}
-            {% endif %}
-            
-            <div class="nav-group">
-                <div class="nav-group-title">Account</div>
-                <a href="{{ url_for('web.profile') }}" class="{% if request.endpoint == 'web.profile' %}active{% endif %}">My Profile</a>
-                <a href="{{ url_for('web.logout') }}">Logout</a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content overflow-y-auto scrollbar-primary h-full">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="alerts-container p-4">
-                    {% for category, message in messages %}
-                        <div class="alert bg-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-50 border border-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-200 text-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-700 p-4 rounded-lg mb-4 animate-slide-up">
-                            <div class="flex items-center gap-3">
-                                <span class="text-lg">
-                                    {% if category == 'error' %}❌{% elif category == 'success' %}✅{% else %}⚠️{% endif %}
-                                </span>
-                                <span>{{ message }}</span>
-                            </div>
-                        </div>
-                    {% endfor %}
                 </div>
-            {% endif %}
-        {% endwith %}
-        
-        <div class="content-wrapper py-6 h-full overflow-y-auto scrollbar-primary">
-            {% block content %}{% endblock %}
-        </div>
-    </main>
-    {% else %}
-    <!-- Non-authenticated content -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
+            </div>
+            <!-- Mobile Menu Overlay -->
+            <div id="mobileMenuOverlay" class="mobile-menu-overlay md:hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(10px); z-index: 1000; transition: opacity 0.3s ease;" onclick="event.target === this && closeMobileMenu()">
+                <div class="mobile-menu-content" style="background: #121212; width: 75%; max-width: 300px; height: 100vh; padding: 0; transform: translateX(-100%); transition: transform 0.3s ease; overflow-y: auto; position: relative; z-index: 1001;" onclick="event.stopPropagation()">
+                    <!-- Logo in sidebar -->
+                    <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                        <a href="#" onclick="closeMobileMenu()">
+                            <img src="/static/images/logo.png" width="90" alt="botle Logo">
+                        </a>
+                    </div>
+                    <!-- Navigation items -->
+                    <nav class="mobile-sidebar-nav" style="padding: 1.5rem 0; display: flex; flex-direction: column;">
+                        <a href="{{ url_for('web.index') }}" class="mobile-nav-link" onclick="closeMobileMenu()" style="padding: 1rem 1.5rem; color: #ffffff; text-decoration: none; font-size: 1rem; transition: all 0.2s ease; border-left: 3px solid transparent;">
+                            Home
+                        </a>
+                        <a href="#contact" class="mobile-nav-link" onclick="closeMobileMenu()" style="padding: 1rem 1.5rem; color: #ffffff; text-decoration: none; font-size: 1rem; transition: all 0.2s ease; border-left: 3px solid transparent;">
+                            Contact
+                        </a>
+                        <div style="padding: 1rem 1.5rem; margin-top: 0.5rem;">
+                            <a href="{{ url_for('web.login') }}" class="mobile-nav-login-btn" onclick="closeMobileMenu()" style="display: block; padding: 0.75rem 1.5rem; background: #a1de56; color: #000000; text-decoration: none; border-radius: 0.5rem; text-align: center; font-weight: 500; transition: all 0.2s ease;">
+                                Login
+                            </a>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-nav">
+                <div class="d-flex ms-4 mb-3 align-items-center justify-content-between">
+                    <button class="theme-toggle" onclick="toggleTheme()">
+                        <i class="fas fa-moon"></i>
+                        <span>Dark Mode</span>
+                    </button>
+                </div>
+                {% if session.role == 'super_admin' %}
+                <!-- Super Admin: Only Organizations -->
+                <div class="nav-group">
+                    <div class="nav-group-title">Platform Management</div>
+                    <a href="{{ url_for('web.organizations') }}"
+                        class="{% if request.endpoint == 'web.organizations' or request.endpoint == 'web.organization_detail' %}active{% endif %}">Organizations</a>
+                </div>
+                {% else %}
+                <!-- Other roles: Full sidebar -->
+                <a href="{{ url_for('web.dashboard') }}"
+                    class="{% if request.endpoint == 'web.dashboard' %}active{% endif %}">Dashboard</a>
+
+                {% if session.role in ['org_admin', 'coach_admin'] %}
+                <div class="nav-group">
+                    <div class="nav-group-title">Management</div>
+                    <a href="{{ url_for('web.users') }}"
+                        class="{% if request.endpoint == 'web.users' %}active{% endif %}">Users</a>
+                    {% if session.role == 'org_admin' %}
+                    <a href="{{ url_for('web.centers') }}"
+                        class="{% if request.endpoint == 'web.centers' %}active{% endif %}">Centers</a>
+                    {% endif %}
+                    <a href="{{ url_for('class_cancellation.class_management') }}"
+                        class="{% if request.endpoint == 'class_cancellation.class_management' %}active{% endif %}">Classes</a>
+                    <a href="{{ url_for('class_cancellation.holidays_management') }}"
+                        class="{% if request.endpoint == 'class_cancellation.holidays_management' %}active{% endif %}">Holidays</a>
+                    <a href="{{ url_for('web.payments') }}"
+                        class="{% if request.endpoint == 'web.payments' %}active{% endif %}">Payments</a>
+                </div>
+                {% endif %}
+
+                {% if session.role in ['coach', 'coach_admin'] %}
+                <div class="nav-group">
+                    <div class="nav-group-title">Teaching</div>
+                    <a href="{{ url_for('web.classes') }}"
+                        class="{% if request.endpoint == 'web.classes' %}active{% endif %}">Classes</a>
+                    <a href="{{ url_for('web.calendar') }}"
+                        class="{% if request.endpoint == 'web.calendar' %}active{% endif %}">Calendar</a>
+                </div>
+                {% endif %}
+
+                {% if session.role == 'student' %}
+                <div class="nav-group">
+                    <div class="nav-group-title">My Learning</div>
+                    <a href="{{ url_for('web.classes') }}"
+                        class="{% if request.endpoint == 'web.classes' %}active{% endif %}">My Classes</a>
+                    <a href="{{ url_for('web.calendar') }}"
+                        class="{% if request.endpoint == 'web.calendar' %}active{% endif %}">My Calendar</a>
+                    <a href="{{ url_for('web.equipment') }}"
+                        class="{% if request.endpoint == 'web.equipment' %}active{% endif %}">Equipment</a>
+                </div>
+                {% endif %}
+
+                {% if session.role in ['org_admin', 'center_admin', 'coach', 'student'] %}
+                <div class="nav-group">
+                    <div class="nav-group-title">Community</div>
+                    <a href="{{ url_for('feed.feed_page') }}"
+                        class="{% if request.endpoint == 'feed.feed_page' %}active{% endif %}">Feed</a>
+                    {% if session.role in ['org_admin', 'center_admin', 'coach'] %}
+                    <a href="{{ url_for('feed.create_post_page') }}"
+                        class="{% if request.endpoint == 'feed.create_post_page' %}active{% endif %}">Create Post</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if session.role == 'org_admin' %}
+                <div class="nav-group">
+                    <div class="nav-group-title">Organization</div>
+                    <a href="{{ url_for('web.organization_settings') }}"
+                        class="{% if request.endpoint == 'web.organization_settings' %}active{% endif %}">Settings</a>
+                    <a href="{{ url_for('web.organization_signup_management') }}"
+                        class="{% if request.endpoint == 'web.organization_signup_management' %}active{% endif %}">Signup
+                        Links</a>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                <div class="nav-group">
+                    <div class="nav-group-title">Account</div>
+                    <a href="{{ url_for('web.profile') }}"
+                        class="{% if request.endpoint == 'web.profile' %}active{% endif %}">My Profile</a>
+                    <a href="{{ url_for('web.logout') }}">Logout</a>
+                </div>
+            </div>
+        </nav>
+
+        <style>
+        .logo img {
+            max-height: 60px !important;
+            width: 60px !important;
+        }
+        header {
+            position: fixed !important;
+            top: 0px;
+            background-color: var(--bg-primary) !important;
+            z-index: 1000 !important;
+        }
+        .header-content {
+            background-color: var(--bg-primary) !important;
+        }
+        @media (min-width:1024px) {
+            .mobile-menu-btn {
+                display: none !important;
+            }
+            .header .nav {
+                display: flex !important;
+            }
+
+            .header .container {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+        }
+        </style>
+
+        <!-- Main Content -->
+        <main class="main-content overflow-y-auto scrollbar-primary h-full">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
             <div class="alerts-container p-4">
                 {% for category, message in messages %}
-                    <div class="alert bg-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-50 border border-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-200 text-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-700 p-4 rounded-lg mb-4 animate-slide-up">
-                        <div class="flex items-center gap-3">
-                            <span class="text-lg">
-                                {% if category == 'error' %}❌{% elif category == 'success' %}✅{% else %}⚠️{% endif %}
-                            </span>
-                            <span>{{ message }}</span>
-                        </div>
+                <div
+                    class="alert bg-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-50 border border-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-200 text-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-700 p-4 rounded-lg mb-4 animate-slide-up">
+                    <div class="flex items-center gap-3">
+                        <span class="text-lg">
+                            {% if category == 'error' %}❌{% elif category == 'success' %}✅{% else %}⚠️{% endif %}
+                        </span>
+                        <span>{{ message }}</span>
                     </div>
+                </div>
                 {% endfor %}
             </div>
-        {% endif %}
-    {% endwith %}
-    {% block login_content %}{% endblock %}
-    
-    {% endif %}
+            {% endif %}
+            {% endwith %}
 
+            <div class="content-wrapper py-6 h-full overflow-y-auto scrollbar-primary">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+        {% else %}
+        <style>
+            @media (min-width: 768px) {
+                .mobile-menu-btn {
+                    display: none !important;
+                }
+                .header .nav {
+                    display: flex !important;
+                }
+            }
+        </style>
+        <!-- Non-authenticated content -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="alerts-container p-4">
+            {% for category, message in messages %}
+            <div
+                class="alert bg-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-50 border border-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-200 text-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' }}-700 p-4 rounded-lg mb-4 animate-slide-up">
+                <div class="flex items-center gap-3">
+                    <span class="text-lg">
+                        {% if category == 'error' %}❌{% elif category == 'success' %}✅{% else %}⚠️{% endif %}
+                    </span>
+                    <span>{{ message }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        <!-- Header for non-authenticated pages -->
+        <header class="header">
+            <div class="">
+                <div class="header-content">
+                    <a href="{{ url_for('web.index') }}" class="ps-3 rounded logo">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" width="90">
+                    </a>
+                    
+                    <nav class="nav" style="display: none; gap: 2rem; align-items: center;">
+                        <a href="{{ url_for('web.index') }}" class="{% if request.endpoint == 'web.index' %}active{% endif %}" style="color: #ffffff; text-decoration: none; font-size: 0.875rem; padding: 0.5rem 1rem; border-radius: 0.375rem; transition: all 0.2s ease;">Home</a>
+                        <a href="{{ url_for('web.index') }}#contact" style="color: #ffffff; text-decoration: none; font-size: 0.875rem; padding: 0.5rem 1rem; border-radius: 0.375rem; transition: all 0.2s ease;">Contact</a>
+                        <a href="{{ url_for('web.login') }}" class="{% if request.endpoint == 'web.login' %}active{% endif %}" style="padding: 0.5rem 1.5rem; background: #a1de56; color: #000000; border-radius: 0.5rem; text-decoration: none; font-weight: 500; transition: all 0.2s ease;">Login</a>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile Menu Overlay for non-authenticated pages -->
+        <div id="mobileMenuOverlay" class="mobile-menu-overlay md:hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(10px); z-index: 1000; transition: opacity 0.3s ease; opacity: 0; visibility: hidden;" onclick="event.target === this && closeMobileMenu()">
+            <div class="mobile-menu-content" style="background: #121212; width: 75%; max-width: 300px; height: 100vh; padding: 0; transform: translateX(-100%); transition: transform 0.3s ease; overflow-y: auto; position: relative; z-index: 1001;" onclick="event.stopPropagation()">
+                <!-- Logo in sidebar -->
+                <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                    <a href="{{ url_for('web.index') }}" onclick="closeMobileMenu()">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" width="90" alt="botle Logo">
+                    </a>
+                </div>
+                <!-- Navigation items -->
+                <nav class="mobile-sidebar-nav" style="padding: 1.5rem 0; display: flex; flex-direction: column;">
+                    <a href="{{ url_for('web.index') }}" class="mobile-nav-link {% if request.endpoint == 'web.index' %}active{% endif %}" onclick="closeMobileMenu()" style="padding: 1rem 1.5rem; color: #ffffff; text-decoration: none; font-size: 1rem; transition: all 0.2s ease; border-left: 3px solid transparent;">
+                        Home
+                    </a>
+                    <a href="{{ url_for('web.index') }}#contact" class="mobile-nav-link" onclick="closeMobileMenu()" style="padding: 1rem 1.5rem; color: #ffffff; text-decoration: none; font-size: 1rem; transition: all 0.2s ease; border-left: 3px solid transparent;">
+                        Contact
+                    </a>
+                    <div style="padding: 1rem 1.5rem; margin-top: 0.5rem;">
+                        <a href="{{ url_for('web.login') }}" class="mobile-nav-login-btn {% if request.endpoint == 'web.login' %}active{% endif %}" onclick="closeMobileMenu()" style="display: block; padding: 0.75rem 1.5rem; background: #a1de56; color: #000000; text-decoration: none; border-radius: 0.5rem; text-align: center; font-weight: 500; transition: all 0.2s ease;">
+                            Login
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+        {% block login_content %}{% endblock %}
+        {% endif %}
     </div> <!-- End app-content -->
-    
     <script>
-        
-        
+
+
         function addStaggeredAnimations() {
             // Animate cards with staggered delay
             const cards = document.querySelectorAll('.content-card-modern, .table-row-modern, .user-card-mobile');
@@ -523,7 +804,7 @@
                 // Mark as being animated to prevent conflicts
                 card.dataset.animating = 'true';
                 card.dataset.staggerAnimated = 'true';
-                
+
                 setTimeout(() => {
                     // card.classList.add('animate-slide-up');
                     // Remove animation class after completion to prevent conflicts
@@ -533,7 +814,7 @@
                     // }, 500);
                 }, index * 50);
             });
-            
+
             // Animate buttons and interactive elements
             const buttons = document.querySelectorAll('.btn, .actions-button');
             buttons.forEach((btn, index) => {
@@ -546,22 +827,22 @@
                 }, index * 25);
             });
         }
-        
+
         // Add micro animations on interactions
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             // Add ripple effect to buttons
             if (e.target.matches('button, .btn, .action-item')) {
                 addRippleEffect(e.target, e);
             }
         });
-        
+
         function addRippleEffect(element, event) {
             const ripple = document.createElement('span');
             const rect = element.getBoundingClientRect();
             const size = Math.max(rect.width, rect.height);
             const x = event.clientX - rect.left - size / 2;
             const y = event.clientY - rect.top - size / 2;
-            
+
             ripple.style.cssText = `
                 position: absolute;
                 border-radius: 50%;
@@ -574,14 +855,14 @@
                 height: ${size}px;
                 pointer-events: none;
             `;
-            
+
             element.style.position = 'relative';
             element.style.overflow = 'hidden';
             element.appendChild(ripple);
-            
+
             setTimeout(() => ripple.remove(), 600);
         }
-        
+
         // Add CSS for ripple animation
         const style = document.createElement('style');
         style.textContent = `
@@ -594,45 +875,45 @@
         `;
         document.head.appendChild(style);
     </script>
-    
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <!-- Bootstrap JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- jQuery (required for Select2) -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <!-- Select2 JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <!-- Initialize Select2 globally -->
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             // Initialize Select2 for all select elements with select2 class
             $('.select2').select2({
                 theme: 'bootstrap-5',
                 width: '100%',
-                placeholder: function() {
+                placeholder: function () {
                     return $(this).data('placeholder') || 'Select an option...';
                 },
                 allowClear: true,
                 dropdownAutoWidth: true
             });
-            
+
             // Initialize Select2 for searchable selects
             $('.select2-search').select2({
                 theme: 'bootstrap-5',
                 width: '100%',
-                placeholder: function() {
+                placeholder: function () {
                     return $(this).data('placeholder') || 'Search and select...';
                 },
                 allowClear: true,
                 minimumInputLength: 0,
                 dropdownAutoWidth: true
             });
-            
-            
+
+
             // Helper function to trigger change events on original select elements
             // This ensures compatibility with existing change listeners
             function triggerSelectChange(selectElement) {
@@ -640,15 +921,90 @@
                 const event = new Event('change', { bubbles: true });
                 selectElement.dispatchEvent(event);
             }
-            
+
             // Listen for Select2 change events and trigger native change events
-            $(document).on('select2:select select2:unselect', '.select2, .select2-search', function(e) {
+            $(document).on('select2:select select2:unselect', '.select2, .select2-search', function (e) {
                 // Trigger the native change event for compatibility with existing listeners
                 triggerSelectChange(this);
             });
         });
     </script>
-    
+
     {% block scripts %}{% endblock %}
+    
+    <!-- Mobile menu functionality for non-authenticated pages -->
+    {% if not session.get('user_id') %}
+    <script>
+        // Initialize mobile menu button for non-authenticated pages
+        document.addEventListener('DOMContentLoaded', function() {
+            initPublicMobileMenu();
+        });
+
+        function initPublicMobileMenu() {
+            const headerContent = document.querySelector('.header-content');
+           
+            if (headerContent && !headerContent.querySelector('.mobile-menu-btn') && window.innerWidth <= 1024) {
+                const menuBtn = document.createElement('button');
+                menuBtn.className = 'mobile-menu-btn';
+                menuBtn.setAttribute('aria-label', 'Toggle menu');
+               
+                menuBtn.onclick = togglePublicMobileMenu;
+                
+                
+            } else {
+                const menuBtn = document.querySelector('.mobile-menu-btn');
+                menuBtn.onclick = togglePublicMobileMenu;
+            }
+            console.log(headerContent);
+        }
+
+        function togglePublicMobileMenu() {
+            const overlay = document.getElementById('mobileMenuOverlay');
+            const menuBtn = document.querySelector('.mobile-menu-btn');
+
+            if (overlay && menuBtn) {
+                const isOpen = overlay.classList.toggle('open');
+                menuBtn.classList.toggle('active', isOpen);
+            }
+        }
+
+        function closeMobileMenu() {
+            const overlay = document.getElementById('mobileMenuOverlay');
+            const menuBtn = document.querySelector('.mobile-menu-btn');
+            
+            if (overlay) {
+                overlay.classList.remove('open');
+            }
+            if (menuBtn) {
+                menuBtn.classList.remove('active');
+            }
+        }
+
+        // Close mobile menu when clicking outside (for non-authenticated pages)
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth < 768) {
+                const overlay = document.getElementById('mobileMenuOverlay');
+                const menuBtn = document.querySelector('.mobile-menu-btn');
+                const menuContent = document.querySelector('.mobile-menu-content');
+                
+                if (overlay && overlay.classList.contains('open') && 
+                    !menuContent?.contains(e.target) && 
+                    !menuBtn?.contains(e.target)) {
+                    closeMobileMenu();
+                }
+            }
+        });
+
+        // Handle window resize for non-authenticated pages
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                closeMobileMenu();
+            } else {
+                initPublicMobileMenu();
+            }
+        });
+    </script>
+    {% endif %}
 </body>
-</html> 
+
+</html>
