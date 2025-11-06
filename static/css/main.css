@@ -1470,7 +1470,6 @@
 }
 
 .form-label {
-    font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
@@ -2528,7 +2527,6 @@ p {
 .form-label {
     display: block;
     margin-bottom: var(--spacing-sm);
-    font-weight: 600;
     color: var(--text-primary);
     font-size: 0.875rem;
 }

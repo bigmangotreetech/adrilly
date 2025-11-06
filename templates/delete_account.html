@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Account - botle Sports Coaching{% endblock %}
+
+{% block content %}
+<div class="page-header-modern">
+    <div class="page-header-content">
+        <div class="page-title-section">
+            <h1 class="page-title-modern">Request Account Deletion</h1>
+            <p class="page-subtitle-modern">Submit a request to delete your account and associated data</p>
+        </div>
+    </div>
+</div>
+
+<div class="settings-container">
+    <div class="settings-main" style="max-width: 800px; margin: 0 auto;">
+        <!-- Warning Card -->
+        <div class="card-modern" style="border-left: 4px solid #ef4444; margin-bottom: 2rem;">
+            <div class="card-header-modern">
+                <div class="card-title-section">
+                    <h3 class="card-title-modern" style="color: #ef4444;">Important Notice</h3>
+                    <p class="card-subtitle-modern">Please read carefully before submitting your request</p>
+                </div>
+                <div class="card-icon" style="color: #ef4444;">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="card-body-modern">
+                <div style="color: #6b7280; line-height: 1.6;">
+                    <p style="margin-bottom: 1rem;"><strong>What will be deleted:</strong></p>
+                    <ul style="margin-left: 1.5rem; margin-bottom: 1rem;">
+                        <li>Your user account and profile information</li>
+                        <li>All class enrollments and attendance records</li>
+                        <li>Payment history and transaction records</li>
+                        <li>Progress tracking and performance data</li>
+                        <li>Child profiles (if you are a parent)</li>
+                        <li>All other data associated with your account</li>
+                    </ul>
+                    <p style="margin-top: 1rem;"><strong>This action cannot be undone.</strong> Once your account is deleted, all data will be permanently removed and cannot be recovered.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deletion Request Form -->
+        <div class="card-modern">
+            <div class="card-header-modern">
+                <div class="card-title-section">
+                    <h3 class="card-title-modern">Account Deletion Request</h3>
+                    <p class="card-subtitle-modern">Fill out the form below to submit your request</p>
+                </div>
+            </div>
+            <div class="card-body-modern">
+                <form method="POST" action="{{ url_for('web.delete_account_submit') }}" id="deleteAccountForm">
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="phone_number" class="form-label-modern">
+                            <span class="label-text">Phone Number <span style="color: #ef4444;">*</span></span>
+                        </label>
+                        <input 
+                            type="tel" 
+                            class="form-control" 
+                            id="phone_number" 
+                            name="phone_number" 
+                            required
+                            placeholder="Enter your registered phone number (e.g., 9876543210 or +919876543210)"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: inherit;"
+                        >
+                        <div class="form-text" style="margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem;">
+                            Enter the phone number associated with your account. We'll use this to verify your identity.
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="reason" class="form-label-modern">
+                            <span class="label-text">Reason for Deletion <span style="color: #ef4444;">*</span></span>
+                        </label>
+                        <textarea 
+                            class="form-control" 
+                            id="reason" 
+                            name="reason" 
+                            rows="5" 
+                            required
+                            placeholder="Please tell us why you want to delete your account. This helps us improve our service."
+                            style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: inherit; resize: vertical;"
+                        ></textarea>
+                        <div class="form-text" style="margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem;">
+                            Your feedback is valuable to us. Please share your reason for leaving.
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="confirmation_text" class="form-label-modern">
+                            <span class="label-text">Confirmation <span style="color: #ef4444;">*</span></span>
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="confirmation_text" 
+                            name="confirmation_text" 
+                            required
+                            placeholder="Type: DELETE MY ACCOUNT"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-family: inherit;"
+                        >
+                        <div class="form-text" style="margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem;">
+                            Type <strong>DELETE MY ACCOUNT</strong> exactly as shown to confirm your request.
+                        </div>
+                    </div>
+
+                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: start; gap: 0.75rem;">
+                            <div style="color: #ef4444; flex-shrink: 0; margin-top: 0.125rem;">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                </svg>
+                            </div>
+                            <div style="color: #991b1b; font-size: 0.875rem;">
+                                <strong>Final Warning:</strong> By submitting this form, you acknowledge that you understand this action is permanent and cannot be undone. All your data will be permanently deleted.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                        <a href="{{ url_for('web.index') }}" class="btn btn-secondary" style="text-decoration: none;">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger" id="submitBtn" style="background: #ef4444; border-color: #ef4444;">
+                            Submit Deletion Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-danger {
+    background-color: #ef4444;
+    border-color: #ef4444;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+.btn-secondary {
+    background-color: #6b7280;
+    border-color: #6b7280;
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 0.5rem;
+    display: inline-block;
+}
+
+.btn-secondary:hover {
+    background-color: #4b5563;
+    border-color: #4b5563;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#deleteAccountForm {
+    max-width: 100%;
+}
+</style>
+
+<script>
+document.getElementById('deleteAccountForm')?.addEventListener('submit', function(e) {
+    const phoneNumber = document.getElementById('phone_number').value.trim();
+    const confirmationText = document.getElementById('confirmation_text').value.trim();
+    const reason = document.getElementById('reason').value.trim();
+    
+    if (!phoneNumber) {
+        e.preventDefault();
+        alert('Please provide your phone number.');
+        return false;
+    }
+    
+    if (confirmationText.toLowerCase() !== 'delete my account') {
+        e.preventDefault();
+        alert('Please type "DELETE MY ACCOUNT" exactly as shown to confirm your request.');
+        return false;
+    }
+    
+    if (!reason) {
+        e.preventDefault();
+        alert('Please provide a reason for account deletion.');
+        return false;
+    }
+    
+    const confirmed = confirm('Are you absolutely sure you want to submit this deletion request? This action cannot be undone.');
+    if (!confirmed) {
+        e.preventDefault();
+        return false;
+    }
+    
+    // Disable submit button to prevent double submission
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+});
+</script>
+{% endblock %}
+

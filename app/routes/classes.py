@@ -297,6 +297,10 @@ def get_class(class_id):
             result['instructions'] = {str(k): v for k, v in result['instructions'].items()}
 
         print(result)
+
+        if result.get('location'):
+            if result['location'].get('center_id'):
+                result['location']['center_id'] = str(result['location']['center_id'])
         
         return jsonify({'class': result}), 200
     

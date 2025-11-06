@@ -659,6 +659,8 @@
                     <div class="nav-group-title">Account</div>
                     <a href="{{ url_for('web.profile') }}"
                         class="{% if request.endpoint == 'web.profile' %}active{% endif %}">My Profile</a>
+                    <a href="{{ url_for('web.delete_account_request') }}"
+                        class="{% if request.endpoint == 'web.delete_account_request' %}active{% endif %}" style="color: #ef4444;">Request Account Deletion</a>
                     <a href="{{ url_for('web.logout') }}">Logout</a>
                 </div>
             </div>

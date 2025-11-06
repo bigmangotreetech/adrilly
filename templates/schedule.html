@@ -315,10 +315,7 @@
 
 
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="activity_price" class="form-label">Price for one time booking (in INR)</label>
-                            <input type="number" class="form-control" id="activity_price" name="price" value="0">
-                        </div>
+                        
                     </div>
                     <div class="mb-3">
                         <label for="activity_description" class="form-label">Description</label>
@@ -332,9 +329,10 @@
                             <input type="number" class="form-control" id="activity_capacity" name="max_participants"
                                 min="1" max="100" value="20">
                         </div>
+                        
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-3 d-none">
                             <label for="activity_level" class="form-label">Skill Level</label>
                             <select class="form-select" id="activity_level" name="skill_level">
                                 <option value="beginner">Beginner</option>
@@ -366,25 +364,32 @@
                         </div>
                     </div>
 
+                    <hr>
                     <!-- Is Bookable Toggle -->
-                    <div class="mb-3">
-                        <label class="form-label d-flex align-items-center justify-content-between">
-                            <span>
-                                Bookable
-                                <small class="text-muted d-block">Allow users to book classes for this activity</small>
-                            </span>
+                    <div class="mb-3 w-75">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <label class="form-label mb-0">
+                                <span>
+                                    Allow users to book classes for this activity
+                                </span>
+                            </label>
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="activity_is_bookable" name="is_bookable" checked style="width: 3rem; height: 1.5rem; cursor: pointer;">
+                                <input class="form-check-input" type="checkbox" id="activity_is_bookable" name="is_bookable" checked>
                             </div>
-                        </label>
+                        </div>
                     </div>
 
+                    <div class="col-md-6 mb-3 px-0" id="activity_price_container">
+                        <label for="activity_price" class="form-label">Price for one time booking (in INR)</label>
+                        <input type="number" class="form-control" id="activity_price" name="price" value="0">
+                    </div>
+
+                    <hr>
                     <!-- Custom Feedback Metrics Section -->
-                    <div class="mb-3">
+                    <div class="my-3">
                         <label class="form-label">
                             Custom Feedback Metrics
-                            <small class="text-muted d-block">Add metrics that coaches will use to evaluate students in
-                                this activity</small>
+                            
                         </label>
                         <div id="feedbackMetricsList" class="mb-2">
                             <!-- Feedback metrics will be dynamically added here -->
@@ -396,8 +401,7 @@
                                 <i class="bi bi-plus-lg"></i> Add Metric
                             </button>
                         </div>
-                        <small class="text-muted">Examples: Technique, Stamina, Teamwork, Accuracy, Speed,
-                            Flexibility</small>
+                        
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1666,6 +1670,62 @@
         transform: scale(1.1);
     }
 
+    /* Form Check Switch */
+    .form-check {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        min-width: 3rem !important;
+    }
+
+    .form-check.form-switch {
+        display: flex !important;
+        align-items: center !important;
+        padding-left: 0 !important;
+        min-height: 1.5rem !important;
+    }
+
+    .form-check-input[type="checkbox"] {
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: 40px !important;
+        height: 1.5rem !important;
+        cursor: pointer !important;
+        margin: 0 !important;
+        background-color: #6c757d !important;
+        border: 1px solid #6c757d !important;
+        border-radius: 1.5rem !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        position: relative !important;
+        transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out !important;
+        flex-shrink: 0 !important;
+    }
+
+    .form-check-input[type="checkbox"]:checked {
+        background-color: var(--accent-primary) !important;
+        border-color: var(--accent-primary) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e") !important;
+        background-position: right center !important;
+        background-repeat: no-repeat !important;
+        background-size: 1.5em 1.5em !important;
+    }
+
+    .form-check-input[type="checkbox"]:not(:checked) {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e") !important;
+        background-position: left center !important;
+        background-repeat: no-repeat !important;
+        background-size: 1.5em 1.5em !important;
+    }
+
+    .form-check-input[type="checkbox"]:focus {
+        border-color: var(--accent-primary) !important;
+        outline: 0 !important;
+        box-shadow: 0 0 0 0.25rem rgba(118, 182, 39, 0.25) !important;
+    }
+
     /* Buttons */
     .btn {
         padding: 0.5rem 1rem;
@@ -2224,6 +2284,12 @@
                     addFeedbackMetric();
                 }
             });
+        }
+
+        // Bookable checkbox - toggle price field visibility
+        const bookableCheckbox = document.getElementById('activity_is_bookable');
+        if (bookableCheckbox) {
+            bookableCheckbox.addEventListener('change', togglePriceFieldVisibility);
         }
 
         // Color preset buttons
@@ -2884,6 +2950,14 @@
     let currentEditingActivityId = null;
     let feedbackMetrics = [];
 
+    function togglePriceFieldVisibility() {
+        const isBookable = document.getElementById('activity_is_bookable').checked;
+        const priceContainer = document.getElementById('activity_price_container');
+        if (priceContainer) {
+            priceContainer.style.display = isBookable ? 'block' : 'none';
+        }
+    }
+
     function openActivityModal() {
         currentEditingActivityId = null;
         feedbackMetrics = [];
@@ -2892,6 +2966,9 @@
         document.getElementById('activitySubmitBtnText').textContent = 'Add Activity';
         document.getElementById('activityForm').reset();
         renderFeedbackMetrics();
+
+        // Set initial price field visibility based on checkbox state
+        togglePriceFieldVisibility();
 
         const modalElement = document.getElementById('activityModal');
         if (modalElement) {
@@ -2929,6 +3006,9 @@
             document.getElementById('activity_level').value = activity.skill_level || 'beginner';
             document.getElementById('activity_color').value = activity.color || '#3B82F6';
             document.getElementById('activity_is_bookable').checked = activity.is_bookable !== undefined ? activity.is_bookable : true;
+
+            // Toggle price field visibility based on bookable state
+            togglePriceFieldVisibility();
 
             // Load feedback metrics
             feedbackMetrics = activity.feedback_metrics || [];
@@ -2995,11 +3075,7 @@
     function renderFeedbackMetrics() {
         const container = document.getElementById('feedbackMetricsList');
 
-        if (feedbackMetrics.length === 0) {
-            container.innerHTML = '<p class="text-muted small mb-2">No custom metrics added yet</p>';
-            return;
-        }
-
+        
         let html = '<div class="d-flex flex-wrap gap-2">';
         feedbackMetrics.forEach((metric, index) => {
             html += `

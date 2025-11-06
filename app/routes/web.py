@@ -3549,7 +3549,7 @@ def center_schedule(center_id):
             'role': {'$in': ['coach', 'coach_admin']}
         }))
 
-        students = list(mongo.db.users.find({'organization_id': ObjectId(org_id), 'role': 'student'}))
+        students = list(mongo.db.users.find({'organization_ids': ObjectId(org_id), 'role': 'student'}))
         
         # Convert ObjectIds to strings for template serialization
         center['_id'] = str(center['_id'])
@@ -4686,6 +4686,7 @@ def signup_classes_submit(link_token):
         if existing_user:
             # User exists, use existing account
             user = existing_user
+            print("existing_user", existing_user)
             print(user)
             user_id = user['_id']
             
@@ -4695,6 +4696,12 @@ def signup_classes_submit(link_token):
                 update_fields['name'] = name
             if email and user.get('email') != email:
                 update_fields['email'] = email
+
+            if not user.get('organization_ids'):
+                mongo.db.users.update_one(
+                    {'_id': user_id},
+                    {'$addToSet': {'organization_ids': ObjectId(sign_up_link['organization_id'])}}
+                )
             
             if update_fields:
                 mongo.db.users.update_one(
@@ -4711,6 +4718,7 @@ def signup_classes_submit(link_token):
             
             
         
+            print(sign_up_link['organization_id'])
             user = auth_service.register_user(phone, name, random_password, 'student', ObjectId(sign_up_link['organization_id']), None, email)
             
             if not user:
@@ -4999,3 +5007,95 @@ def view_signup_links():
         traceback.print_exc()
         flash('Error loading sign up links', 'error')
         return redirect(url_for('web.classes'))
+
+@web_bp.route('/request-delete-account', methods=['GET'])
+def delete_account_request():
+    """Account deletion request page - public route"""
+    try:
+        return render_template('delete_account.html', no_sidebar=True)
+    
+    except Exception as e:
+        current_app.logger.error(f"Error loading delete account page: {str(e)}")
+        traceback.print_exc()
+        flash('Error loading page. Please try again.', 'error')
+        return redirect(url_for('web.index'))
+
+@web_bp.route('/request-delete-account', methods=['POST'])
+def delete_account_submit():
+    """Submit account deletion request - public route"""
+    try:
+        # Get form data
+        phone_number = request.form.get('phone_number', '').strip()
+        reason = request.form.get('reason', '').strip()
+        confirmation_text = request.form.get('confirmation_text', '').strip()
+        
+        # Validate required fields
+        if not phone_number:
+            flash('Please provide your phone number.', 'error')
+            return redirect(url_for('web.delete_account_request'))
+        
+        if not reason:
+            flash('Please provide a reason for account deletion.', 'error')
+            return redirect(url_for('web.delete_account_request'))
+        
+        if confirmation_text.lower() != 'delete my account':
+            flash('Please type "DELETE MY ACCOUNT" exactly to confirm your request.', 'error')
+            return redirect(url_for('web.delete_account_request'))
+        
+        # Normalize phone number using User model's normalization method
+        normalized_phone = User(phone_number, 'temp')._normalize_phone_number(phone_number)
+        
+        # Find user by phone number
+        user_data = mongo.db.users.find_one({'phone_number': normalized_phone})
+        if not user_data:
+            # Also try without country code prefix
+            alt_phone = normalized_phone.replace('+91', '') if normalized_phone.startswith('+91') else normalized_phone
+            user_data = mongo.db.users.find_one({
+                '$or': [
+                    {'phone_number': alt_phone},
+                    {'phone_number': normalized_phone}
+                ]
+            })
+        
+        if not user_data:
+            flash('No account found with this phone number. Please check and try again.', 'error')
+            return redirect(url_for('web.delete_account_request'))
+        
+        user_obj_id = user_data['_id']
+        
+        # Check if user already has a pending deletion request
+        existing_request = mongo.db.account_deletion_requests.find_one({
+            'user_id': user_obj_id,
+            'status': 'pending'
+        })
+        
+        if existing_request:
+            flash('You already have a pending deletion request. Please wait for it to be processed.', 'error')
+            return redirect(url_for('web.delete_account_request'))
+        
+        # Create deletion request record
+        deletion_request = {
+            'user_id': user_obj_id,
+            'user_email': user_data.get('email'),
+            'user_phone': user_data.get('phone_number'),
+            'user_name': user_data.get('name'),
+            'reason': reason,
+            'requested_at': datetime.utcnow(),
+            'status': 'pending',
+            'deleted_at': None
+        }
+        
+        # Store deletion request
+        mongo.db.account_deletion_requests.insert_one(deletion_request)
+        
+        # Log the deletion request
+        current_app.logger.info(f"Account deletion requested for phone {normalized_phone}: {user_data.get('email') or user_data.get('phone_number')}")
+        
+        flash('Your account deletion request has been submitted successfully. We will process it and notify you once completed.', 'success')
+        return redirect(url_for('web.index'))
+    
+    except Exception as e:
+        current_app.logger.error(f"Error processing account deletion request: {str(e)}")
+        traceback.print_exc()
+        flash('An error occurred while processing your request. Please contact support.', 'error')
+        return redirect(url_for('web.delete_account_request'))

@@ -3053,9 +3053,7 @@ def get_explore_organizations():
     """Get list of all organizations for explore feature"""
     try:
         # Get all active organizations
-        organizations = list(mongo.db.organizations.find({
-            'status': 'active',
-        }))
+        organizations = list(mongo.db.organizations.find())
 
         print(organizations)
         
@@ -3822,6 +3820,7 @@ def mobile_get_latest_announcement():
             'content': announcement['content'],
             'created_at': announcement['created_at'].isoformat(),
             'created_by': str(created_by['name']),
+            'author_id': str(announcement['author_id']),
             'organization_id': str(announcement['organization_id']),
             'associated_class': associated_class if len(associated_class.keys()) > 0 else None,
             'media_urls': announcement.get('media_urls', []),
@@ -4052,6 +4051,49 @@ def get_comments(announcement_id):
         traceback.print_exc()
         return jsonify({'success': False, 'message': 'Internal server error'}), 500
 
+@mobile_api_bp.route('/announcements/<announcement_id>', methods=['DELETE'])
+@jwt_required()
+def delete_announcement(announcement_id):
+    """Delete an announcement - only if created by self or if user is org_admin"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        current_user_role = claims.get('role')
+        
+        # Verify announcement exists
+        announcement = mongo.db.posts.find_one({'_id': ObjectId(announcement_id)})
+        if not announcement:
+            return jsonify({'success': False, 'message': 'Announcement not found'}), 404
+        
+        # Check if user is the author
+        author_id = announcement.get('author_id')
+        if isinstance(author_id, str):
+            author_id = ObjectId(author_id)
+        
+        is_author = str(author_id) == current_user_id or author_id == ObjectId(current_user_id)
+        is_org_admin = current_user_role == 'org_admin'
+        
+        # Allow deletion if user is the author OR if user is org_admin
+        if not (is_author or is_org_admin):
+            return jsonify({'success': False, 'message': 'Unauthorized: You can only delete your own announcements or must be an org_admin'}), 403
+        
+        # Delete the announcement
+        result = mongo.db.posts.delete_one({'_id': ObjectId(announcement_id)})
+        
+        if result.deleted_count > 0:
+            return jsonify({
+                'success': True,
+                'message': 'Announcement deleted successfully'
+            }), 200
+        else:
+            return jsonify({'success': False, 'message': 'Failed to delete announcement'}), 500
+        
+    except Exception as e:
+        current_app.logger.error(f"Delete announcement error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
 @mobile_api_bp.route('/posts', methods=['GET'])
 @jwt_required()
 def get_posts():
@@ -4062,17 +4104,20 @@ def get_posts():
         if not user:
             return jsonify({'success': False, 'message': 'User not found'}), 404
         
+        print("user", user)
         # Build query
         query = {
             'post_type': 'announcement',
-            'organization_id': ObjectId(user['organization_id']),
+            'organization_id': {'$in': user['organization_ids']},
             'status': 'published'
         }
 
+        print("query", query)
         # Get latest announcement
         announcements = mongo.db.posts.find(query, sort=[('created_at', -1)])
         formatted_announcements = []
         for announcement in announcements:
+            print("announcement", announcement)
             author_id = announcement['author_id']
             if isinstance(author_id, str):
                 author_id = ObjectId(author_id)
@@ -4126,6 +4171,7 @@ def get_posts():
                 'content': announcement['content'],
                 'created_at': announcement['created_at'].isoformat(),
                 'created_by': str(created_by['name']),
+                'author_id': str(announcement['author_id']),
                 'organization_id': str(announcement['organization_id']),
                 'associated_class': associated_class if len(associated_class.keys()) > 0 else None,
                 'media_urls': announcement.get('media_urls', []),
