@@ -61,3 +61,11 @@ Whatsapp number 15558309085
 15th Oct
 
 - Signle sign on with google
+
+
+App icon
+Feature graphics
+Screenshots
+Fix class time in booked by you (Check others)
+New user login on app is broken
+Update homepage

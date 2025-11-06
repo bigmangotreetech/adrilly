@@ -155,6 +155,11 @@
                 </div>
             </div>
             <div class="schedule-grid-container">
+                <!-- Schedule Loader -->
+                <div id="scheduleLoader" class="schedule-loader" style="display: none;">
+                    <div class="loader-spinner"></div>
+                    <div class="loader-text">Loading schedule...</div>
+                </div>
                 <!-- Time Slots Header -->
                 <div class="time-slots-header">
                     <div class="day-header-cell"></div>
@@ -585,7 +590,7 @@
 
     .sign-up-link-instruction {
         position: fixed;
-        bottom: -100px;
+        bottom: -200px;
         right: 0;
         background: var(--bg-card);
         padding: 1rem;
@@ -1767,6 +1772,47 @@
         pointer-events: none;
     }
 
+    /* Schedule Loader */
+    .schedule-loader {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(2px);
+    }
+
+    .loader-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3B82F6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loader-text {
+        margin-top: 12px;
+        color: #6B7280;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .schedule-grid-container {
+        position: relative;
+    }
+
     /* Responsive design */
     @media (max-width: 1200px) {
         .schedule-container {
@@ -2116,6 +2162,8 @@
         currentX: 0,
         currentY: 0,
         dragOffset: { x: 0, y: 0 },
+        initialCardX: 0,
+        initialCardY: 0,
         longPressTimer: null,
         longPressActivated: false
     };
@@ -2439,11 +2487,18 @@
             touchDragState.longPressActivated = true;
             touchDragState.isDragging = true;
             
+            // Store initial card position for transform calculations
+            const cardRect = card.getBoundingClientRect();
+            touchDragState.initialCardX = cardRect.left;
+            touchDragState.initialCardY = cardRect.top;
+            
             // Visual feedback for long press activation
             card.style.opacity = '0.5';
-            card.style.transition = 'opacity 0.2s';
+            card.style.transition = 'opacity 0.2s, transform 0.1s';
             card.style.transform = 'scale(1.05)';
             card.style.zIndex = '1000';
+            card.style.position = 'fixed';
+            card.style.pointerEvents = 'none';
             
             // Haptic feedback if available
             if (navigator.vibrate) {
@@ -2483,6 +2538,15 @@
             // Prevent scrolling
             e.preventDefault();
 
+            // Update card position to follow finger
+            if (touchDragState.activityCard) {
+                const deltaX = touch.clientX - touchDragState.startX;
+                const deltaY = touch.clientY - touchDragState.startY;
+                touchDragState.activityCard.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
+                touchDragState.activityCard.style.left = touchDragState.initialCardX + 'px';
+                touchDragState.activityCard.style.top = touchDragState.initialCardY + 'px';
+            }
+
             // Find the schedule cell under the touch point
             const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
             const scheduleCell = elementUnderTouch?.closest('.schedule-cell');
@@ -2513,6 +2577,10 @@
                 touchDragState.activityCard.style.opacity = '';
                 touchDragState.activityCard.style.transform = '';
                 touchDragState.activityCard.style.zIndex = '';
+                touchDragState.activityCard.style.position = '';
+                touchDragState.activityCard.style.left = '';
+                touchDragState.activityCard.style.top = '';
+                touchDragState.activityCard.style.pointerEvents = '';
             }
             touchDragState.activityCard = null;
             draggedActivity = null;
@@ -2551,6 +2619,10 @@
             touchDragState.activityCard.style.opacity = '';
             touchDragState.activityCard.style.transform = '';
             touchDragState.activityCard.style.zIndex = '';
+            touchDragState.activityCard.style.position = '';
+            touchDragState.activityCard.style.left = '';
+            touchDragState.activityCard.style.top = '';
+            touchDragState.activityCard.style.pointerEvents = '';
         }
         
         // Remove all drag-over classes
@@ -2590,6 +2662,13 @@
             touchDragState.currentX = touch.clientX;
             touchDragState.currentY = touch.clientY;
 
+            // Update card position to follow finger
+            const deltaX = touch.clientX - touchDragState.startX;
+            const deltaY = touch.clientY - touchDragState.startY;
+            touchDragState.activityCard.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.05)`;
+            touchDragState.activityCard.style.left = touchDragState.initialCardX + 'px';
+            touchDragState.activityCard.style.top = touchDragState.initialCardY + 'px';
+
             // Find the schedule cell under the touch point
             const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
             const scheduleCell = elementUnderTouch?.closest('.schedule-cell');
@@ -2628,6 +2707,10 @@
             touchDragState.activityCard.style.opacity = '';
             touchDragState.activityCard.style.transform = '';
             touchDragState.activityCard.style.zIndex = '';
+            touchDragState.activityCard.style.position = '';
+            touchDragState.activityCard.style.left = '';
+            touchDragState.activityCard.style.top = '';
+            touchDragState.activityCard.style.pointerEvents = '';
 
             // Remove all drag-over classes
             document.querySelectorAll('.schedule-cell.drag-over, .schedule-cell.drag-active').forEach(cell => {
@@ -2740,28 +2823,41 @@
     }
 
     function renderScheduleItems() {
-        // Clear existing items and states
-        document.querySelectorAll('.schedule-item').forEach(item => {
-            // Dispose of Bootstrap popover if it exists
-            const popoverInstance = bootstrap.Popover.getInstance(item);
-            if (popoverInstance) {
-                popoverInstance.dispose();
-            }
-            item.remove();
-        });
-        document.querySelectorAll('.schedule-cell.occupied').forEach(cell => {
-            cell.classList.remove('occupied');
-        });
+        // Show loader
+        const loader = document.getElementById('scheduleLoader');
+        if (loader) {
+            loader.style.display = 'flex';
+        }
 
-        // Render each schedule item
-        currentScheduleData.forEach(item => {
-            const cell = document.querySelector(`[data-day="${item.day_of_week}"][data-slot-id="${item.time_slot_id}"]`);
-            if (cell) {
-                const scheduleElement = createScheduleElement(item);
-                cell.appendChild(scheduleElement);
-                cell.classList.add('occupied');
+        try {
+            // Clear existing items and states
+            document.querySelectorAll('.schedule-item').forEach(item => {
+                // Dispose of Bootstrap popover if it exists
+                const popoverInstance = bootstrap.Popover.getInstance(item);
+                if (popoverInstance) {
+                    popoverInstance.dispose();
+                }
+                item.remove();
+            });
+            document.querySelectorAll('.schedule-cell.occupied').forEach(cell => {
+                cell.classList.remove('occupied');
+            });
+
+            // Render each schedule item
+            currentScheduleData.forEach(item => {
+                const cell = document.querySelector(`[data-day="${item.day_of_week}"][data-slot-id="${item.time_slot_id}"]`);
+                if (cell) {
+                    const scheduleElement = createScheduleElement(item);
+                    cell.appendChild(scheduleElement);
+                    cell.classList.add('occupied');
+                }
+            });
+        } finally {
+            // Hide loader
+            if (loader) {
+                loader.style.display = 'none';
             }
-        });
+        }
     }
 
     function createScheduleElement(scheduleItem) {
@@ -3772,8 +3868,9 @@
             color: activity.color
         };
 
-        closeActivitySelectionModal();
         createScheduleItem(selectedDayIndex, selectedSlotId, activityData);
+        closeActivitySelectionModal();
+
     }
 
     // Load activities and coaches from the template data
