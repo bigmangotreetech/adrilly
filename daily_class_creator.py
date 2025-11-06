@@ -141,7 +141,6 @@ class DailyClassCreator:
         existing = self.db.classes.find_one({
             'location.center_id': center_id,
             'scheduled_at': scheduled_at,
-            'status': {'$in': ['scheduled', 'ongoing']}
         })
         
         return existing is not None
@@ -251,6 +250,9 @@ class DailyClassCreator:
                 except ValueError:
                     duration_minutes = 60
             
+            # Get is_bookable from activity (default to True if not present)
+            is_bookable = activity.get('is_bookable', True) if activity else True
+            
             # Create class title
             center_name = center.get('name', 'Training Center')
             title = f"{activity_name}"
@@ -289,8 +291,9 @@ class DailyClassCreator:
                 student_ids=student_ids,
                 sport=sport,
                 schedule_item_id=ObjectId(schedule_item['_id']),
-                notes=f"Auto-generated from schedule on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                price=activity.get('price', 0)
+                notes=f"",
+                price=activity.get('price', 0) if activity else 0,
+                is_bookable=is_bookable
             )
 
             print(new_class.to_dict())

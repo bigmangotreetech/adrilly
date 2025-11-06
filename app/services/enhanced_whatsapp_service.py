@@ -12,6 +12,7 @@ import re
 from typing import Dict, List, Tuple, Optional
 import json
 from bson import ObjectId
+import pytz
 
 class EnhancedWhatsAppService:
     """Enhanced enterprise-grade WhatsApp messaging service with advanced features"""
@@ -59,6 +60,10 @@ class EnhancedWhatsAppService:
         try:
             # Normalize phone number
             to_number = self._normalize_phone_number(to_number)
+
+            if os.getenv('ENVIRONMENT') == 'dev':
+                to_number = 'whatsapp:+919945613932'
+
             
             message_data = {
                 'from_': os.getenv('TWILIO_WHATSAPP_FROM'),
@@ -768,6 +773,57 @@ That's it! We'll confirm your response right away. 😊
 
         return True, ''
     
+    def send_class_cancellation_notification(self, phone_number: str, student_name: str, class_title: str, 
+                                            scheduled_at: datetime, location: str, cancellation_reason: str,
+                                            cancelled_by: str, replacement_info: Dict = None) -> Tuple[bool, str]:
+        """Send class cancellation notification using template
+        
+        Template format:
+        Hello {{1}}, your {{2}} scheduled on {{3}} was cancelled due the below mentioned reason:
+        {{4}}
+        Please check the botle app for more details
+        Thank you
+        """
+        try:
+            # Normalize phone number
+            if not phone_number.startswith("+91"): 
+                phone_number = '+91' + phone_number
+
+            if phone_number.startswith("+1"): 
+                phone_number = '+91' + phone_number.replace("+1", "")
+
+            if not phone_number.startswith("whatsapp:"):
+                phone_number = f"whatsapp:{phone_number}"
+            
+            # Format date and time combined for template variable {{3}}
+            # Format: "January 15, 2024 at 10:00 AM"
+            
+            scheduled_at_ist = scheduled_at + timedelta(hours=5, minutes=30)
+            
+            date_str = scheduled_at_ist.strftime('%B %d, %Y')
+            time_str = scheduled_at_ist.strftime('%I:%M %p')
+            scheduled_datetime_str = f"{date_str} at {time_str}"
+            
+            # Build content variables for template
+            # Template expects: {{1}} = student_name, {{2}} = class_title, {{3}} = scheduled datetime, {{4}} = cancellation_reason
+            content_variables = {
+                "1": student_name,
+                "2": class_title,
+                "3": scheduled_datetime_str,
+                "4": cancellation_reason
+            }
+            
+            # Send template message
+            # TODO: Replace with actual template SID for class cancellation
+            template_sid = 'HXcec8f59ee0476b4ad3369cdc9c7849d4'  # Replace with actual template SID
+            self.send_template_message(phone_number, template_sid, json.dumps(content_variables))
+            
+            return True, 'Cancellation notification sent'
+            
+        except Exception as e:
+            current_app.logger.error(f"Error sending cancellation notification: {str(e)}")
+            return False, str(e)
+    
     def send_simple_class_reminder(self, phone_number: str, class_title: str, scheduled_at: datetime, 
                                   location: str = None, coach_name: str = None) -> Tuple[bool, str]:
         """Send a simple class reminder message like OTP - using template or simple text message"""
@@ -807,6 +863,52 @@ That's it! We'll confirm your response right away. 😊
             
         except Exception as e:
             current_app.logger.error(f"Error sending simple class reminder: {str(e)}")
+            return False, str(e)
+    
+    def send_class_instructions_message(self, phone_number: str, student_name: str, class_title: str, 
+                                       scheduled_at: datetime, instructions: str) -> Tuple[bool, str]:
+        """Send class instructions message using template
+        
+        Template format:
+        Hi {{1}}, Please find instructions for your {{2}} class scheduled on {{3}}
+        {{4}}
+        Thank you
+        """
+        try:
+            # Normalize phone number
+            if not phone_number.startswith("+91"): 
+                phone_number = '+91' + phone_number
+
+            if phone_number.startswith("+1"): 
+                phone_number = '+91' + phone_number.replace("+1", "")
+
+            if not phone_number.startswith("whatsapp:"):
+                phone_number = f"whatsapp:{phone_number}"
+            
+            # Format date and time combined for template variable {{3}}
+            # Convert to IST (UTC + 5:30)
+            scheduled_at_ist = scheduled_at + timedelta(hours=5, minutes=30)
+            date_str = scheduled_at_ist.strftime('%B %d, %Y')
+            time_str = scheduled_at_ist.strftime('%I:%M %p')
+            scheduled_datetime_str = f"{date_str} at {time_str}"
+            
+            # Build content variables for template
+            # Template expects: {{1}} = student_name, {{2}} = class_title, {{3}} = scheduled datetime, {{4}} = instructions
+            content_variables = {
+                "1": student_name,
+                "2": class_title,
+                "3": scheduled_datetime_str,
+                "4": instructions
+            }
+            
+            # Send template message
+            template_sid = 'HX64368a05c4dcc4caa159c5c474224853'
+            self.send_template_message(phone_number, template_sid, json.dumps(content_variables))
+            
+            return True, 'Class instructions sent'
+            
+        except Exception as e:
+            current_app.logger.error(f"Error sending class instructions: {str(e)}")
             return False, str(e)
     
     # Legacy method compatibility

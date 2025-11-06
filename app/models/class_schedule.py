@@ -7,7 +7,7 @@ class Class:
     def __init__(self, title, organization_id, coach_id, scheduled_at, 
                  duration_minutes=60, location=None, group_ids=None, 
                  student_ids=None, sport=None, level=None, notes=None,
-                 schedule_item_id=None, price=0):
+                 schedule_item_id=None, price=0, is_bookable=True):
         self.title = title
         self.organization_id = ObjectId(organization_id) if organization_id else None
         self.coach_id = ObjectId(coach_id) if coach_id else None
@@ -27,6 +27,7 @@ class Class:
         self.recurring = None  # For future: recurring class settings
         self.schedule_item_id = ObjectId(schedule_item_id) if schedule_item_id else None  # ID of the schedule item that created this class
         self.price = price
+        self.is_bookable = is_bookable  # Inherited from activity, default True
         # Enhanced cancellation fields
         self.cancellation_reason = None  # Reason for cancellation
         self.cancelled_by = None  # User ID who cancelled the class
@@ -67,6 +68,7 @@ class Class:
             'notification_sent': self.notification_sent,
             'refund_required': self.refund_required,
             'refund_processed': self.refund_processed,
+            'is_bookable': self.is_bookable,
         }
         
         # Only include _id if it exists and is not None
@@ -126,7 +128,11 @@ class Class:
         if 'refund_required' in data:
             class_obj.refund_required = data['refund_required']
         if 'refund_processed' in data:
-            class_obj.refund_processed = data['refund_processed']           
+            class_obj.refund_processed = data['refund_processed']
+        if 'is_bookable' in data:
+            class_obj.is_bookable = data['is_bookable']
+        else:
+            class_obj.is_bookable = True  # Default to True if not present
         return class_obj
     
     def get_all_student_ids(self):

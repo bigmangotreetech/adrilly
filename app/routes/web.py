@@ -4127,6 +4127,7 @@ def api_create_activity(org_id):
             'skill_level': data.get('skill_level', 'beginner'),
             'color': data.get('color', '#3B82F6'),
             'is_active': data.get('is_active', True),
+            'is_bookable': data.get('is_bookable', True),  # Default to true
             'created_at': datetime.utcnow(),
             'created_by': ObjectId(session.get('user_id')),
             'price': float(data.get('price', 0)),
@@ -4176,6 +4177,7 @@ def api_update_activity(org_id, activity_id):
             'skill_level': data.get('skill_level', 'beginner'),
             'color': data.get('color', '#3B82F6'),
             'is_active': data.get('is_active', True),
+            'is_bookable': data.get('is_bookable', True),  # Default to true if not provided
             'price': float(data.get('price', 0)),
             'feedback_metrics': data.get('feedback_metrics', []),
             'updated_at': datetime.utcnow()
@@ -4561,6 +4563,73 @@ def signup_classes(link_token):
         flash('Error loading class information', 'error')
         return redirect(url_for('web.classes'))
 
+@web_bp.route('/signup-classes/<link_token>/send-otp', methods=['POST'])
+def signup_classes_send_otp(link_token):
+    """Send OTP to phone number for signup verification"""
+    try:
+        phone = request.json.get('phone', '').strip() if request.is_json else request.form.get('phone', '').strip()
+        
+        if not phone:
+            return jsonify({'error': 'Phone number is required'}), 400
+        
+        import re
+        # Normalize phone number
+        phone = re.sub(r'\D', '', phone)
+        if not re.match(r'^\d{10}$', phone):
+            return jsonify({'error': 'Invalid phone number format'}), 400
+        
+        # Normalize to include country code for OTP service
+        phone_with_country = f'+91{phone}'
+        
+        # Use AuthService to send OTP
+        result, status_code = AuthService.request_otp(phone_with_country)
+        
+        if status_code == 200:
+            # Store phone number in session for verification
+            session['signup_phone_otp_sent'] = phone
+            session['signup_phone_verified'] = False
+            return jsonify({'message': 'OTP sent successfully'}), 200
+        else:
+            return jsonify(result), status_code
+            
+    except Exception as e:
+        current_app.logger.error(f"Error sending OTP for signup: {str(e)}")
+        return jsonify({'error': 'Failed to send OTP'}), 500
+
+@web_bp.route('/signup-classes/<link_token>/verify-otp', methods=['POST'])
+def signup_classes_verify_otp(link_token):
+    """Verify OTP for signup"""
+    try:
+        phone = request.json.get('phone', '').strip() if request.is_json else request.form.get('phone', '').strip()
+        otp = request.json.get('otp', '').strip() if request.is_json else request.form.get('otp', '').strip()
+        
+        if not phone or not otp:
+            return jsonify({'error': 'Phone number and OTP are required'}), 400
+        
+        import re
+        # Normalize phone number
+        phone = re.sub(r'\D', '', phone)
+        if not re.match(r'^\d{10}$', phone):
+            return jsonify({'error': 'Invalid phone number format'}), 400
+        
+        # Normalize to include country code for OTP service
+        phone_with_country = f'+91{phone}'
+        
+        # Verify OTP using AuthService
+        result, status_code = AuthService.verify_otp(phone_with_country, otp)
+        
+        if status_code == 200:
+            # Mark phone as verified in session
+            session['signup_phone_verified'] = True
+            session['signup_phone'] = phone
+            return jsonify({'message': 'OTP verified successfully'}), 200
+        else:
+            return jsonify(result), status_code
+            
+    except Exception as e:
+        current_app.logger.error(f"Error verifying OTP for signup: {str(e)}")
+        return jsonify({'error': 'Failed to verify OTP'}), 500
+
 @web_bp.route('/signup-classes/<link_token>/submit', methods=['POST'])
 def signup_classes_submit(link_token):
     try:
@@ -4599,6 +4668,11 @@ def signup_classes_submit(link_token):
         phone = re.sub(r'\D', '', phone)  # Remove non-digits
         if not re.match(r'^\d{10}$', phone):
             flash('Phone number must be 10 digits', 'error')
+            return redirect(url_for('web.signup_classes', link_token=link_token))
+        
+        # Check if OTP was verified
+        if not session.get('signup_phone_verified') or session.get('signup_phone') != phone:
+            flash('Please verify your phone number with OTP before submitting', 'error')
             return redirect(url_for('web.signup_classes', link_token=link_token))
         
         # Validate email format if provided
@@ -4667,7 +4741,6 @@ def signup_classes_submit(link_token):
         for class_id in class_id_list:
             try:
                 class_doc = mongo.db.schedules.find_one({'_id': ObjectId(class_id)})
-                print('class_doc1', class_doc)
                 if not class_doc:
                     continue
 
@@ -4707,6 +4780,21 @@ def signup_classes_submit(link_token):
                 class_names += activity_name + ', '
                 enrolled_count += 1
 
+
+                classes = mongo.db.classes.find({'schedule_item_id': ObjectId(class_id)})
+                if classes:
+                    for class_item in classes:
+                        if 'student_ids' not in class_item:
+                            mongo.db.classes.update_one(
+                                {'_id': ObjectId(class_item['_id'])},
+                                {'$addToSet': {'student_ids': user_id}}
+                            )
+                        else:
+                            mongo.db.classes.update_one(
+                                {'_id': ObjectId(class_item['_id'])},
+                                {'$addToSet': {'student_ids': user_id}}
+                            )
+
     
                 
             except Exception as e:
@@ -4723,6 +4811,11 @@ def signup_classes_submit(link_token):
                 {'$addToSet': {'enrolled_users': user_id}, '$set': {'updated_at': datetime.utcnow()}}
             )
 
+        # Clear OTP verification from session after successful submission
+        session.pop('signup_phone_verified', None)
+        session.pop('signup_phone', None)
+        session.pop('signup_phone_otp_sent', None)
+        
         # enhanced_whatsapp_service = EnhancedWhatsAppService()
         # try:
         #     enhanced_whatsapp_service.send_added_to_class_message(phone, name, class_names, center_doc['name'])

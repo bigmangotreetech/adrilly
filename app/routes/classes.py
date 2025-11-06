@@ -201,6 +201,10 @@ def get_classes():
                 coach = mongo.db.users.find_one({'_id': ObjectId(class_doc['coach_id'])})
                 if coach:
                     class_doc['coach_name'] = coach.get('name', 'Unknown')
+            
+            # Convert instruction keys to strings if instructions is a dict
+            if class_doc.get('instructions') and isinstance(class_doc.get('instructions'), dict):
+                class_doc['instructions'] = {str(k): v for k, v in class_doc['instructions'].items()}
         
         # Get total count
         total = mongo.db.classes.count_documents(query)
@@ -281,11 +285,23 @@ def get_class(class_id):
             total_students += group_students
         
         result['student_count'] = total_students
+
+        for key, value in result.items():
+            if isinstance(value, ObjectId):
+                result[key] = str(value)
+            if 'ids' in key:
+                result[key] = [str(id) for id in value]
+
+        # Convert instruction keys to strings if instructions is a dict
+        if result.get('instructions') and isinstance(result.get('instructions'), dict):
+            result['instructions'] = {str(k): v for k, v in result['instructions'].items()}
+
+        print(result)
         
         return jsonify({'class': result}), 200
     
     except Exception as e:
-        return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({'error': 'Internal server error ' + str(e)}), 500
 
 @classes_bp.route('/<class_id>', methods=['PUT'])
 @jwt_or_session_required()

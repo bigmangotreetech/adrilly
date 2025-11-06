@@ -857,3 +857,151 @@ def generate_class_qr_code(class_id):
     except Exception as e:
         current_app.logger.error(f"Error generating QR code for class {class_id}: {str(e)}")
         return jsonify({'error': 'Failed to generate QR code'}), 500
+
+@class_cancellation_bp.route('/api/classes/<class_id>/details', methods=['GET'])
+@jwt_or_session_required()
+@require_role_hybrid(['org_admin', 'center_admin', 'coach'])
+def get_class_details_with_feedback(class_id):
+    """Get class details including attendance, coach feedback, and student feedback for past classes"""
+    try:
+        org_id = session.get('organization_id') or get_jwt().get('organization_id')
+        if not org_id:
+            return jsonify({'error': 'Organization not found'}), 403
+        
+        # Get the class
+        class_doc = mongo.db.classes.find_one({
+            '_id': ObjectId(class_id),
+            'organization_id': ObjectId(org_id)
+        })
+        
+        if not class_doc:
+            return jsonify({'error': 'Class not found'}), 404
+        
+        # Only allow viewing details for completed classes
+        if class_doc.get('status') != 'completed':
+            return jsonify({'error': 'Class details are only available for completed classes'}), 400
+        
+        # Get all students enrolled in the class (direct + from groups)
+        student_ids = set()
+        if class_doc.get('student_ids'):
+            student_ids.update([ObjectId(sid) for sid in class_doc.get('student_ids', [])])
+        
+        # Get students from groups
+        if class_doc.get('group_ids'):
+            for group_id in class_doc.get('group_ids', []):
+                group_students = mongo.db.users.find({
+                    'groups': str(group_id),
+                    'role': 'student',
+                    'organization_id': ObjectId(org_id)
+                })
+                for student in group_students:
+                    student_ids.add(student['_id'])
+        
+        student_ids = list(student_ids)
+        
+        # Get attendance records
+        attendance_records = list(mongo.db.attendance.find({
+            'class_id': ObjectId(class_id)
+        }))
+        
+        # Get coach feedback (from feedback collection)
+        coach_feedback = list(mongo.db.feedback.find({
+            'class_id': ObjectId(class_id)
+        }))
+        
+        # Get student feedback (from student_feedback collection)
+        student_feedback = list(mongo.db.student_feedback.find({
+            'class_id': ObjectId(class_id)
+        }))
+        
+        # Get student details
+        students = list(mongo.db.users.find({
+            '_id': {'$in': student_ids}
+        }))
+        
+        student_map = {str(s['_id']): s for s in students}
+        
+        # Get coach details
+        coach = None
+        if class_doc.get('coach_id'):
+            coach = mongo.db.users.find_one({'_id': ObjectId(class_doc['coach_id'])})
+        
+        # Format attendance data
+        attendance_data = []
+        attendance_map = {str(att['student_id']): att for att in attendance_records}
+        
+        for student_id in student_ids:
+            student_id_str = str(student_id)
+            student = student_map.get(student_id_str)
+            if not student:
+                continue
+            
+            att_record = attendance_map.get(student_id_str)
+            attendance_data.append({
+                'student_id': student_id_str,
+                'student_name': student.get('name', 'Unknown'),
+                'student_phone': student.get('phone_number', ''),
+                'student_email': student.get('email', ''),
+                'status': att_record.get('status', 'absent') if att_record else 'absent',
+                'check_in_time': att_record.get('check_in_time').isoformat() if att_record and att_record.get('check_in_time') else None,
+                'marked_at': att_record.get('marked_at').isoformat() if att_record and att_record.get('marked_at') else None,
+                'notes': att_record.get('notes', '') if att_record else ''
+            })
+        
+        # Format coach feedback data
+        coach_feedback_data = []
+        for feedback in coach_feedback:
+            student_id_str = str(feedback.get('student_id'))
+            student = student_map.get(student_id_str)
+            coach_feedback_data.append({
+                'student_id': student_id_str,
+                'student_name': student.get('name', 'Unknown') if student else 'Unknown',
+                'metrics': feedback.get('metrics', {}),
+                'notes': feedback.get('notes', ''),
+                'created_at': feedback.get('created_at').isoformat() if feedback.get('created_at') else None,
+                'coach_id': str(feedback.get('coach_id')) if feedback.get('coach_id') else None,
+                'coach_name': coach.get('name', 'Unknown') if coach else 'Unknown'
+            })
+        
+        # Format student feedback data
+        student_feedback_data = []
+        for feedback in student_feedback:
+            student_id_str = str(feedback.get('student_id'))
+            student = student_map.get(student_id_str)
+            student_feedback_data.append({
+                'student_id': student_id_str,
+                'student_name': student.get('name', 'Unknown') if student else 'Unknown',
+                'rating': feedback.get('rating'),
+                'notes': feedback.get('notes', ''),
+                'created_at': feedback.get('created_at').isoformat() if feedback.get('created_at') else None
+            })
+        
+        # Calculate attendance summary
+        attendance_summary = {
+            'total': len(attendance_data),
+            'present': len([a for a in attendance_data if a['status'] in ['present', 'late']]),
+            'absent': len([a for a in attendance_data if a['status'] == 'absent']),
+            'late': len([a for a in attendance_data if a['status'] == 'late']),
+            'pending': len([a for a in attendance_data if a['status'] == 'pending'])
+        }
+        
+        return jsonify({
+            'class': {
+                '_id': str(class_doc['_id']),
+                'title': class_doc.get('title', ''),
+                'scheduled_at': class_doc.get('scheduled_at').isoformat() if class_doc.get('scheduled_at') else None,
+                'duration_minutes': class_doc.get('duration_minutes', 60),
+                'coach_name': coach.get('name', 'Unknown') if coach else 'Unknown',
+                'status': class_doc.get('status', '')
+            },
+            'attendance': attendance_data,
+            'attendance_summary': attendance_summary,
+            'coach_feedback': coach_feedback_data,
+            'student_feedback': student_feedback_data
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting class details: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Failed to get class details'}), 500

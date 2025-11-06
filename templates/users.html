@@ -1206,8 +1206,14 @@
                     }
                 });
 
-                // Restore original content AFTER destroying Select2
-                modalBody.innerHTML = originalContent;
+                // Remove select2 class from originalContent to prevent global auto-initialization
+                // The global Select2 initialization in base.html will try to initialize all .select2 elements
+                let $temp = $('<div>').html(originalContent);
+                $temp.find('#edit_role, #edit_status').removeClass('select2');
+                let cleanedContent = $temp.html();
+
+                // Restore original content AFTER destroying Select2 and removing select2 class
+                modalBody.innerHTML = cleanedContent;
 
                 // Small delay to ensure DOM is ready, then initialize Select2
                 setTimeout(function() {

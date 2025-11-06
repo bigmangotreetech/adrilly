@@ -394,9 +394,11 @@ def generate_whatsapp_analytics_report():
         print(f"Error in generate_whatsapp_analytics_report: {str(e)}")
         return f"Error: {str(e)}"
 
-@celery.task
-def update_class_statuses():
-    """Update class statuses based on current time"""
+def update_class_statuses_function():
+    """
+    Update class statuses based on current time.
+    This is the core function that can be called directly without Celery.
+    """
     try:
         now = datetime.utcnow()
         updated_count = 0
@@ -414,25 +416,53 @@ def update_class_statuses():
         )
         updated_count += result.modified_count
         
-        # Mark classes as completed if they've ended (assuming 2-hour duration max)
-        completion_time = now - timedelta(hours=2)
-        result = mongo.db.classes.update_many(
-            {
-                'scheduled_at': {'$lte': completion_time},
-                'status': 'ongoing'
-            },
-            {'$set': {
-                'status': 'completed',
-                'updated_at': now
-            }}
-        )
-        updated_count += result.modified_count
+        # Mark classes as completed if current time is beyond class end time
+        # Get all classes that are scheduled or ongoing
+        classes_cursor = mongo.db.classes.find({
+            'status': {'$in': ['scheduled', 'ongoing']}
+        })
+        
+        completed_classes = []
+        for class_data in classes_cursor:
+            scheduled_at = class_data.get('scheduled_at')
+            # Handle both 'duration_minutes' and 'duration' fields for backward compatibility
+            duration_minutes = class_data.get('duration_minutes') or class_data.get('duration', 60)  # Default to 60 minutes
+            
+            if scheduled_at:
+                # Calculate end time
+                end_time = scheduled_at + timedelta(minutes=duration_minutes)
+                
+                # If current time is beyond end time, mark as completed
+                if now >= end_time:
+                    completed_classes.append(class_data['_id'])
+        
+        # Update all completed classes
+        if completed_classes:
+            result = mongo.db.classes.update_many(
+                {
+                    '_id': {'$in': completed_classes},
+                    'status': {'$ne': 'cancelled'}  # Don't mark cancelled classes as completed
+                },
+                {'$set': {
+                    'status': 'completed',
+                    'updated_at': now
+                }}
+            )
+            updated_count += result.modified_count
         
         return f"Updated status for {updated_count} classes"
         
     except Exception as e:
         print(f"Error in update_class_statuses: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return f"Error: {str(e)}"
+
+
+@celery.task
+def update_class_statuses():
+    """Celery task wrapper for update_class_statuses_function"""
+    return update_class_statuses_function()
 
 @celery.task
 def send_daily_digest():

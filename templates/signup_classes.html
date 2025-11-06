@@ -276,6 +276,42 @@
     </div>
 </div>
 
+<!-- OTP Verification Modal -->
+<div class="modal fade" id="otpVerificationModal" tabindex="-1" aria-labelledby="otpVerificationModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="otpVerificationModalLabel">Verify OTP</h5>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">We've sent a verification code to <strong id="otpDisplayPhoneNumber"></strong></p>
+                <div class="mb-3">
+                    <label for="otpInput" class="form-label fw-semibold">Enter OTP</label>
+                    <input type="text" 
+                           class="form-control form-control-lg access-code-input" 
+                           id="otpInput" 
+                           placeholder="000000" 
+                           maxlength="6"
+                           minlength="6"
+                           pattern="[0-9]{6}">
+                    <div class="invalid-feedback" id="otpError">Please enter a valid 6-digit OTP</div>
+                </div>
+                <div class="text-center">
+                    <small class="text-muted">Didn't receive the code? </small>
+                    <button type="button" class="btn btn-link p-0" id="resendOtpBtn" style="font-size: 0.875rem;">
+                        Resend OTP
+                    </button>
+                </div>
+                <div id="otpMessage" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelOtpBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="verifyOtpBtn">Verify OTP</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Set theme to dark
 document.addEventListener('DOMContentLoaded', () => {
@@ -325,26 +361,192 @@ document.addEventListener('DOMContentLoaded', () => {
         const confirmBtn = document.getElementById('confirmPhoneBtn');
         if (!confirmBtn) return;
         
-        let phoneConfirmed = false;
+        // Setup OTP verification modal
+        const otpModalElement = document.getElementById('otpVerificationModal');
+        const otpModal = otpModalElement ? new bootstrap.Modal(otpModalElement, {
+            backdrop: 'static',
+            keyboard: false
+        }) : null;
         
-        // Handle modal close - when user clicks "Edit" or closes modal
-        modalElement.addEventListener('hidden.bs.modal', () => {
-            if (phoneConfirmed) {
-                // Phone was confirmed, submit the form
-                form.removeEventListener('submit', handleSubmit);
-                form.submit();
-                // Reset flag after submission starts
-                phoneConfirmed = false;
-            } else {
-                // User clicked Edit or closed modal, focus back on phone input field
-                phoneInput.focus();
+        const otpInput = document.getElementById('otpInput');
+        const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+        const resendOtpBtn = document.getElementById('resendOtpBtn');
+        const cancelOtpBtn = document.getElementById('cancelOtpBtn');
+        const otpMessage = document.getElementById('otpMessage');
+        const otpDisplayPhoneNumber = document.getElementById('otpDisplayPhoneNumber');
+        
+        let phoneConfirmed = false;
+        let currentPhoneNumber = '';
+        const linkToken = '{{ link_token }}';
+        
+        // OTP input validation - only allow numbers
+        if (otpInput) {
+            otpInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+            });
+            
+            otpInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (verifyOtpBtn) verifyOtpBtn.click();
+                }
+            });
+        }
+        
+        // Function to show message in OTP modal
+        function showOtpMessage(message, type = 'info') {
+            if (!otpMessage) return;
+            otpMessage.className = `mt-3 alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'}`;
+            otpMessage.textContent = message;
+            otpMessage.style.display = 'block';
+        }
+        
+        // Function to hide OTP message
+        function hideOtpMessage() {
+            if (otpMessage) {
+                otpMessage.style.display = 'none';
+            }
+        }
+        
+        // Function to send OTP
+        async function sendOtp(phone) {
+            try {
+                hideOtpMessage();
+                const response = await fetch(`/signup-classes/${linkToken}/send-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone: phone })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showOtpMessage('OTP sent successfully!', 'success');
+                    return true;
+                } else {
+                    showOtpMessage(result.error || 'Failed to send OTP', 'error');
+                    return false;
+                }
+            } catch (error) {
+                showOtpMessage('Network error. Please try again.', 'error');
+                return false;
+            }
+        }
+        
+        // Function to verify OTP
+        async function verifyOtp(phone, otp) {
+            try {
+                hideOtpMessage();
+                const response = await fetch(`/signup-classes/${linkToken}/verify-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ phone: phone, otp: otp })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    return true;
+                } else {
+                    showOtpMessage(result.error || 'Invalid OTP', 'error');
+                    if (otpInput) {
+                        otpInput.classList.add('is-invalid');
+                    }
+                    return false;
+                }
+            } catch (error) {
+                showOtpMessage('Network error. Please try again.', 'error');
+                return false;
+            }
+        }
+        
+        // Handle "Yes, continue" button - send OTP instead of directly submitting
+        confirmBtn.addEventListener('click', async () => {
+            const phoneValue = phoneInput.value;
+            currentPhoneNumber = phoneValue;
+            
+            // Hide phone confirmation modal
+            modal.hide();
+            
+            // Show OTP modal
+            if (otpModal && otpDisplayPhoneNumber) {
+                otpDisplayPhoneNumber.textContent = phoneValue;
+                if (otpInput) {
+                    otpInput.value = '';
+                    otpInput.classList.remove('is-invalid');
+                }
+                hideOtpMessage();
+                otpModal.show();
+                
+                // Send OTP
+                await sendOtp(phoneValue);
             }
         });
         
-        // Handle "Yes, continue" button
-        confirmBtn.addEventListener('click', () => {
-            phoneConfirmed = true;
-            modal.hide();
+        // Handle OTP verification
+        if (verifyOtpBtn) {
+            verifyOtpBtn.addEventListener('click', async () => {
+                if (!otpInput || !otpInput.value || otpInput.value.length !== 6) {
+                    if (otpInput) {
+                        otpInput.classList.add('is-invalid');
+                    }
+                    showOtpMessage('Please enter a valid 6-digit OTP', 'error');
+                    return;
+                }
+                
+                verifyOtpBtn.disabled = true;
+                verifyOtpBtn.textContent = 'Verifying...';
+                
+                const isValid = await verifyOtp(currentPhoneNumber, otpInput.value);
+                
+                if (isValid) {
+                    // OTP verified successfully
+                    phoneConfirmed = true;
+                    if (otpModal) {
+                        otpModal.hide();
+                    }
+                    // Submit the form
+                    form.removeEventListener('submit', handleSubmit);
+                    form.submit();
+                } else {
+                    verifyOtpBtn.disabled = false;
+                    verifyOtpBtn.textContent = 'Verify OTP';
+                }
+            });
+        }
+        
+        // Handle resend OTP
+        if (resendOtpBtn) {
+            resendOtpBtn.addEventListener('click', async () => {
+                resendOtpBtn.disabled = true;
+                resendOtpBtn.textContent = 'Sending...';
+                await sendOtp(currentPhoneNumber);
+                resendOtpBtn.disabled = false;
+                resendOtpBtn.textContent = 'Resend OTP';
+            });
+        }
+        
+        // Handle cancel OTP
+        if (cancelOtpBtn) {
+            cancelOtpBtn.addEventListener('click', () => {
+                if (otpModal) {
+                    otpModal.hide();
+                }
+                phoneConfirmed = false;
+                phoneInput.focus();
+            });
+        }
+        
+        // Handle modal close - when user clicks "Edit" or closes modal
+        modalElement.addEventListener('hidden.bs.modal', () => {
+            if (!phoneConfirmed) {
+                // User clicked Edit or closed modal, focus back on phone input field
+                phoneInput.focus();
+            }
         });
         
         const handleSubmit = function(event) {

@@ -6,7 +6,7 @@
 
 <!-- View Class Modal -->
 <div class="modal fade" id="viewClassModal" tabindex="-1" aria-labelledby="viewClassModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="viewClassModalLabel">Class Details</h5>
@@ -19,6 +19,88 @@
                             <span class="visually-hidden">Loading...</span>
                         </div>
                         <p class="text-muted mt-2">Loading class details...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Past Class Details Modal with Tabs -->
+<div class="modal fade" id="pastClassDetailsModal" tabindex="-1" aria-labelledby="pastClassDetailsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pastClassDetailsModalLabel">Past Class Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Class Info Header -->
+                <div id="pastClassInfoHeader" class="mb-4">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2">Loading class details...</p>
+                    </div>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <ul class="nav nav-tabs" id="pastClassTabs" role="tablist" style="display: none;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="attendance-tab" data-bs-toggle="tab"
+                            data-bs-target="#attendance" type="button" role="tab">
+                            <i class="bi bi-clipboard-check me-2"></i>Attendance
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="coach-feedback-tab" data-bs-toggle="tab"
+                            data-bs-target="#coach-feedback" type="button" role="tab">
+                            <i class="bi bi-person-check me-2"></i>Coach Feedback
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="student-feedback-tab" data-bs-toggle="tab"
+                            data-bs-target="#student-feedback" type="button" role="tab">
+                            <i class="bi bi-star me-2"></i>Student Feedback
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content mt-4" id="pastClassTabContent">
+                    <!-- Attendance Tab -->
+                    <div class="tab-pane fade show active" id="attendance" role="tabpanel">
+                        <div id="attendanceContent">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                <p class="text-muted mt-2">Loading attendance...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coach Feedback Tab -->
+                    <div class="tab-pane fade" id="coach-feedback" role="tabpanel">
+                        <div id="coachFeedbackContent">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                <p class="text-muted mt-2">Loading coach feedback...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Student Feedback Tab -->
+                    <div class="tab-pane fade" id="student-feedback" role="tabpanel">
+                        <div id="studentFeedbackContent">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                <p class="text-muted mt-2">Loading student feedback...</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -137,7 +219,8 @@
 
                     <div class="mb-3">
                         <div class="form-check">
-                            <input type="checkbox" name="refund_required" class="form-check-input custom-checkbox" id="refund_required">
+                            <input type="checkbox" name="refund_required" class="form-check-input custom-checkbox"
+                                id="refund_required">
                             <label class="form-check-label" for="refund_required">Refund Required</label>
                         </div>
                         <div class="form-text">Check if students should receive a refund for this class.</div>
@@ -180,23 +263,24 @@
                     <h6 class="fw-bold">Class: <span id="qrClassName" class="text-primary"></span></h6>
                     <small class="text-muted">Valid until: <span id="qrValidUntil"></span></small>
                 </div>
-                
+
                 <div class="qr-code-container mb-3">
                     <div id="qrCodeDisplay" class="d-flex justify-content-center">
                         <!-- QR code will be generated here -->
                     </div>
                 </div>
-                
+
                 <div class="alert alert-info">
                     <small>
-                        <strong>Instructions:</strong> Students can scan this QR code with the mobile app to mark their attendance.
+                        <strong>Instructions:</strong> Students can scan this QR code with the mobile app to mark their
+                        attendance.
                         The QR code is valid for 15 minutes from generation.
                     </small>
                 </div>
-                
+
                 <div class="mt-3 d-none">
                     <h6>QR Code String:</h6>
-                    <div class="bg-light p-2 rounded">
+                    <div class=" p-2 rounded">
                         <small id="qrStringDisplay" class="font-monospace text-break"></small>
                     </div>
                 </div>
@@ -224,7 +308,9 @@
                 <div class="bulk-cancel-info">
                     <div class="bulk-cancel-icon">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z">
+                            </path>
                         </svg>
                     </div>
                     <div class="bulk-cancel-text">
@@ -242,23 +328,25 @@
                     <div class="bulk-cancel-form">
                         <div class="bulk-cancel-input-group">
                             <label for="bulk_reason" class="bulk-cancel-label">Cancellation Reason</label>
-                            <textarea type="text" name="reason" id="bulk_reason" class="form-control bulk-cancel-input" 
-                                   placeholder="Enter reason for cancellation..." required rows="3"></textarea>  
+                            <textarea type="text" name="reason" id="bulk_reason" class="form-control bulk-cancel-input"
+                                placeholder="Enter reason for cancellation..." required rows="3"></textarea>
                         </div>
-                        
+
                         <div class="bulk-cancel-options mt-4">
                             <div class="bulk-cancel-checkbox">
-                                <input type="checkbox" name="send_notifications" class="form-check-input custom-checkbox bulk-cancel-checkbox-input" 
-                                       id="bulk_send_notifications" checked>
+                                <input type="checkbox" name="send_notifications"
+                                    class="form-check-input custom-checkbox bulk-cancel-checkbox-input"
+                                    id="bulk_send_notifications" checked>
                                 <label class="bulk-cancel-checkbox-label" for="bulk_send_notifications">
                                     <span class="bulk-cancel-checkbox-text">Send Notifications</span>
                                     <small class="bulk-cancel-checkbox-desc">WhatsApp alerts to students</small>
                                 </label>
                             </div>
-                            
+
                             <div class="bulk-cancel-checkbox d-none">
-                                <input type="checkbox" name="refund_required" class="form-check-input custom-checkbox bulk-cancel-checkbox-input" 
-                                       id="bulk_refund_required">
+                                <input type="checkbox" name="refund_required"
+                                    class="form-check-input custom-checkbox bulk-cancel-checkbox-input"
+                                    id="bulk_refund_required">
                                 <label class="bulk-cancel-checkbox-label" for="bulk_refund_required">
                                     <span class="bulk-cancel-checkbox-text">Refund Required</span>
                                     <small class="bulk-cancel-checkbox-desc">Process refunds</small>
@@ -272,8 +360,11 @@
                         Cancel
                     </button>
                     <button type="submit" class="btn btn-danger">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 0.25rem;">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 0.25rem;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                            </path>
                         </svg>
                         Cancel <span id="footerSelectedCount">0</span> Class(es)
                     </button>
@@ -283,8 +374,8 @@
     </div>
 </div>
 
-<div class="container-fluid">
-    
+<div class="container-fluid mt-5 pt-5">
+
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -299,7 +390,7 @@
     {% endif %}
     {% endwith %}
 
-    <div class="page-header-modern">
+    <div class="page-header-modern ">
         <div class="page-header-content">
             <div class="page-title-section">
                 <h1 class="page-title-modern">Classes</h1>
@@ -308,32 +399,34 @@
             <div class="page-actions">
                 <button class="btn btn-secondary" onclick="refreshClasses()">
                     <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
                     </svg>
                     Refresh
                 </button>
                 <button id="bulkSelectToggle" class="btn btn-danger" onclick="toggleBulkSelectMode()">
                     <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <span id="bulkSelectText">Cancel Multiple Classes</span>
                 </button>
             </div>
         </div>
     </div>
-    
+
     <small class="text-muted instructions d-none ms-4" id="instructions">Select classes you want to cancel</small>
 
     <div class="justify-content-end p-4 cancel-submit-container">
-        <button id="cancelSelectedButton" class="btn btn-danger" onclick="showBulkCancelPanel()"
-                        style="display: none;">
-                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        Cancel <span id="headerSelectedCount">0</span> Selected
-                    </button>
+        <button id="cancelSelectedButton" class="btn btn-danger" onclick="showBulkCancelPanel()" style="display: none;">
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            Cancel <span id="headerSelectedCount">0</span> Selected
+        </button>
     </div>
-    
+
     <div class="content-card-modern">
         <div class="filter-bar-modern">
             <!-- Create div for date range -->
@@ -341,247 +434,265 @@
                 <div class="input-group">
                     <span class="input-group-text">
                         <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                            </path>
                         </svg>
                     </span>
-                    <input type="date" id="startDate" class="form-control" value="{{ start_date }}" onchange="applyDateFilter()">
+                    <input type="date" id="startDate" class="form-control" value="{{ start_date }}"
+                        onchange="applyDateFilter()">
                     <span class="input-group-text">to</span>
-                    <input type="date" id="endDate" class="form-control" value="{{ end_date }}" onchange="applyDateFilter()">
+                    <input type="date" id="endDate" class="form-control" value="{{ end_date }}"
+                        onchange="applyDateFilter()">
                 </div>
             </div>
         </div>
-        
-            {% if classes %}
-            <div class="table-container-modern">
-                <table class="table-modern" id="classesTable">
-                    <thead class="table-header-sticky">
-                        <tr>
-                            <th class="bulk-select-column" style="display: none; width: 40px;">
-                                <div class="th-content">
-                                    <input type="checkbox" id="selectAllClasses" class="form-check-input custom-checkbox"
-                                        onchange="toggleSelectAll()">
+
+        {% if classes %}
+        <div class="table-container-modern">
+            <table class="table-modern" id="classesTable">
+                <thead class="table-header-sticky">
+                    <tr>
+                        <th class="bulk-select-column" style="display: none; width: 40px;">
+                            <div class="th-content">
+                                <input type="checkbox" id="selectAllClasses" class="form-check-input custom-checkbox"
+                                    onchange="toggleSelectAll()">
+                            </div>
+                        </th>
+                        <th class="sortable" data-sort="title">
+                            <div class="th-content">
+                                <span>Class</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="sortable" data-sort="scheduled_at">
+                            <div class="th-content">
+                                <span>Date & Time</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th>
+                            <div class="th-content">
+                                <span>Students</span>
+                            </div>
+                        </th>
+                        <th class="sortable" data-sort="status">
+                            <div class="th-content">
+                                <span>Status</span>
+                                <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                                </svg>
+                            </div>
+                        </th>
+                        <th class="actions-column">
+                            <div class="th-content">
+                                <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
+                                    </path>
+                                </svg>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class in classes %}
+                    <tr class="table-row-modern" id="class-{{ class._id }}">
+                        <td class="bulk-select-column" style="display: none;">
+                            {% if class.status in ['scheduled', 'ongoing'] %}
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input custom-checkbox class-select-checkbox"
+                                    data-class-id="{{ class._id }}" data-class-title="{{ class.title }}"
+                                    onchange="updateBulkSelectCount()">
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="class-cell">
+                            <div class="class-info-modern">
+                                <div class="class-avatar">
+                                    {{ class.title[0].upper() }}
                                 </div>
-                            </th>
-                            <th class="sortable" data-sort="title">
-                                <div class="th-content">
-                                    <span>Class</span>
-                                    <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                    </svg>
+                                <div class="class-details">
+                                    <div class="class-name">{{ class.title }}</div>
+
                                 </div>
-                            </th>
-                            <th class="sortable" data-sort="scheduled_at">
-                                <div class="th-content">
-                                    <span>Date & Time</span>
-                                    <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th>
-                                <div class="th-content">
-                                    <span>Students</span>
-                                </div>
-                            </th>
-                            <th class="sortable" data-sort="status">
-                                <div class="th-content">
-                                    <span>Status</span>
-                                    <svg class="sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th class="actions-column">
-                                <div class="th-content">
-                                    <svg class="actions-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
-                                        </path>
-                                    </svg>
-                                </div>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for class in classes %}
-                        <tr class="table-row-modern" id="class-{{ class._id }}">
-                            <td class="bulk-select-column" style="display: none;">
-                                {% if class.status in ['scheduled', 'ongoing'] %}
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input custom-checkbox class-select-checkbox"
-                                        data-class-id="{{ class._id }}" data-class-title="{{ class.title }}"
-                                        onchange="updateBulkSelectCount()">
-                                </div>
-                                {% endif %}
-                            </td>
-                            <td class="class-cell">
-                                <div class="class-info-modern">
-                                    <div class="class-avatar">
-                                        {{ class.title[0].upper() }}
-                                    </div>
-                                    <div class="class-details">
-                                        <div class="class-name">{{ class.title }}</div>
-                                        
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="date-info">
-                                    <div class="date-primary">{{ class.scheduled_at.strftime('%A, %b %d, %Y') }}</div>
-                                    <div class="date-secondary">{{ class.scheduled_at.strftime('%I:%M %p') }}</div>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="student-count">
-                                    {{ class.student_ids|length + class.group_ids|length }} students
-                                </span>
-                            </td>
-                            <td>
-                                <span class="status-pill status-{{ class.status }}">
-                                    {{ class.status.title() }}
-                                </span>
-                            </td>
-                            <td class="actions-cell">
-                                <div class="actions-dropdown">
-                                    <!-- bootstrap dropdown -->
-                                    <div class="dropdown">
-                                        <button class="action-item dropdown-toggle" type="button"
-                                            id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                                            More
-                                        </button>
-                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                                {% if class.status in ['scheduled', 'ongoing'] %}
-                                                <li>
-                                                    <button class="action-item"
-                                                    onclick="showStudentManagementModal('{{ class._id }}', '{{ class.title }}')">
-                                                    <svg class="action-icon" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                                                        </path>
-                                                    </svg>
-                                                    Manage Students
-                                                </button>
-                                            </li>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="date-info">
+                                <div class="date-primary">{{ class.scheduled_at.strftime('%A, %b %d, %Y') }}</div>
+                                <div class="date-secondary">{{ class.scheduled_at.strftime('%I:%M %p') }}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="student-count">
+                                {{ class.student_ids|length + class.group_ids|length }} students
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-pill status-{{ class.status }}">
+                                {{ class.status.title() }}
+                            </span>
+                        </td>
+                        <td class="actions-cell">
+                            <div class="actions-dropdown">
+                                <!-- bootstrap dropdown -->
+                                <div class="dropdown">
+                                    <button class="action-item dropdown-toggle" type="button" id="dropdownMenuButton"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        More 
+                                    </button>
+                                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                        {% if class.status in ['scheduled', 'ongoing'] %}
+                                        <li>
+                                            <button class="action-item"
+                                                onclick="showStudentManagementModal('{{ class._id }}', '{{ class.title }}')">
+                                                <svg class="action-icon" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                                    </path>
+                                                </svg>
+                                                Manage Students
+                                            </button>
+                                        </li>
+                                        {% endif %}
+                                        <li>
+                                            <div class="action-divider"></div>
+                                        </li>
+                                        <li>
+                                            {% if class.status == 'completed' %}
+                                            <button class="action-item"
+                                                onclick="viewPastClassDetails('{{ class._id }}', '{{ class.title }}')">
+                                                <svg class="action-icon" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z">
+                                                    </path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                                    </path>
+                                                </svg>
+                                                View Details
+                                            </button>
+                                            {% elif class.status in ['scheduled', 'ongoing', 'cancelled'] %}
+                                            <button class="action-item" onclick="openViewClassModal('{{ class._id }}')">
+                                                <svg class="action-icon" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z">
+                                                    </path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                                    </path>
+                                                </svg>
+                                                View Details
+                                            </button>
                                             {% endif %}
-                                            <li>
-                                                <div class="action-divider"></div>
-                                            </li>
-                                            <li>
-                                                {% if class.status in ['scheduled', 'ongoing', 'cancelled'] %}
-                                                <button class="action-item"
-                                                    onclick="showStudentManagementModal('{{ class._id }}', '{{ class.title }}')">
-                                                    <svg class="action-icon" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z">
-                                                        </path>
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
-                                                        </path>
-                                                    </svg>
-                                                    View Details
-                                                </button>
-                                                {% endif %}
-                                            </li>
-                                            <li>
-                                                {% if class.status in ['scheduled', 'ongoing'] %}
-                                                <button class="action-item"
-                                                    onclick="generateQRCode('{{ class._id }}', '{{ class.title }}')">
-                                                    <svg class="action-icon" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 13a1 1 0 011-1h3a1 1 0 011 1v7a1 1 0 01-1 1H4a1 1 0 01-1-1v-7zM12 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1V4zM9 9h1v1H9V9zM12 12h1v1h-1v-1zM15 12h1v1h-1v-1zM18 12h1v1h-1v-1zM9 15h1v1H9v-1zM12 15h1v1h-1v-1zM15 15h1v1h-1v-1zM18 15h1v1h-1v-1zM9 18h1v1H9v-1zM12 18h1v1h-1v-1zM15 18h1v1h-1v-1zM18 18h1v1h-1v-1z">
-                                                        </path>
-                                                    </svg>
-                                                    Generate QR Code
-                                                </button>
-                                                {% endif %}
-                                            </li>
-                                            <li>
-                                                {% if class.status in ['scheduled', 'ongoing'] %}
-                                                <button class="action-item danger" data-class-id="{{ class._id }}"
-                                                    data-class-title="{{ class.title }}"
-                                                    data-class-time="{{ class.scheduled_at.strftime('%b %d, %Y at %I:%M %p') }}"
-                                                    onclick="showCancelModal(this.dataset.classId, this.dataset.classTitle, this.dataset.classTime)">
-                                                    <svg class="action-icon" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z">
-                                                        </path>
-                                                    </svg>
-                                                    Cancel Class
-                                                </button>
-                                                {% endif %}
-                                            </li>
-                                        </div>
+                                        </li>
+                                        <li>
+                                            {% if class.status in ['scheduled', 'ongoing'] %}
+                                            <button class="action-item"
+                                                onclick="generateQRCode('{{ class._id }}', '{{ class.title }}')">
+                                                <svg class="action-icon" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 13a1 1 0 011-1h3a1 1 0 011 1v7a1 1 0 01-1 1H4a1 1 0 01-1-1v-7zM12 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1V4zM9 9h1v1H9V9zM12 12h1v1h-1v-1zM15 12h1v1h-1v-1zM18 12h1v1h-1v-1zM9 15h1v1H9v-1zM12 15h1v1h-1v-1zM15 15h1v1h-1v-1zM18 15h1v1h-1v-1zM9 18h1v1H9v-1zM12 18h1v1h-1v-1zM15 18h1v1h-1v-1zM18 18h1v1h-1v-1z">
+                                                    </path>
+                                                </svg>
+                                                Generate QR Code
+                                            </button>
+                                            {% endif %}
+                                        </li>
+                                        <li>
+                                            {% if class.status in ['scheduled', 'ongoing'] %}
+                                            <button class="action-item danger" data-class-id="{{ class._id }}"
+                                                data-class-title="{{ class.title }}"
+                                                data-class-time="{{ class.scheduled_at.strftime('%b %d, %Y at %I:%M %p') }}"
+                                                onclick="showCancelModal(this.dataset.classId, this.dataset.classTitle, this.dataset.classTime)">
+                                                <svg class="action-icon" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z">
+                                                    </path>
+                                                </svg>
+                                                Cancel Class
+                                            </button>
+                                            {% endif %}
+                                        </li>
                                     </div>
-
                                 </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-calendar-x display-1 text-muted"></i>
-                <h4 class="mt-3">No Upcoming Classes</h4>
-                <p class="text-muted">No classes are scheduled for the next 7 days.</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
 
-    <!-- Recent Cancellations -->
-    {% if cancelled_classes %}
-    <div class="card mt-4 d-none">
-        <div class="card-header">
-            <h5 class="card-title mb-0">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                Recent Cancellations (Last 30 Days)
-            </h5>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Class</th>
-                            <th>Date</th>
-                            <th>Cancelled</th>
-                            <th>Reason</th>
-                            <th>Type</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for class in cancelled_classes %}
-                        <tr>
-                            <td>{{ class.title }}</td>
-                            <td>{{ class.scheduled_at }}</td>
-                            <td>{{ class.cancelled_at if class.cancelled_at else 'N/A' }}</td>
-                            <td>{{ class.cancellation_reason or 'No reason provided' }}</td>
-                            <td>
-                                <span class="text-muted">
-                                    {{ class.cancellation_type or 'manual' }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-calendar-x display-1 text-muted"></i>
+            <h4 class="mt-3">No Upcoming Classes</h4>
+            <p class="text-muted">No classes are scheduled for the next 7 days.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Cancellations -->
+{% if cancelled_classes %}
+<div class="card mt-4 d-none">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Recent Cancellations (Last 30 Days)
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Class</th>
+                        <th>Date</th>
+                        <th>Cancelled</th>
+                        <th>Reason</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class in cancelled_classes %}
+                    <tr>
+                        <td>{{ class.title }}</td>
+                        <td>{{ class.scheduled_at }}</td>
+                        <td>{{ class.cancelled_at if class.cancelled_at else 'N/A' }}</td>
+                        <td>{{ class.cancellation_reason or 'No reason provided' }}</td>
+                        <td>
+                            <span class="text-muted">
+                                {{ class.cancellation_type or 'manual' }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-    {% endif %}
+</div>
+{% endif %}
 </div>
 
 <style>
@@ -594,6 +705,7 @@
         border-top: var(--border-primary);
         display: none;
     }
+
     /* Custom Actions Dropdown (matching users.html) */
     .actions-cell {
         width: 60px;
@@ -605,7 +717,7 @@
         display: inline-block;
         z-index: 1;
     }
-    
+
     .actions-dropdown:hover,
     .actions-dropdown.show {
         z-index: 10000;
@@ -868,7 +980,7 @@
         font-weight: 500;
     }
 
-    
+
     .status-pill.status-scheduled {
         background: var(--success-100);
         color: var(--success-700);
@@ -885,10 +997,10 @@
     }
 
     .status-pill.status-completed {
-        background: var(--secondary-100);
-        color: var(--secondary-700);
+        background: var(--primary-100);
+        color: var(--primary-700);
     }
-    
+
     /* Bulk Cancel Modal Styles */
     .bulk-cancel-info {
         display: flex;
@@ -1039,16 +1151,16 @@
             gap: var(--spacing-md);
         }
     }
-    
+
     /* Fix dropdown visibility in table */
     .table-container-modern {
         overflow: visible !important;
     }
-    
+
     .table-container-modern .table-modern {
         overflow: visible !important;
     }
-    
+
     /* Ensure dropdown appears above table */
     .actions-dropdown .dropdown-menu {
         z-index: 10000 !important;
@@ -1216,6 +1328,245 @@
     `;
 
         document.getElementById('classDetailsContent').innerHTML = content;
+    }
+
+    // View Past Class Details with Tabs
+    function viewPastClassDetails(classId, className) {
+        currentClassId = classId;
+        const modalElement = document.getElementById('pastClassDetailsModal');
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            loadPastClassDetails(classId, className);
+        } else {
+            console.error('Past class details modal element not found');
+        }
+    }
+
+    function loadPastClassDetails(classId, className) {
+        // Reset tabs
+        document.getElementById('pastClassTabs').style.display = 'none';
+        document.getElementById('pastClassInfoHeader').innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="text-muted mt-2">Loading class details...</p>
+            </div>
+        `;
+
+        // Reset tab content
+        document.getElementById('attendanceContent').innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <p class="text-muted mt-2">Loading attendance...</p>
+            </div>
+        `;
+        document.getElementById('coachFeedbackContent').innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <p class="text-muted mt-2">Loading coach feedback...</p>
+            </div>
+        `;
+        document.getElementById('studentFeedbackContent').innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <p class="text-muted mt-2">Loading student feedback...</p>
+            </div>
+        `;
+
+        fetch(`/api/classes/${classId}/details`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('pastClassInfoHeader').innerHTML =
+                        `<div class="alert alert-danger">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                // Display class info header
+                const scheduledDate = new Date(data.class.scheduled_at);
+                document.getElementById('pastClassInfoHeader').innerHTML = `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">${data.class.title}</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Date & Time:</strong> ${scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} at ${scheduledDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+                                <p class="mb-1"><strong>Duration:</strong> ${data.class.duration_minutes} minutes</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Coach:</strong> ${data.class.coach_name}</p>
+                                <p class="mb-1"><strong>Status:</strong> <span class="badge bg-success">${data.class.status}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+                // Show tabs
+                document.getElementById('pastClassTabs').style.display = 'flex';
+
+                // Display attendance
+                displayAttendance(data.attendance, data.attendance_summary);
+
+                // Display coach feedback
+                displayCoachFeedback(data.coach_feedback);
+
+                // Display student feedback
+                displayStudentFeedback(data.student_feedback);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('pastClassInfoHeader').innerHTML =
+                    `<div class="alert alert-danger">Error loading class details</div>`;
+            });
+    }
+
+    function displayAttendance(attendance, summary) {
+        if (!attendance || attendance.length === 0) {
+            document.getElementById('attendanceContent').innerHTML =
+                '<div class="alert alert-info">No attendance records found.</div>';
+            return;
+        }
+
+        let html = `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="card-title">Attendance Summary</h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-2  rounded">
+                                <div class="h4 mb-0">${summary.total}</div>
+                                <small class="text-muted">Total Students</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-2 bg-success bg-opacity-10 rounded">
+                                <div class="h4 mb-0 text-success">${summary.present}</div>
+                                <small class="text-muted">Present</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
+                                <div class="h4 mb-0 text-danger">${summary.absent}</div>
+                                <small class="text-muted">Absent</small>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Status</th>
+                            <th>Check-in Time</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        attendance.forEach(att => {
+            const statusBadge = {
+                'present': '<span class="badge bg-success">Present</span>',
+                'absent': '<span class="badge bg-danger">Absent</span>',
+                'late': '<span class="badge bg-warning">Late</span>',
+                'pending': '<span class="badge bg-secondary">Pending</span>'
+            }[att.status] || '<span class="badge bg-secondary">Unknown</span>';
+
+            const checkInTime = att.check_in_time ? new Date(att.check_in_time).toLocaleString() : 'N/A';
+
+            html += `
+                <tr>
+                    <td>${att.student_name}</td>
+                    <td>${statusBadge}</td>
+                    <td>${checkInTime}</td>
+                    <td>${att.notes || '-'}</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        document.getElementById('attendanceContent').innerHTML = html;
+    }
+
+    function displayCoachFeedback(feedback) {
+        if (!feedback || feedback.length === 0) {
+            document.getElementById('coachFeedbackContent').innerHTML =
+                '<div class="alert alert-info">No coach feedback available for this class.</div>';
+            return;
+        }
+
+        let html = '<div class="list-group">';
+
+        feedback.forEach(fb => {
+            const metricsHtml = Object.entries(fb.metrics || {}).map(([key, value]) =>
+                `<div class="d-flex justify-content-between mb-2">
+                    <span>${key}:</span>
+                    <span class="badge bg-primary">${value}/5</span>
+                </div>`
+            ).join('');
+
+            const createdAt = fb.created_at ? new Date(fb.created_at).toLocaleString() : 'N/A';
+
+            html += `
+                <div class="list-group-item mb-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0">${fb.student_name}</h6>
+                        <small class="text-muted">${createdAt}</small>
+                    </div>
+                    ${metricsHtml ? `<div class="mb-2">${metricsHtml}</div>` : ''}
+                    ${fb.notes ? `<p class="mb-0"><strong>Notes:</strong> ${fb.notes}</p>` : ''}
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        document.getElementById('coachFeedbackContent').innerHTML = html;
+    }
+
+    function displayStudentFeedback(feedback) {
+        if (!feedback || feedback.length === 0) {
+            document.getElementById('studentFeedbackContent').innerHTML =
+                '<div class="alert alert-info">No student feedback available for this class.</div>';
+            return;
+        }
+
+        let html = '<div class="list-group">';
+
+        feedback.forEach(fb => {
+            const stars = '★'.repeat(fb.rating || 0) + '☆'.repeat(5 - (fb.rating || 0));
+            const createdAt = fb.created_at ? new Date(fb.created_at).toLocaleString() : 'N/A';
+
+            html += `
+                <div class="list-group-item mb-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0">${fb.student_name}</h6>
+                        <small class="text-muted">${createdAt}</small>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-warning" style="font-size: 1.2em;">${stars}</span>
+                        <span class="ms-2">(${fb.rating}/5)</span>
+                    </div>
+                    ${fb.notes ? `<p class="mb-0"><strong>Feedback:</strong> ${fb.notes}</p>` : ''}
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        document.getElementById('studentFeedbackContent').innerHTML = html;
     }
 
     // Student Management Functions (matching schedule page pattern)
@@ -1735,18 +2086,18 @@
                 'Content-Type': 'application/json'
             }
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showQRCodeModal(data, className);
-            } else {
-                alert(`Error: ${data.error || 'Failed to generate QR code'}`);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error generating QR code. Please try again.');
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showQRCodeModal(data, className);
+                } else {
+                    alert(`Error: ${data.error || 'Failed to generate QR code'}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error generating QR code. Please try again.');
+            });
     }
 
     function showQRCodeModal(qrData, className) {
@@ -1755,18 +2106,18 @@
         const validUntilElement = document.getElementById('qrValidUntil');
         const qrCodeDisplay = document.getElementById('qrCodeDisplay');
         const qrStringDisplay = document.getElementById('qrStringDisplay');
-        
+
         // Set class name
         classNameElement.textContent = className;
-        
+
         // Set validity information
         const validUntil = new Date(qrData.validUntil);
         validUntilElement.textContent = validUntil.toLocaleString();
-        
+
         // Clear previous QR code
         qrCodeDisplay.innerHTML = '';
         qrStringDisplay.textContent = qrData.qrString;
-        
+
         // Display QR code image from backend
         if (qrData.qrImageBase64) {
             const qrImg = document.createElement('img');
@@ -1786,7 +2137,7 @@
                 </div>
             `;
         }
-        
+
         // Show the modal
         const bsModal = new bootstrap.Modal(modal);
         bsModal.show();

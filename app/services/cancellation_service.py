@@ -5,7 +5,7 @@ from app.extensions import mongo
 from app.models.class_schedule import Class
 from app.models.user import User
 from app.models.holiday import Holiday
-from app.services.whatsapp_service import WhatsAppService
+from app.services.enhanced_whatsapp_service import EnhancedWhatsAppService
 from typing import Tuple, List, Dict, Any, Optional
 
 class CancellationService:
@@ -311,7 +311,7 @@ class CancellationService:
     ) -> bool:
         """Send WhatsApp notifications about class cancellation"""
         try:
-            whatsapp_service = WhatsAppService()
+            whatsapp_service = EnhancedWhatsAppService()
             
             # Get all students for this class
             student_ids = class_obj.get_all_student_ids()
@@ -339,6 +339,9 @@ class CancellationService:
                         'location': replacement_class.location
                     }
             
+            # Get location string
+            location_str = class_obj.location.get('name', 'TBD') if class_obj.location else 'TBD'
+            
             notification_count = 0
             
             # Send notifications to each student
@@ -347,14 +350,17 @@ class CancellationService:
                 if student_data and student_data.get('phone_number'):
                     student = User.from_dict(student_data)
                     
-                    message = CancellationService._create_cancellation_message(
+                    success, _ = whatsapp_service.send_class_cancellation_notification(
+                        phone_number=student.phone_number,
                         student_name=student.name,
-                        class_obj=class_obj,
+                        class_title=class_obj.title,
+                        scheduled_at=class_obj.scheduled_at,
+                        location=location_str,
+                        cancellation_reason=class_obj.cancellation_reason,
                         cancelled_by=cancelled_by_user.name,
                         replacement_info=replacement_info
                     )
                     
-                    success, _ = whatsapp_service.send_message(student.phone_number, message)
                     if success:
                         notification_count += 1
             

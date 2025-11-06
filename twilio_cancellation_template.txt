@@ -1,0 +1,38 @@
+TWILIO WHATSAPP CONTENT TEMPLATE
+=================================
+
+Template Name: Class Cancellation Notification
+Category: UTILITY
+Language: English (en)
+
+TEMPLATE BODY:
+--------------
+Hello {{1}}, your {{2}} scheduled on {{3}} was cancelled due the below mentioned reason:
+
+{{4}}
+
+Please check the botle app for more details
+
+Thank you
+
+VARIABLES:
+----------
+{{1}} - Student Name (Text)
+{{2}} - Class Title (Text)
+{{3}} - Scheduled Date and Time (Text) - Format: "January 15, 2024 at 10:00 AM"
+{{4}} - Cancellation Reason (Text)
+
+INSTRUCTIONS FOR TWILIO:
+------------------------
+1. Go to Twilio Console > Content > Content Templates
+2. Click "Create New Template"
+3. Select Category: UTILITY
+4. Set Language: English (en)
+5. Copy the template body above
+6. Add 4 text variables in order: {{1}}, {{2}}, {{3}}, {{4}}
+7. Submit for approval
+8. Once approved, copy the Content SID and update it in the code:
+   - File: app/services/enhanced_whatsapp_service.py
+   - Line: 814
+   - Replace: 'HXcec8f59ee0476b4ad3369cdc9c7849d4' with your actual Content SID
+

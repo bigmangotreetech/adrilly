@@ -35,6 +35,18 @@ def make_json_serializable(obj):
     else:
         return obj
 
+def convert_instruction_keys_to_str(class_doc):
+    """Convert instruction keys to strings if instructions is a dict"""
+    if class_doc and isinstance(class_doc, dict):
+        instructions = class_doc.get('instructions')
+        if instructions and isinstance(instructions, dict):
+            # Convert all keys to strings
+            class_doc['instructions'] = {str(k): v for k, v in instructions.items()}
+        instructions_sent_by = class_doc.get('instructions_sent_by')
+        if instructions_sent_by:
+            class_doc['instructions_sent_by'] = str(instructions_sent_by)
+    return class_doc
+
 def get_effective_user_id():
     """
     Get the effective user ID to use for API calls.
@@ -606,11 +618,11 @@ def get_dashboard_stats(user_id):
         current_app.logger.error(f"Dashboard stats error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
-# Classes endpoints  
-@mobile_api_bp.route('/classes', methods=['GET'])
+# Classes endpoints - segregated by role
+@mobile_api_bp.route('/student/classes', methods=['GET'])
 @jwt_required()
-def get_classes():
-    """Get classes based on user role and filters"""
+def get_student_classes():
+    """Get classes for students"""
     try:
         # Get effective user ID (supports child profiles)
         current_user_id = get_effective_user_id()
@@ -618,6 +630,10 @@ def get_classes():
         claims = get_jwt()
         current_role = claims.get('role', 'student')
         current_org_id = claims.get('organization_id')
+        
+        # This endpoint is for students only
+        # if current_role not in ['student']:
+        #     return jsonify({'error': 'Unauthorized - Student access only'}), 403
         
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
@@ -630,10 +646,8 @@ def get_classes():
         if current_org_id:
             filter_query['organization_id'] = ObjectId(current_org_id)
         
-        if current_role == 'student':
-            filter_query['student_ids'] = ObjectId(current_user_id)
-        elif current_role == 'coach':
-            filter_query['coach_id'] = ObjectId(current_user_id)
+        # Students only see their enrolled classes
+        filter_query['student_ids'] = ObjectId(current_user_id)
         
         if start_date or end_date:
             date_filter = {}
@@ -699,6 +713,14 @@ def get_classes():
             if class_doc.get('cancelled_by'):
                 class_doc['cancelled_by'] = str(class_doc['cancelled_by'])
             
+            if 'organization_id' in class_doc:
+                organization = mongo.db.organizations.find_one({'_id': ObjectId(class_doc['organization_id'])})
+                if organization:
+                    class_doc['organization_name'] = organization.get('name','')
+
+            # Convert instruction keys to strings if instructions is a dict
+            convert_instruction_keys_to_str(class_doc)
+
             classes.append(class_doc)
         
         total_count = mongo.db.classes.count_documents(filter_query)
@@ -717,11 +739,130 @@ def get_classes():
         }), 200
     
     except Exception as e:
-        current_app.logger.error(f"Get classes error: {str(e)}")
+        current_app.logger.error(f"Get student classes error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
+@mobile_api_bp.route('/coach/classes', methods=['GET'])
+@jwt_required()
+def get_coach_classes():
+    """Get classes for coaches and org_admins"""
+    try:
+        current_user_id = get_jwt_identity()
+        
+        claims = get_jwt()
+        current_role = claims.get('role', 'student')
+        current_org_id = claims.get('organization_id')
+        
+        # This endpoint is for coaches and org_admins
+        if current_role not in ['coach', 'coach_admin', 'org_admin', 'super_admin', 'center_admin']:
+            return jsonify({'error': 'Unauthorized - Coach/Admin access only'}), 403
+        
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        status = request.args.get('status')
+        page = int(request.args.get('page', 1))
+        per_page = min(int(request.args.get('per_page', 20)), 100)
+        count_only = request.args.get('count_only') == 'true'
+        
+        filter_query = {}
+        if current_org_id:
+            filter_query['organization_id'] = ObjectId(current_org_id)
+        
+        # For org_admin, show all classes in organization (no coach filter)
+        # For coaches, only show their assigned classes
+        if current_role == 'org_admin' or current_role == 'super_admin':
+            # Org admin sees all classes in their organization
+            pass  # No coach_id filter
+        else:
+            # Regular coaches see only their classes
+            filter_query['coach_id'] = ObjectId(current_user_id)
+        
+        if start_date or end_date:
+            date_filter = {}
+            if start_date:
+                print(start_date)
+                date_filter['$gte'] = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+            if end_date:
+                print(end_date)
+                date_filter['$lte'] = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+            filter_query['scheduled_at'] = date_filter
+        
+        if status:
+            filter_query['status'] = status
+        
+        if count_only:
+            count = mongo.db.classes.count_documents(filter_query)
+            return jsonify({'total_count': count}), 200
+        
+        skip = (page - 1) * per_page
+        classes_cursor = mongo.db.classes.find(filter_query).sort('scheduled_at', 1).skip(skip).limit(per_page)
+        
+        classes = []
+        for class_doc in classes_cursor:
+            class_doc['_id'] = str(class_doc['_id'])
+            if class_doc.get('coach_id'):
+                class_doc['coach_id'] = str(class_doc['coach_id'])
+            if class_doc.get('organization_id'):
+                class_doc['organization_id'] = str(class_doc['organization_id'])
+            if class_doc.get('student_ids'):
+                class_doc['student_ids'] = [str(s) for s in class_doc['student_ids']]
+            if class_doc['scheduled_at']:
+                class_doc['scheduled_at'] = (class_doc['scheduled_at'] + timedelta(hours=5, minutes=30)).isoformat()
+            if class_doc['created_at']:
+                class_doc['created_at'] = class_doc['created_at'].isoformat()
+            if class_doc['updated_at']:
+                class_doc['updated_at'] = class_doc['updated_at'].isoformat()
+            if class_doc['cancelled_at']:
+                class_doc['cancelled_at'] = class_doc['cancelled_at'].isoformat()
+            if class_doc['recurring']:
+                class_doc['recurring'] = str(class_doc['recurring'])
+            else:
+                class_doc['recurring'] = 'No'
+            if class_doc.get('organization_id'):
+                class_doc['organization_id'] = str(class_doc['organization_id'])
+            if class_doc.get('coach_id'):
+                class_doc['coach_id'] = str(class_doc['coach_id'])
+            if class_doc.get('group_ids'):
+                class_doc['group_ids'] = [str(gid) for gid in class_doc['group_ids']]
+            if class_doc.get('student_ids'):
+                class_doc['student_ids'] = [str(sid) for sid in class_doc['student_ids']]
+            if class_doc.get('location'):
+                if class_doc['location'].get('center_id'):
+                    class_doc['location']['center_id'] = str(class_doc['location']['center_id'])
+            if class_doc.get('schedule_item_id'):
+                class_doc['schedule_item_id'] = str(class_doc['schedule_item_id'])
+            
+            if class_doc.get('coach_id'):
+                coach = mongo.db.users.find_one({'_id': ObjectId(class_doc['coach_id'])})
+                if coach:
+                    class_doc['coach_name'] = coach.get('name', 'Unknown')
 
-# API to get classes booked by a user
+            if class_doc.get('cancelled_by'):
+                class_doc['cancelled_by'] = str(class_doc['cancelled_by'])
+            
+            # Convert instruction keys to strings if instructions is a dict
+            convert_instruction_keys_to_str(class_doc)
+            
+            classes.append(class_doc)
+        
+        total_count = mongo.db.classes.count_documents(filter_query)
+        
+        print(filter_query)
+        
+        return jsonify({
+            'classes': classes,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total_count': total_count,
+                'total_pages': (total_count + per_page - 1) // per_page
+            }
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get coach classes error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @mobile_api_bp.route('/student/classes-booked', methods=['GET'])
 @jwt_required()
 def get_classes_booked():
@@ -776,6 +917,8 @@ def get_classes_booked():
             if class_doc.get('cancelled_by'):
                 class_doc['cancelled_by'] = str(class_doc['cancelled_by'])
 
+            # Convert instruction keys to strings if instructions is a dict
+            convert_instruction_keys_to_str(class_doc)
 
             booked_for = mongo.db.users.find_one({'_id': ObjectId(booking['student_id'])})
             class_doc['booked_for'] = booked_for.get('name', '')
@@ -848,6 +991,9 @@ def get_class_details(class_id):
                 for student in students
             ]
         
+        # Convert instruction keys to strings if instructions is a dict
+        convert_instruction_keys_to_str(class_doc)
+        
         return jsonify({'class': class_doc}), 200
     
     except Exception as e:
@@ -886,6 +1032,85 @@ def get_class_attendance(class_id):
     
     except Exception as e:
         current_app.logger.error(f"Get class attendance error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@mobile_api_bp.route('/classes/<class_id>/rsvp-status', methods=['GET'])
+@jwt_required()
+def get_class_rsvp_status(class_id):
+    """Get RSVP status for all students in a class"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        current_role = claims.get('role', 'student')
+        current_org_id = claims.get('organization_id')
+        
+        # Validate class exists
+        class_doc = mongo.db.classes.find_one({'_id': ObjectId(class_id)})
+        
+        if not class_doc:
+            return jsonify({'error': 'Class not found'}), 404
+        
+        # Check permission - coaches, org_admins can see all RSVPs
+        if current_role == 'student':
+            # Students can only see their own RSVP
+            if ObjectId(current_user_id) not in class_doc.get('student_ids', []):
+                return jsonify({'error': 'Unauthorized'}), 403
+        elif current_role == 'coach':
+            # Coach can see RSVPs for their classes
+            if str(class_doc.get('coach_id')) != current_user_id:
+                return jsonify({'error': 'Unauthorized'}), 403
+        elif current_role in ['org_admin', 'super_admin']:
+            # Org admin can see RSVPs for all classes in their organization
+            if current_org_id and str(class_doc.get('organization_id')) != current_org_id:
+                return jsonify({'error': 'Unauthorized'}), 403
+        
+        # Get all enrolled students
+        student_ids = class_doc.get('student_ids', [])
+        
+        # Get RSVP status for all students
+        rsvps = list(mongo.db.rsvps.find({
+            'class_id': ObjectId(class_id),
+            'student_id': {'$in': [ObjectId(sid) for sid in student_ids]}
+        }))
+        
+        # Create a map of student_id -> rsvp_status
+        rsvp_map = {}
+        for rsvp in rsvps:
+            rsvp_map[str(rsvp['student_id'])] = {
+                'status': rsvp.get('rsvp_status'),
+                'reason': rsvp.get('reason'),
+                'updated_at': rsvp.get('updated_at').isoformat() if rsvp.get('updated_at') else None
+            }
+        
+        # Get student details
+        students = list(mongo.db.users.find(
+            {'_id': {'$in': [ObjectId(sid) for sid in student_ids]}},
+            {'name': 1, 'phone_number': 1}
+        ))
+        
+        # Build response with student info and RSVP status
+        rsvp_status_list = []
+        for student in students:
+            student_id = str(student['_id'])
+            rsvp_info = rsvp_map.get(student_id, {'status': None, 'reason': None, 'updated_at': None})
+            
+            rsvp_status_list.append({
+                'student_id': student_id,
+                'student_name': student.get('name', 'Unknown'),
+                'rsvp_status': rsvp_info['status'],
+                'reason': rsvp_info['reason'],
+                'updated_at': rsvp_info['updated_at']
+            })
+        
+        return jsonify({
+            'rsvp_status': rsvp_status_list,
+            'total_students': len(student_ids),
+            'responded': len(rsvp_map),
+            'not_responded': len(student_ids) - len(rsvp_map)
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get class RSVP status error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @mobile_api_bp.route('/classes/<class_id>/students/enrolled', methods=['GET'])
@@ -1608,6 +1833,12 @@ def get_student_attended_classes():
                 else:
                     attended_class['duration_display'] = f'{minutes}m'
 
+                # Add instructions from class_doc if they exist
+                if class_doc.get('instructions'):
+                    attended_class['instructions'] = class_doc['instructions']
+                
+                # Convert instruction keys to strings if instructions is a dict
+                convert_instruction_keys_to_str(attended_class)
                 
                 # Ensure the attended_class is JSON serializable
                 serializable_class = make_json_serializable(attended_class)
@@ -1680,13 +1911,8 @@ def get_student_next_class():
         }
         
         # Security check: students can only query their own classes
-        if current_role == 'student':
-            filter_query['student_ids'] = ObjectId(target_student_id)
+        filter_query['student_ids'] = ObjectId(target_student_id)
         
-        if current_role == 'student' and target_student_id != current_user_id:
-            return jsonify({'error': 'Unauthorized access'}), 403
-        elif current_role == 'coach' and str(filter_query['coach_id']) != current_user_id:
-            return jsonify({'error': 'Unauthorized access'}), 403
         
         
         
@@ -1783,8 +2009,11 @@ def get_student_next_class():
         if rsvp_info:
             next_class['rsvp_done'] = True
             next_class['user_rsvp_status'] = rsvp_info['rsvp_status']
+        
+        # Convert instruction keys to strings if instructions is a dict
+        convert_instruction_keys_to_str(next_class)
+        
         print(next_class)
-
 
         
         return jsonify({
@@ -1799,7 +2028,7 @@ def get_student_next_class():
 @mobile_api_bp.route('/coach/next-class', methods=['GET'])
 @jwt_required()
 def get_coach_next_class():
-    """Get the coach's next upcoming class"""
+    """Get the coach's next upcoming class or org_admin's next upcoming class for center"""
     try:
         current_user_id = get_jwt_identity()
         
@@ -1807,21 +2036,29 @@ def get_coach_next_class():
         current_role = claims.get('role', 'student')
         current_org_id = claims.get('organization_id')
         
-        # This endpoint is only for coaches
+        # This endpoint is only for coaches and org_admins
         if current_role not in ['coach', 'coach_admin', 'org_admin', 'super_admin']:
             return jsonify({'error': 'Unauthorized - Coach access only'}), 403
         
-        # Get the next upcoming class for the coach
+        # Get the next upcoming class
         now = datetime.utcnow() - timedelta(hours=1, minutes=30)
         
         filter_query = {
-            'coach_id': ObjectId(current_user_id),
             'scheduled_at': {'$gte': now},
             'status': {'$in': ['scheduled', 'ongoing']}
         }
         
-        if current_org_id:
-            filter_query['organization_id'] = ObjectId(current_org_id)
+        # For org_admin, show all classes in organization (no coach filter)
+        # For coaches, only show their assigned classes
+        if current_role == 'org_admin' or current_role == 'super_admin':
+            # Org admin sees all classes in their organization
+            if current_org_id:
+                filter_query['organization_id'] = ObjectId(current_org_id)
+        else:
+            # Regular coaches see only their classes
+            filter_query['coach_id'] = ObjectId(current_user_id)
+            if current_org_id:
+                filter_query['organization_id'] = ObjectId(current_org_id)
 
         print(filter_query)
         
@@ -1909,6 +2146,8 @@ def get_coach_next_class():
                 for student in students
             ]
 
+        # Convert instruction keys to strings if instructions is a dict
+        convert_instruction_keys_to_str(next_class)
         
         return jsonify({
             'next_class': next_class,
@@ -2178,7 +2417,7 @@ def student_rsvp():
         class_id = data.get('class_id')
         rsvp_status = data.get('rsvp_status')  # 'going', 'maybe', 'not_going'
         reason = data.get('reason')  # Required for not_going
-        
+        print(data)
         if not class_id or not rsvp_status:
             return jsonify({'error': 'Class ID and RSVP status are required'}), 400
         
@@ -2191,7 +2430,6 @@ def student_rsvp():
         # Validate class exists
         class_doc = mongo.db.classes.find_one({
             '_id': ObjectId(class_id),
-            'organization_id': ObjectId(current_org_id) if current_org_id else None
         })
         
         if not class_doc:
@@ -2277,6 +2515,9 @@ def student_rsvp():
             if rsvp_info.get('reason'):
                 response_class['user_rsvp_reason'] = rsvp_info['reason']
         
+        # Convert instruction keys to strings if instructions is a dict
+        convert_instruction_keys_to_str(response_class)
+        
         response_data = {
             'message': f'RSVP updated to {rsvp_status}',
             'class': response_class
@@ -2297,6 +2538,233 @@ def student_rsvp():
         
     except Exception as e:
         current_app.logger.error(f"Student RSVP error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@mobile_api_bp.route('/classes/<class_id>/send-instructions', methods=['POST'])
+@jwt_required()
+@require_role(['coach', 'org_admin', 'super_admin'])
+def send_class_instructions(class_id):
+    """Send instructions to students for a class (coach and org_admin only)"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        current_role = claims.get('role', 'student')
+        current_org_id = claims.get('organization_id')
+        
+        data = request.get_json()
+        instructions = data.get('instructions', '').strip()
+        
+        if not instructions:
+            return jsonify({'error': 'Instructions are required'}), 400
+        
+        # Validate class exists
+        class_doc = mongo.db.classes.find_one({'_id': ObjectId(class_id)})
+        
+        if not class_doc:
+            return jsonify({'error': 'Class not found'}), 404
+        
+        # Check if user has permission
+        if current_role == 'coach':
+            # Coach can only send instructions for their own classes
+            if str(class_doc.get('coach_id')) != current_user_id:
+                return jsonify({'error': 'Unauthorized - You can only send instructions for your own classes'}), 403
+        elif current_role in ['org_admin', 'super_admin']:
+            # Org admin can send instructions for any class in their organization
+            if current_org_id and str(class_doc.get('organization_id')) != current_org_id:
+                return jsonify({'error': 'Unauthorized - Class not in your organization'}), 403
+        
+        # Check if class has started
+        if class_doc['scheduled_at'] <= datetime.utcnow():
+            return jsonify({'error': 'Cannot send instructions for classes that have already started'}), 400
+        
+        # Update class with instructions
+        mongo.db.classes.update_one(
+            {'_id': ObjectId(class_id)},
+            {
+                '$set': {
+                    'instructions': instructions,
+                    'instructions_sent_at': datetime.utcnow(),
+                    'instructions_sent_by': ObjectId(current_user_id),
+                    'updated_at': datetime.utcnow()
+                }
+            }
+        )
+        
+        # Send WhatsApp messages to all enrolled students
+        from app.services.enhanced_whatsapp_service import EnhancedWhatsAppService
+        whatsapp_service = EnhancedWhatsAppService()
+        
+        student_ids = class_doc.get('student_ids', [])
+        sent_count = 0
+        failed_count = 0
+        
+        scheduled_at = class_doc['scheduled_at']
+        class_title = class_doc.get('title', 'Class')
+        
+        for student_id in student_ids:
+            try:
+                student = mongo.db.users.find_one({'_id': ObjectId(student_id)})
+                if student and student.get('phone_number'):
+                    phone_number = student['phone_number']
+                    student_name = student.get('name', 'Student')
+                    
+                    # Send instructions using template message
+                    success, message = whatsapp_service.send_class_instructions_message(
+                        phone_number=phone_number,
+                        student_name=student_name,
+                        class_title=class_title,
+                        scheduled_at=scheduled_at,
+                        instructions=instructions
+                    )
+                    
+                    if success:
+                        sent_count += 1
+                    else:
+                        failed_count += 1
+            except Exception as e:
+                current_app.logger.error(f"Error sending instructions to student {student_id}: {str(e)}")
+                failed_count += 1
+        
+        return jsonify({
+            'message': 'Instructions sent successfully',
+            'sent_count': sent_count,
+            'failed_count': failed_count
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Send class instructions error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@mobile_api_bp.route('/classes/<class_id>/instructions', methods=['GET'])
+@jwt_required()
+def get_class_instructions(class_id):
+    """Get instructions for a class (all authenticated users)"""
+    try:
+        # Validate class exists
+        class_doc = mongo.db.classes.find_one({'_id': ObjectId(class_id)})
+        
+        if not class_doc:
+            return jsonify({'error': 'Class not found'}), 404
+        
+        # Get instructions if they exist
+        instructions = class_doc.get('instructions')
+        instructions_sent_at = class_doc.get('instructions_sent_at')
+        instructions_sent_by = class_doc.get('instructions_sent_by')
+        
+        if not instructions:
+            return jsonify({
+                'instructions': None,
+                'instructions_sent_at': None,
+                'instructions_sent_by': None
+            }), 200
+        
+        # Get sender info if available
+        sender_info = None
+        if instructions_sent_by:
+            sender = mongo.db.users.find_one({'_id': instructions_sent_by}, {'name': 1, '_id': 1})
+            if sender:
+                sender_info = {
+                    'id': str(sender['_id']),
+                    'name': sender.get('name', 'Unknown')
+                }
+        
+        return jsonify({
+            'instructions': instructions,
+            'instructions_sent_at': instructions_sent_at.isoformat() if instructions_sent_at else None,
+            'instructions_sent_by': sender_info
+        }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Get class instructions error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@mobile_api_bp.route('/classes/<class_id>/cancel', methods=['POST'])
+@jwt_required()
+@require_role(['coach', 'org_admin', 'super_admin'])
+def cancel_class(class_id):
+    """Cancel a class (coach and org_admin only)"""
+    try:
+        current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        current_role = claims.get('role', 'student')
+        current_org_id = claims.get('organization_id')
+        
+        data = request.get_json()
+        reason = data.get('reason', '').strip()
+        cancellation_type = data.get('cancellation_type', 'manual')
+        refund_required = data.get('refund_required', False)
+        send_notifications = data.get('send_notifications', True)
+        
+        if not reason:
+            return jsonify({'error': 'Cancellation reason is required'}), 400
+        
+        # Validate class exists
+        class_doc = mongo.db.classes.find_one({'_id': ObjectId(class_id)})
+        
+        if not class_doc:
+            return jsonify({'error': 'Class not found'}), 404
+        
+        # Check if user has permission
+        if current_role == 'coach':
+            # Coach can only cancel their own classes
+            if str(class_doc.get('coach_id')) != current_user_id:
+                return jsonify({'error': 'Unauthorized - You can only cancel your own classes'}), 403
+        elif current_role in ['org_admin', 'super_admin']:
+            # Org admin can cancel any class in their organization
+            if current_org_id and str(class_doc.get('organization_id')) != current_org_id:
+                return jsonify({'error': 'Unauthorized - Class not in your organization'}), 403
+        
+        # Check if class can be cancelled
+        if class_doc.get('status') in ['cancelled', 'completed']:
+            return jsonify({'error': f'Cannot cancel class with status: {class_doc.get("status")}'}), 400
+        
+        # Use cancellation service if available
+        try:
+            from app.services.cancellation_service import CancellationService
+            success, message, class_data = CancellationService.cancel_class(
+                class_id=class_id,
+                reason=reason,
+                cancelled_by=str(current_user_id),
+                cancellation_type=cancellation_type,
+                refund_required=refund_required,
+                send_notifications=send_notifications,
+                replacement_class_id=data.get('replacement_class_id')
+            )
+            
+            if success:
+                return jsonify({
+                    'message': message,
+                }), 200
+            else:
+                return jsonify({'error': message}), 400
+        except ImportError:
+            # Fallback if cancellation service not available
+            # Update class status directly
+            mongo.db.classes.update_one(
+                {'_id': ObjectId(class_id)},
+                {
+                    '$set': {
+                        'status': 'cancelled',
+                        'cancellation_reason': reason,
+                        'cancelled_by': ObjectId(current_user_id),
+                        'cancelled_at': datetime.utcnow(),
+                        'cancellation_type': cancellation_type,
+                        'refund_required': refund_required,
+                        'updated_at': datetime.utcnow()
+                    }
+                }
+            )
+            
+            # Get updated class
+            updated_class = mongo.db.classes.find_one({'_id': ObjectId(class_id)})
+            updated_class['_id'] = str(updated_class['_id'])
+            
+            return jsonify({
+                'message': 'Class cancelled successfully',
+            }), 200
+    
+    except Exception as e:
+        current_app.logger.error(f"Cancel class error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @mobile_api_bp.route('/student/review-class', methods=['POST'])
@@ -2458,6 +2926,9 @@ def get_classes_pending_review():
             
             # Mark that this class needs review
             class_doc['user_has_reviewed'] = False
+            
+            # Convert instruction keys to strings if instructions is a dict
+            convert_instruction_keys_to_str(class_doc)
         
         return jsonify({
             'classes_pending_review': make_json_serializable(classes_pending_review),
@@ -2555,6 +3026,9 @@ def student_cancel_class():
         
         if rsvp_info:
             response_class['user_rsvp_status'] = rsvp_info['rsvp_status']
+        
+        # Convert instruction keys to strings if instructions is a dict
+        convert_instruction_keys_to_str(response_class)
         
         return jsonify({
             'message': 'Successfully cancelled class registration',
@@ -2703,12 +3177,13 @@ def get_organization_classes(org_id):
         
         centers_with_classes = []
         for center in centers:
-            # Get classes for this center
+            # Get classes for this center (only bookable classes)
             classes = list(mongo.db.classes.find({
                 'organization_id': ObjectId(org_id),
                 'location.center_id': center['_id'],
                 'scheduled_at': {'$gte': start_date, '$lt': end_date},
-                'status': {'$in': ['scheduled', 'ongoing']}
+                'status': {'$in': ['scheduled', 'ongoing']},
+                'is_bookable': {'$ne': False}  # Include only bookable classes (True or undefined/null)
             }).sort('scheduled_at', 1))
             
             # Format classes
@@ -2737,6 +3212,14 @@ def get_organization_classes(org_id):
                     'is_user_enrolled': is_user_enrolled,
                     'price': class_doc.get('price', 0)
                 }
+                
+                # Add instructions if they exist
+                if class_doc.get('instructions'):
+                    formatted_class['instructions'] = class_doc['instructions']
+                
+                # Convert instruction keys to strings if instructions is a dict
+                convert_instruction_keys_to_str(formatted_class)
+                
                 print(class_doc)
                 formatted_classes.append(formatted_class)
             
@@ -2860,6 +3343,10 @@ def book_class(class_id):
         if updated_class.get('location'):   
             if updated_class['location'].get('center_id'):
                 updated_class['location']['center_id'] = str(updated_class['location']['center_id'])
+        
+        # Convert instruction keys to strings if instructions is a dict
+        convert_instruction_keys_to_str(updated_class)
+        
         print("updated_class", updated_class)
         return jsonify({
             'message': 'Successfully booked class',
@@ -3318,6 +3805,9 @@ def mobile_get_latest_announcement():
                         else:
                             associated_class[key][key2] = value2
 
+            # Convert instruction keys to strings if instructions is a dict
+            convert_instruction_keys_to_str(associated_class)
+
             # Get likes and comments info
             likes = announcement.get('likes', [])
             comments = announcement.get('comments', [])
@@ -3616,6 +4106,9 @@ def get_posts():
                             if '_id' in key2:
                                 if isinstance(value2, ObjectId):
                                     associated_class[key][key2] = str(value2)
+
+            # Convert instruction keys to strings if instructions is a dict
+            convert_instruction_keys_to_str(associated_class)
 
             print("associated_class", associated_class)
                     

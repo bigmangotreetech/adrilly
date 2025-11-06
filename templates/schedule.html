@@ -366,6 +366,19 @@
                         </div>
                     </div>
 
+                    <!-- Is Bookable Toggle -->
+                    <div class="mb-3">
+                        <label class="form-label d-flex align-items-center justify-content-between">
+                            <span>
+                                Bookable
+                                <small class="text-muted d-block">Allow users to book classes for this activity</small>
+                            </span>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="activity_is_bookable" name="is_bookable" checked style="width: 3rem; height: 1.5rem; cursor: pointer;">
+                            </div>
+                        </label>
+                    </div>
+
                     <!-- Custom Feedback Metrics Section -->
                     <div class="mb-3">
                         <label class="form-label">
@@ -2042,7 +2055,9 @@
         startY: 0,
         currentX: 0,
         currentY: 0,
-        dragOffset: { x: 0, y: 0 }
+        dragOffset: { x: 0, y: 0 },
+        longPressTimer: null,
+        longPressActivated: false
     };
 
     // Debug logging
@@ -2334,7 +2349,9 @@
         // Get the card's position relative to viewport
         const rect = card.getBoundingClientRect();
         
-        touchDragState.isDragging = false; // Will be set to true after movement threshold
+        // Reset state
+        touchDragState.isDragging = false;
+        touchDragState.longPressActivated = false;
         touchDragState.activityCard = card;
         touchDragState.startX = touch.clientX;
         touchDragState.startY = touch.clientY;
@@ -2351,8 +2368,22 @@
             color: card.dataset.activityColor
         };
 
-        // Don't prevent default here - allow normal taps to work
-        // We'll prevent default only after drag threshold is met
+        // Start long press timer (400ms)
+        touchDragState.longPressTimer = setTimeout(() => {
+            touchDragState.longPressActivated = true;
+            touchDragState.isDragging = true;
+            
+            // Visual feedback for long press activation
+            card.style.opacity = '0.5';
+            card.style.transition = 'opacity 0.2s';
+            card.style.transform = 'scale(1.05)';
+            card.style.zIndex = '1000';
+            
+            // Haptic feedback if available
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }, 400);
     }
 
     function handleActivityTouchMove(e) {
@@ -2362,13 +2393,23 @@
         const deltaX = Math.abs(touch.clientX - touchDragState.startX);
         const deltaY = Math.abs(touch.clientY - touchDragState.startY);
         
-        // Start dragging after 10px movement threshold
-        if (!touchDragState.isDragging && (deltaX > 10 || deltaY > 10)) {
-            touchDragState.isDragging = true;
-            touchDragState.activityCard.style.opacity = '0.5';
-            touchDragState.activityCard.style.transition = 'opacity 0.2s';
+        // If long press hasn't activated yet, check if movement is too much
+        if (!touchDragState.longPressActivated) {
+            // Cancel long press if user moves too much (15px threshold)
+            if (deltaX > 15 || deltaY > 15) {
+                if (touchDragState.longPressTimer) {
+                    clearTimeout(touchDragState.longPressTimer);
+                    touchDragState.longPressTimer = null;
+                }
+                touchDragState.activityCard = null;
+                draggedActivity = null;
+                return;
+            }
+            // Don't prevent default until long press activates
+            return;
         }
 
+        // Only allow dragging after long press is activated
         if (touchDragState.isDragging) {
             touchDragState.currentX = touch.clientX;
             touchDragState.currentY = touch.clientY;
@@ -2393,10 +2434,23 @@
     }
 
     function handleActivityTouchEnd(e) {
-        // If we didn't drag, just reset state
+        // Clear long press timer if it's still running
+        if (touchDragState.longPressTimer) {
+            clearTimeout(touchDragState.longPressTimer);
+            touchDragState.longPressTimer = null;
+        }
+
+        // If we didn't drag (long press didn't activate), reset state
         if (!touchDragState.isDragging) {
+            // Reset card styles if long press was cancelled
+            if (touchDragState.activityCard) {
+                touchDragState.activityCard.style.opacity = '';
+                touchDragState.activityCard.style.transform = '';
+                touchDragState.activityCard.style.zIndex = '';
+            }
             touchDragState.activityCard = null;
             draggedActivity = null;
+            touchDragState.longPressActivated = false;
             return;
         }
         
@@ -2420,9 +2474,17 @@
     }
 
     function handleActivityTouchCancel(e) {
+        // Clear long press timer if it's still running
+        if (touchDragState.longPressTimer) {
+            clearTimeout(touchDragState.longPressTimer);
+            touchDragState.longPressTimer = null;
+        }
+
         // Clean up touch drag state if touch is cancelled
         if (touchDragState.activityCard) {
-            touchDragState.activityCard.style.opacity = '1';
+            touchDragState.activityCard.style.opacity = '';
+            touchDragState.activityCard.style.transform = '';
+            touchDragState.activityCard.style.zIndex = '';
         }
         
         // Remove all drag-over classes
@@ -2431,13 +2493,33 @@
         });
 
         touchDragState.isDragging = false;
+        touchDragState.longPressActivated = false;
         touchDragState.activityCard = null;
         draggedActivity = null;
     }
 
     // Document-level touchmove handler to handle dragging anywhere
     document.addEventListener('touchmove', function(e) {
-        if (touchDragState.isDragging && touchDragState.activityCard) {
+        // If we have an activity card but long press hasn't activated yet, check movement
+        if (touchDragState.activityCard && !touchDragState.longPressActivated) {
+            const touch = e.touches[0];
+            const deltaX = Math.abs(touch.clientX - touchDragState.startX);
+            const deltaY = Math.abs(touch.clientY - touchDragState.startY);
+            
+            // Cancel long press if user moves too much (15px threshold)
+            if (deltaX > 15 || deltaY > 15) {
+                if (touchDragState.longPressTimer) {
+                    clearTimeout(touchDragState.longPressTimer);
+                    touchDragState.longPressTimer = null;
+                }
+                touchDragState.activityCard = null;
+                draggedActivity = null;
+                return;
+            }
+        }
+
+        // Only process dragging after long press is activated
+        if (touchDragState.isDragging && touchDragState.activityCard && touchDragState.longPressActivated) {
             const touch = e.touches[0];
             touchDragState.currentX = touch.clientX;
             touchDragState.currentY = touch.clientY;
@@ -2466,12 +2548,20 @@
         if (touchDragState.isDragging && touchDragState.activityCard) {
             const touch = e.changedTouches[0];
             
+            // Clear long press timer if still running
+            if (touchDragState.longPressTimer) {
+                clearTimeout(touchDragState.longPressTimer);
+                touchDragState.longPressTimer = null;
+            }
+            
             // Find the schedule cell under the touch point
             const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
             const scheduleCell = elementUnderTouch?.closest('.schedule-cell');
 
-            // Reset card opacity
-            touchDragState.activityCard.style.opacity = '1';
+            // Reset card styles
+            touchDragState.activityCard.style.opacity = '';
+            touchDragState.activityCard.style.transform = '';
+            touchDragState.activityCard.style.zIndex = '';
 
             // Remove all drag-over classes
             document.querySelectorAll('.schedule-cell.drag-over, .schedule-cell.drag-active').forEach(cell => {
@@ -2497,6 +2587,7 @@
 
             // Reset touch drag state
             touchDragState.isDragging = false;
+            touchDragState.longPressActivated = false;
             touchDragState.activityCard = null;
             draggedActivity = null;
         }
@@ -2837,6 +2928,7 @@
             document.getElementById('activity_capacity').value = activity.max_participants || 20;
             document.getElementById('activity_level').value = activity.skill_level || 'beginner';
             document.getElementById('activity_color').value = activity.color || '#3B82F6';
+            document.getElementById('activity_is_bookable').checked = activity.is_bookable !== undefined ? activity.is_bookable : true;
 
             // Load feedback metrics
             feedbackMetrics = activity.feedback_metrics || [];
@@ -3187,7 +3279,8 @@
             color: formData.get('color'),
             default_coach_id: formData.get('default_coach_id'),
             price: parseFloat(formData.get('price')),
-            feedback_metrics: feedbackMetrics
+            feedback_metrics: feedbackMetrics,
+            is_bookable: document.getElementById('activity_is_bookable').checked
 
         };
 
