@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app, jsonify
 from bson import ObjectId
-from datetime import datetime, date, timedelta, time
+from datetime import datetime, date, timedelta, time, timezone
 from dateutil.relativedelta import relativedelta
+import pytz
 from app.extensions import mongo
 from app.services.auth_service import AuthService
 from app.models.user import User
@@ -342,6 +343,59 @@ def logout():
     flash('You have been logged out.', 'success')
     return redirect(url_for('web.login'))
 
+def get_organization_timezone(org_id):
+    """Get organization timezone from settings, defaulting to IST (Asia/Kolkata)"""
+    try:
+        if org_id:
+            org = mongo.db.organizations.find_one({'_id': ObjectId(org_id)})
+            if org and org.get('settings') and org['settings'].get('timezone'):
+                timezone_str = org['settings']['timezone']
+                # Validate timezone
+                try:
+                    pytz.timezone(timezone_str)
+                    return timezone_str
+                except pytz.exceptions.UnknownTimeZoneError:
+                    # Invalid timezone, fall back to IST
+                    return 'Asia/Kolkata'
+    except Exception as e:
+        current_app.logger.error(f"Error getting organization timezone: {str(e)}")
+    
+    # Default to IST (Asia/Kolkata)
+    return 'Asia/Kolkata'
+
+def convert_to_timezone_and_format(dt, timezone_str='Asia/Kolkata', time_format='%I:%M %p'):
+    """Convert datetime to specified timezone and format it
+    
+    Args:
+        dt: datetime object to convert
+        timezone_str: timezone string (e.g., 'Asia/Kolkata', 'America/New_York')
+                     Defaults to 'Asia/Kolkata' (IST)
+        time_format: strftime format string, defaults to '%I:%M %p'
+    
+    Returns:
+        Formatted time string in the specified timezone
+    """
+    if dt is None:
+        return ''
+    
+    try:
+        # Get timezone object
+        tz = pytz.timezone(timezone_str)
+    except pytz.exceptions.UnknownTimeZoneError:
+        # Fall back to IST if timezone is invalid
+        tz = pytz.timezone('Asia/Kolkata')
+    
+    # If datetime is naive (no timezone info), assume it's stored as UTC
+    if dt.tzinfo is None:
+        # Assume naive datetime is UTC, convert to target timezone
+        utc_dt = pytz.utc.localize(dt)
+        local_dt = utc_dt.astimezone(tz)
+        return local_dt.strftime(time_format)
+    else:
+        # Convert to target timezone if it has timezone info
+        local_dt = dt.astimezone(tz)
+        return local_dt.strftime(time_format)
+
 @web_bp.route('/dashboard')
 @login_required
 def dashboard():
@@ -357,6 +411,10 @@ def dashboard():
         user_name = session.get('first_name', 'User')
         current_user = mongo.db.users.find_one({'_id': ObjectId(session.get('user_id'))})
         org_id = ObjectId(session.get('organization_id'))
+        
+        # Get organization timezone (defaults to IST)
+        org_timezone = get_organization_timezone(org_id)
+        
         import time
         # Get today's date
         today = datetime.now()
@@ -427,7 +485,7 @@ def dashboard():
                 
                 next_class = {
                     'title': next_class_data.get('title', 'Untitled Class'),
-                    'time': next_class_data['scheduled_at'].strftime('%I:%M %p'),
+                    'time': convert_to_timezone_and_format(next_class_data['scheduled_at'], org_timezone),
                     'total_students': total_students,
                     'rsvp_count': rsvp_count,
                     'coach_name': coach_name,
@@ -631,7 +689,7 @@ def dashboard():
             for class_ in day_classes:
                 day_data['classes'].append({
                     'title': class_.get('title', 'Untitled Class'),
-                    'time': class_['scheduled_at'].strftime('%I:%M %p')
+                    'time': convert_to_timezone_and_format(class_['scheduled_at'], org_timezone)
                 })
             
             formatted_schedule['days'].append(day_data)
@@ -2483,9 +2541,25 @@ def update_organization_settings(org_id, current_org):
             # If not provided, use existing value or default to 120
             reminder_minutes = existing_settings.get('reminder_minutes_before', 120)
         
+        # Get timezone setting
+        timezone_str = request.form.get('settings[timezone]', '').strip()
+        if timezone_str:
+            # Validate timezone
+            try:
+                pytz.timezone(timezone_str)
+                # Timezone is valid
+            except pytz.exceptions.UnknownTimeZoneError:
+                # Invalid timezone, use existing or default to IST
+                timezone_str = existing_settings.get('timezone', 'Asia/Kolkata')
+                flash(f'Invalid timezone. Using default: {timezone_str}', 'warning')
+        else:
+            # If not provided, use existing value or default to IST
+            timezone_str = existing_settings.get('timezone', 'Asia/Kolkata')
+        
         # Update settings dictionary
         settings = existing_settings.copy()
         settings['reminder_minutes_before'] = reminder_minutes
+        settings['timezone'] = timezone_str
         
         # Basic validation
         if not name:
